@@ -902,8 +902,7 @@
       const ext=(s.ext||[]).map(e=>`<line class="dim-line" x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}"/>`).join('');
       const main=`<line class="dim-line" marker-start="url(#arr)" marker-end="url(#arr)" x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}"/>`;
       const val=readDimValue(r,s.key,s.value), label=(s.prefix||'')+n1(val);
-      const w=Math.max(50,label.length*8+14), h=24, bx=s.textX-w/2, by=s.textY-h/2;
-      parts.push(`<g>${ext}${main}<rect class="dim-box" x="${bx.toFixed(1)}" y="${by.toFixed(1)}" rx="3" ry="3" width="${w.toFixed(1)}" height="${h}"/><text class="dim-text" x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle">${esc(label)}</text></g>`);
+      parts.push(`<g>${ext}${main}<text class="dim-text" x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle">${esc(label)}</text></g>`);
     }
     return parts.join('');
   }
@@ -951,8 +950,8 @@
       screen=mmPath.map(p=>({x:ox+(p.x-pb.minX)*sc,y:oy+(p.y-pb.minY)*sc}));
     }
     const specs=buildDimensionSpecs(variant==='drawing'?mmPath:transformedPath(r),screen,W,H);
-    const inputs = specs.map(s=>`<input class="dim-input-overlay" data-id="${escAttr(r.id)}" data-dimkey="${escAttr(s.key)}" type="number" step="0.1" value="${escAttr(n1(readDimValue(r,s.key,s.value)))}" style="left:${(s.textX/W*100).toFixed(2)}%;top:${(s.textY/H*100).toFixed(2)}%;" title="${escAttr(s.key)}">`).join('');
-    return `<div class="figure-frame ${variant==='photo'?'photo-variant':''}">${svg}${inputs}</div>`;
+    const inputs = r.dimEditMode ? specs.map(s=>`<input class="dim-input-overlay" data-id="${escAttr(r.id)}" data-dimkey="${escAttr(s.key)}" type="number" inputmode="decimal" step="0.1" value="${escAttr(n1(readDimValue(r,s.key,s.value)))}" style="left:${(s.textX/W*100).toFixed(2)}%;top:${(s.textY/H*100).toFixed(2)}%;" title="${escAttr(s.key)}">`).join('') : '';
+    return `<div class="figure-frame ${variant==='photo'?'photo-variant':''}">${svg}${inputs}</div>${r.dimEditMode?'<div class="dim-edit-note">치수 편집 중 · 숫자 입력 후 「편집 종료」를 누르면 도면에 반영됩니다.</div>':''}`;
   }
 
   function renderResults() {
@@ -962,7 +961,7 @@
       if(!r.ok)return `<div class="result-item failed" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge quality bad">생성 실패</span></div><div class="result-msg">${esc(r.error)}</div></div>`;
       const quality=r.quality>.76?'양호':r.quality>.53?'보통':'확인필요';
       const modeText=(r.captureType==='product')?'제품 실제사진':'치구 '+(currentRenderMode()==='photo'?'실제사진':'도면');
-      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${r.arDetected?'ar ':''}${r.quality<.53?'quality bad':''}">${esc(modeText)} · ${quality}</span></div>${makeFigureHtml(r)}<div class="edit-grid"><label>전체 폭 mm<input data-rfield="width" type="number" step="0.1" value="${n1(r.width)}"></label><label>전체 높이 mm<input data-rfield="height" type="number" step="0.1" value="${n1(r.height)}"></label><label>전개길이 mm<input data-rfield="length" type="number" step="0.1" value="${n1(r.length)}"></label><label>상부 R mm<input data-rfield="r1" type="number" step="0.1" value="${n1(r.r1)}"></label><label>하부 R mm<input data-rfield="r2" type="number" step="0.1" value="${n1(r.r2)}"></label><label>Ø mm<input data-rfield="diameter" type="number" step="0.1" value="${n1(r.diameter)}"></label></div><div class="result-actions"><button class="btn apply-dims" data-id="${r.id}">폭/높이 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 도면 PDF</button></div><div class="result-msg">형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)} · 도면은 ${esc(straightenLevelLabel(currentStraightenLevel()))} 직선화 보정이 적용되며, 꺾임부와 전체 치수선은 모두 직접 수정 가능합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
+      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${r.arDetected?'ar ':''}${r.quality<.53?'quality bad':''}">${esc(modeText)} · ${quality}</span></div>${makeFigureHtml(r)}<div class="edit-grid"><label>전체 폭 mm<input data-rfield="width" type="number" step="0.1" value="${n1(r.width)}"></label><label>전체 높이 mm<input data-rfield="height" type="number" step="0.1" value="${n1(r.height)}"></label><label>전개길이 mm<input data-rfield="length" type="number" step="0.1" value="${n1(r.length)}"></label><label>상부 R mm<input data-rfield="r1" type="number" step="0.1" value="${n1(r.r1)}"></label><label>하부 R mm<input data-rfield="r2" type="number" step="0.1" value="${n1(r.r2)}"></label><label>Ø mm<input data-rfield="diameter" type="number" step="0.1" value="${n1(r.diameter)}"></label></div><div class="result-actions"><button class="btn dim-edit-btn ${r.dimEditMode?'active':''}" data-id="${r.id}">${r.dimEditMode?'편집 종료':'치수 편집'}</button><button class="btn apply-dims" data-id="${r.id}">폭/높이 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 도면 PDF</button></div><div class="result-msg">형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)} · 도면은 ${esc(straightenLevelLabel(currentStraightenLevel()))} 직선화 보정이 적용되며, 꺾임부와 전체 치수선은 모두 직접 수정 가능합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
     }).join('');
   }
 
@@ -970,12 +969,12 @@
     const row=e.target.closest('.result-item'),r=state.results.find(x=>x.id===row?.dataset.id);if(!r?.ok)return;
     const f=e.target.dataset?.rfield,dk=e.target.dataset?.dimkey;const v=parseFloat(e.target.value);
     if(f && Number.isFinite(v)) r[f]=v;
-    if(dk && Number.isFinite(v)) writeDimValue(r,dk,v);
-    const fig=row.querySelector('.figure-frame');if(fig) fig.outerHTML=makeFigureHtml(r);
+    if(dk && Number.isFinite(v)){ writeDimValue(r,dk,v); return; }
   });
 
   $('resultList').addEventListener('click',async e=>{
-    const apply=e.target.closest('.apply-dims'),one=e.target.closest('.export-one');
+    const edit=e.target.closest('.dim-edit-btn'),apply=e.target.closest('.apply-dims'),one=e.target.closest('.export-one');
+    if(edit){const r=state.results.find(x=>x.id===edit.dataset.id);if(!r?.ok)return;r.dimEditMode=!r.dimEditMode;renderResults();return;}
     if(apply){const r=state.results.find(x=>x.id===apply.dataset.id);if(!r?.ok)return;recalcFromDimensions(r);renderResults();toast('폭/높이를 형상에 반영했습니다.');}
     if(one){const r=state.results.find(x=>x.id===one.dataset.id);if(r?.ok)await exportPdf([r],`${safeName(r.name)}_drawing.pdf`);}
   });
@@ -1084,10 +1083,10 @@
   window.addEventListener('pagehide',()=>{stopCamera();state.captures.forEach(revokeCapture);});
 
   if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-    navigator.serviceWorker.register('./sw.js?v=0.6.4').then(reg=>reg.update()).catch(()=>{});
+    navigator.serviceWorker.register('./sw.js?v=0.6.5').then(reg=>reg.update()).catch(()=>{});
   }
 
-  const APP_VERSION='0.6.4';
+  const APP_VERSION='0.6.5';
   if(/^https?:$/.test(location.protocol)){setTimeout(async()=>{try{const res=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store'});if(!res.ok)return;const latest=(await res.json()).version;if(!latest||latest===APP_VERSION)return;if('caches' in window){for(const key of await caches.keys())await caches.delete(key);}if('serviceWorker' in navigator){for(const reg of await navigator.serviceWorker.getRegistrations())await reg.unregister();}location.replace(`./?v=${encodeURIComponent(latest)}&refresh=${Date.now()}`);}catch(_){}},1800);}
 
   // Test hooks are available only when ?test=1 is present. They are not shown in normal use.

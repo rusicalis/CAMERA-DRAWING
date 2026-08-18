@@ -89,10 +89,10 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 .wide{grid-column:1/-1}
 .figure-frame{position:relative;background:#fff;margin:10px;border-radius:10px;overflow:hidden;aspect-ratio:1189/841}
 .figure-frame svg{width:100%;height:100%;display:block;background:#fff}
-.dim-input-overlay{position:absolute;transform:translate(-50%,-50%);min-width:54px;max-width:72px;padding:2px 4px;height:24px;border:1px solid #111;border-radius:4px;background:rgba(255,255,255,.96);color:#111;font-size:10px;font-weight:700;text-align:center;z-index:2}
-.photo-variant .dim-input-overlay{background:rgba(255,255,255,.88)}
+.dim-input-overlay{position:absolute;transform:translate(-50%,-50%);width:44px;min-width:44px;max-width:44px;padding:1px 2px;height:19px;border:1px solid #2563eb;border-radius:3px;background:rgba(255,255,255,.90);color:#0f172a;font-size:9px;font-weight:800;text-align:center;z-index:3;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.photo-variant .dim-input-overlay{background:rgba(255,255,255,.82)}
 .capture-type-badge{font-size:9px;color:#e0f2fe;background:#155e75;border:1px solid #0891b2;padding:4px 6px;border-radius:999px;margin-left:6px}
-@media(max-width:560px){.dim-input-overlay{min-width:46px;max-width:60px;height:22px;font-size:9px}.mode-tabs{top:0}}
+@media(max-width:560px){.dim-input-overlay{width:38px;min-width:38px;max-width:38px;height:18px;font-size:8px;padding:0 1px}.mode-tabs{top:0}}
 
 .quick-mode-row{display:flex;gap:12px;align-items:end;justify-content:space-between;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid rgba(148,163,184,.18)}
 .quick-mode-row label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#cbd5e1;font-weight:700;min-width:220px}
@@ -101,3 +101,5 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 .figure-frame svg .dim-text{font:700 11px Arial,'Noto Sans KR',sans-serif;fill:#111}.figure-frame svg .dim-box{fill:#fff;stroke:#111;stroke-width:1}.figure-frame svg .dim-line{stroke:#111;stroke-width:1.1;fill:none}.figure-frame svg .light-guide{stroke:#777;stroke-width:1;fill:none;stroke-dasharray:8 5}
 
 #straightenLevelSelect{font-weight:700}
+
+.dim-edit-note{font-size:11px;color:#93c5fd;margin:6px 10px 0}.dim-edit-btn.active{background:#1d4ed8;border-color:#60a5fa;color:#fff}.figure-frame svg .dim-text{font-size:10px;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round;fill:#111}.figure-frame svg .dim-box{display:none}
