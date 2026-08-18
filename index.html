@@ -1,0 +1,1963 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="theme-color" content="#0b1220" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; img-src 'self' blob: data:; media-src 'self' blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; worker-src 'self' blob:;" />
+  <title>HOOK 모바일 자동도면 v0.8.7</title>
+  <link rel="manifest" href="manifest.json?v=0.8.7" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+  <style>
+:root{
+  --bg:#070b13;--panel:#111827;--panel2:#172033;--line:#263247;--text:#eef2ff;--muted:#9aa8bd;
+  --accent:#38bdf8;--accent2:#0ea5e9;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;--shadow:0 18px 45px rgba(0,0,0,.28)
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg);color-scheme:dark}
+body{margin:0;background:linear-gradient(180deg,#07101f 0,#070b13 32rem);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;min-height:100vh}
+button,input,select{font:inherit}
+button{touch-action:manipulation}
+.topbar{position:sticky;top:0;z-index:30;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;background:rgba(7,11,19,.91);backdrop-filter:blur(18px);border-bottom:1px solid rgba(148,163,184,.12);display:flex;justify-content:space-between;gap:12px;align-items:center}
+.topbar h1{font-size:20px;line-height:1.1;margin:2px 0 4px}.topbar p{font-size:11px;color:var(--muted);margin:0}.eyebrow{font-size:10px;letter-spacing:.14em;color:#7dd3fc;font-weight:800}
+.pill{font-size:11px;font-weight:800;padding:7px 10px;border-radius:999px;background:#334155;white-space:nowrap}
+main{max-width:820px;margin:0 auto;padding:14px 12px calc(28px + env(safe-area-inset-bottom))}
+.card{background:linear-gradient(180deg,rgba(23,32,51,.96),rgba(15,23,42,.97));border:1px solid rgba(148,163,184,.14);border-radius:18px;padding:15px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card.compact{padding:15px}.hidden{display:none!important}
+.privacy-card{display:flex;align-items:flex-start;gap:12px;border-color:rgba(34,197,94,.28);background:linear-gradient(180deg,rgba(20,83,45,.32),rgba(15,23,42,.96))}.privacy-icon{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:#166534;color:#dcfce7;font-weight:900;flex:0 0 auto}.privacy-card b{font-size:14px}.privacy-card p{font-size:11px;color:#bbf7d0;margin:4px 0 0;line-height:1.45}
+.section-title{display:flex;gap:10px;align-items:flex-start;margin-bottom:13px}.section-title>span{width:28px;height:28px;border-radius:9px;background:#0c4a6e;color:#bae6fd;display:grid;place-items:center;font-weight:900;flex:0 0 auto}.section-title h2{font-size:16px;margin:1px 0 3px}.section-title p{font-size:11px;color:var(--muted);line-height:1.42;margin:0}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.form-grid label,.capture-fields label,.edit-grid label{display:flex;flex-direction:column;gap:5px;color:#cbd5e1;font-size:11px;font-weight:700}
+input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8fafc;border-radius:10px;padding:11px 10px;outline:none;min-height:42px}input:focus,select:focus{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.12)}
+.camera-stage{position:relative;overflow:hidden;border-radius:16px;background:#020617;aspect-ratio:3/4;max-height:70vh;border:1px solid #263247}.camera-stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.camera-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center;color:#cbd5e1;padding:20px}.camera-empty strong{font-size:18px}.camera-empty span{font-size:11px;color:#94a3b8}
+.camera-guide{position:absolute;inset:0;pointer-events:none}.guide-frame{position:absolute;left:10%;right:10%;top:10%;bottom:10%;border:1px dashed rgba(255,255,255,.56);border-radius:12px}.guide-cross{position:absolute;background:rgba(255,255,255,.28)}.guide-cross.h{height:1px;left:42%;right:42%;top:50%}.guide-cross.v{width:1px;top:44%;bottom:44%;left:50%}
+.camera-actions{display:grid;grid-template-columns:1fr 88px 1fr;gap:12px;align-items:center;margin-top:14px}.btn{border:1px solid #3b4a62;background:#1e293b;color:#f8fafc;border-radius:12px;padding:11px 12px;font-weight:800;min-height:44px;cursor:pointer}.btn:disabled{opacity:.38;cursor:not-allowed}.btn.primary{background:linear-gradient(180deg,#0284c7,#0369a1);border-color:#0ea5e9}.btn.danger{background:#32161d;border-color:#7f1d1d;color:#fecaca}.btn.big{min-height:50px;font-size:14px}.capture-btn{width:78px;height:78px;border-radius:50%;border:5px solid rgba(255,255,255,.78);background:transparent;padding:5px;justify-self:center}.capture-btn span{display:block;width:100%;height:100%;border-radius:50%;background:white;box-shadow:0 0 0 2px rgba(0,0,0,.18) inset}.capture-btn:disabled{opacity:.28}
+.message{padding:10px 12px;border-radius:10px;background:#3a2610;border:1px solid #92400e;color:#fde68a;font-size:11px;margin-top:10px;line-height:1.5}.shot-status{display:flex;gap:10px;align-items:center;margin-top:12px}.shot-status b{font-size:14px;color:#7dd3fc}.shot-status span{font-size:10px;color:var(--muted)}
+.capture-list{display:grid;gap:10px}.empty-state{border:1px dashed #334155;border-radius:12px;color:#64748b;text-align:center;padding:24px 12px;font-size:12px}.capture-item{display:grid;grid-template-columns:92px 1fr;gap:10px;padding:10px;background:#0b1220;border:1px solid #263247;border-radius:14px}.capture-thumb{width:92px;height:122px;object-fit:cover;border-radius:10px;background:#020617}.capture-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}.capture-head b{font-size:13px;flex:1}.icon-btn{border:1px solid #4b2731;background:#2b1018;color:#fecaca;border-radius:9px;padding:7px 9px;font-size:11px;font-weight:800}.capture-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}.capture-fields input{padding:8px;min-height:36px;font-size:12px}.capture-fields .wide{grid-column:1/-1}.field-note{display:block;font-size:9px;color:#64748b;margin-top:5px;line-height:1.4}.queue-actions{display:grid;grid-template-columns:1fr 1.5fr;gap:9px;margin-top:12px}
+.progress{height:11px;background:#09111f;border:1px solid #263247;border-radius:999px;overflow:hidden}.progress>div{width:0;height:100%;background:linear-gradient(90deg,#0284c7,#38bdf8);transition:width .25s ease}
+.result-list{display:grid;gap:14px}.result-item{background:#0b1220;border:1px solid #263247;border-radius:15px;overflow:hidden}.result-head{display:flex;align-items:center;gap:8px;padding:12px 12px 0}.result-head b{font-size:14px;flex:1}.source-badge{font-size:9px;color:#bae6fd;background:#0c4a6e;border:1px solid #075985;padding:5px 7px;border-radius:999px}.quality.bad{color:#fed7aa;background:#431407;border-color:#9a3412}.drawing-wrap{background:white;margin:10px;border-radius:10px;overflow:hidden;aspect-ratio:1120/790}.drawing-wrap svg{width:100%;height:100%;display:block}.edit-grid{padding:0 10px 10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.edit-grid input{padding:8px;min-height:36px;font-size:12px}.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 10px 10px}.result-msg{font-size:10px;color:#94a3b8;padding:0 12px 12px;line-height:1.45}.failed{border-color:#7f1d1d}.failed .result-msg{color:#fecaca}
+.export-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.export-actions #newJobBtn{grid-column:1/-1}.warn{color:#fdba74;background:#2a1909;border:1px solid #7c2d12;padding:10px;border-radius:10px;font-size:10px;line-height:1.45}.install-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.install-grid div{display:flex;flex-direction:column;gap:4px;background:#0b1220;border:1px solid #263247;border-radius:11px;padding:10px}.install-grid b{font-size:12px}.install-grid span,.small{font-size:10px;color:#94a3b8;line-height:1.45}.install-card h2{font-size:15px;margin:0 0 10px}.install-card .btn{margin-top:9px;width:100%}
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:#0f172a;border:1px solid #475569;color:#f8fafc;padding:10px 14px;border-radius:999px;font-size:11px;box-shadow:0 10px 35px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:.22s;z-index:100;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:560px){.form-grid{grid-template-columns:1fr 1fr}.camera-actions{grid-template-columns:1fr 76px 1fr}.capture-btn{width:70px;height:70px}.capture-item{grid-template-columns:76px 1fr}.capture-thumb{width:76px;height:104px}.capture-fields{grid-template-columns:1fr 1fr}.edit-grid{grid-template-columns:1fr 1fr}.install-grid{grid-template-columns:1fr}.topbar p{display:none}}
+@media(min-width:700px){.camera-stage{aspect-ratio:4/3;max-height:620px}.capture-list{grid-template-columns:1fr 1fr}.result-list{grid-template-columns:1fr 1fr}}
+
+/* v0.4 additions */
+.topbar h1 small{font-size:.42em;opacity:.58}
+.number-preview{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;background:#0b1220;border:1px solid #263247;border-radius:12px;flex-wrap:wrap}
+.number-preview span{font-size:10px;color:#94a3b8;font-weight:800}
+.number-preview b{font-size:13px;color:#7dd3fc;flex:1;min-width:150px}
+.small-btn{min-height:36px;padding:7px 10px;font-size:11px}
+.line-manager{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px;margin-top:10px}
+.line-manager input{min-height:42px;text-transform:uppercase}
+.measure-grid{align-items:end}
+.ar-control{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:8px 9px;background:#0b1220;border:1px solid #334155;border-radius:11px;min-height:42px}
+.ar-control span{font-size:10px;color:#94a3b8;font-weight:800}.ar-control b{font-size:12px;color:#cbd5e1}.ar-control .btn{min-height:34px;padding:6px 9px;font-size:10px}
+.message.info{background:#0a2234;border-color:#075985;color:#bae6fd}
+.capture-fields .jig-no input{font-weight:900;letter-spacing:.04em;color:#7dd3fc}
+.source-badge.ar{background:#3b0764;border-color:#7e22ce;color:#e9d5ff}
+.drawing-wrap{aspect-ratio:1.414/1}
+@media(max-width:560px){.line-manager{grid-template-columns:1fr 1fr}.line-manager input{grid-column:1/-1}.ar-control{grid-template-columns:auto 1fr}.ar-control .btn{grid-column:1/-1}.number-preview .small-btn{width:100%}}
+
+/* v0.4.1 mobile workflow: camera first + collapsed menus */
+.camera-primary{border-color:rgba(56,189,248,.32);box-shadow:0 18px 45px rgba(0,0,0,.28),0 0 0 1px rgba(56,189,248,.05) inset}
+.menu-card{padding:0;overflow:hidden}
+.menu-card>summary{list-style:none}
+.menu-card>summary::-webkit-details-marker{display:none}
+.menu-summary{min-height:64px;padding:13px 15px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;background:linear-gradient(180deg,rgba(23,32,51,.98),rgba(15,23,42,.98))}
+.menu-summary:active{background:#172033}
+.summary-main{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.summary-main>div{min-width:0;display:flex;flex-direction:column;gap:2px}
+.summary-main b{font-size:14px;color:#eef2ff}
+.summary-main small{font-size:10px;color:#8797ad;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65vw}
+.summary-no{width:28px;height:28px;border-radius:9px;background:#0c4a6e;color:#bae6fd;display:grid;place-items:center;font-weight:900;flex:0 0 auto}
+.summary-arrow{font-size:22px;color:#7dd3fc;line-height:1;transition:transform .18s ease;flex:0 0 auto}
+.menu-card[open]>.menu-summary .summary-arrow{transform:rotate(180deg)}
+.menu-card[open]>.menu-summary{border-bottom:1px solid rgba(148,163,184,.12)}
+.menu-content{padding:14px 15px 15px}
+.summary-count{font-size:10px;font-weight:900;color:#bae6fd;background:#0c4a6e;border:1px solid #075985;border-radius:999px;padding:5px 8px;white-space:nowrap}
+.privacy-mini,.install-mini{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:900;flex:0 0 auto}
+.privacy-mini{background:#166534;color:#dcfce7}.install-mini{background:#1e3a5f;color:#bae6fd}
+.privacy-panel{border-color:rgba(34,197,94,.22)}
+.privacy-content b{font-size:13px;color:#dcfce7}.privacy-content p{font-size:10px;color:#bbf7d0;line-height:1.5;margin:6px 0 0}
+.install-card h2{margin:0}
+@media(max-width:560px){
+  main{padding-top:9px}
+  .camera-primary{margin-bottom:9px}
+  .menu-card{margin-bottom:9px;border-radius:15px}
+  .menu-summary{min-height:58px;padding:11px 12px}
+  .menu-content{padding:12px}
+  .summary-main b{font-size:13px}
+  .summary-main small{max-width:56vw}
+}
+
+
+/* v0.6.0 */
+.slim-card{padding:10px 12px;margin-bottom:10px}
+.mode-tabs{display:flex;gap:8px;position:sticky;top:0;z-index:10;background:rgba(7,11,19,.92);backdrop-filter:blur(6px)}
+.tab-btn{flex:1;border:1px solid #334155;background:#0b1220;color:#cbd5e1;border-radius:12px;padding:12px 10px;font-weight:900;cursor:pointer}
+.tab-btn.active{background:linear-gradient(180deg,#2563eb,#1d4ed8);border-color:#60a5fa;color:#fff}
+.camera-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.inline-status{margin-top:0}
+.wide{grid-column:1/-1}
+.figure-frame{position:relative;background:#fff;margin:10px;border-radius:10px;overflow:hidden;aspect-ratio:1189/841}
+.figure-frame svg{width:100%;height:100%;display:block;background:#fff}
+.dim-input-overlay{position:absolute;transform:translate(-50%,-50%);width:44px;min-width:44px;max-width:44px;padding:1px 2px;height:19px;border:1px solid #2563eb;border-radius:3px;background:rgba(255,255,255,.90);color:#0f172a;font-size:9px;font-weight:800;text-align:center;z-index:3;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.photo-variant .dim-input-overlay{background:rgba(255,255,255,.82)}
+.capture-type-badge{font-size:9px;color:#e0f2fe;background:#155e75;border:1px solid #0891b2;padding:4px 6px;border-radius:999px;margin-left:6px}
+@media(max-width:560px){.dim-input-overlay{width:38px;min-width:38px;max-width:38px;height:18px;font-size:8px;padding:0 1px}.mode-tabs{top:0}}
+
+.quick-mode-row{display:flex;gap:12px;align-items:end;justify-content:space-between;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid rgba(148,163,184,.18)}
+.quick-mode-row label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#cbd5e1;font-weight:700;min-width:220px}
+.quick-mode-row select{padding:11px 12px;border-radius:12px;border:1px solid #334155;background:#0b1220;color:#fff;font-weight:700}
+.quick-help{color:#94a3b8}
+.figure-frame svg .dim-text{font:700 11px Arial,'Noto Sans KR',sans-serif;fill:#111}.figure-frame svg .dim-box{fill:#fff;stroke:#111;stroke-width:1}.figure-frame svg .dim-line{stroke:#111;stroke-width:1.1;fill:none}.figure-frame svg .light-guide{stroke:#777;stroke-width:1;fill:none;stroke-dasharray:8 5}
+
+#straightenLevelSelect{font-weight:700}
+
+.dim-edit-note{font-size:11px;color:#93c5fd;margin:6px 10px 0}.dim-edit-btn.active{background:#1d4ed8;border-color:#60a5fa;color:#fff}.figure-frame svg .dim-text{font-size:10px;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round;fill:#111}.figure-frame svg .dim-box{display:none}
+
+
+/* v0.8.0 shape correction */
+.shape-editor{margin:10px;border:1px solid #2563eb;border-radius:12px;background:#07111f;overflow:hidden}
+.shape-editor-head{display:flex;align-items:center;gap:8px;padding:10px 11px;background:#0b1a2d;border-bottom:1px solid #1d4ed8;flex-wrap:wrap}
+.shape-editor-head b{font-size:12px;color:#dbeafe;flex:1}.shape-editor-head span{font-size:9px;color:#93c5fd}
+.shape-editor-stage{position:relative;background:#111;touch-action:none;user-select:none}
+.shape-editor-stage svg{display:block;width:100%;height:auto;max-height:66vh;touch-action:none}
+.shape-editor-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;padding:9px}
+.shape-editor-actions .btn{min-height:38px;font-size:10px}
+.shape-editor-actions .primary-action{background:#0369a1;border-color:#38bdf8;color:#fff}
+.shape-editor-help{font-size:9px;line-height:1.45;color:#bae6fd;padding:0 10px 10px}
+.shape-edit-btn{background:#1e3a5f;border-color:#3b82f6;color:#dbeafe}.shape-edit-btn.active{background:#1d4ed8;border-color:#7dd3fc;color:#fff}
+.shape-node-label{font:700 11px Arial,sans-serif;fill:#fff;paint-order:stroke;stroke:#111;stroke-width:3px}
+.shape-auto-line{fill:none;stroke:#ff3b30;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.shape-correct-line{fill:none;stroke:#00e5ff;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.shape-node{fill:#fff;stroke:#007aff;stroke-width:4;cursor:grab}
+.shape-node.active{fill:#ffcc00;stroke:#ff3b30}
+@media(max-width:560px){.shape-editor-actions{grid-template-columns:1fr 1fr}.shape-editor-stage svg{max-height:55vh}}
+
+.shape-confirm-warning{margin:10px;border-color:#f59e0b;background:#2a1604;color:#fde68a;font-size:11px;line-height:1.45}
+.shape-approve{background:#14532d!important;border-color:#22c55e!important;color:#dcfce7!important}
+.shape-editor-help b{color:#fff}
+
+.shape-node-hit{fill:transparent;stroke:transparent;pointer-events:all;cursor:grab}.shape-editor-svg.manual-mode .shape-correct-line{stroke:#ffd60a}.shape-editor-svg.manual-mode .shape-node{stroke:#ff9f0a}.shape-editor-svg.auto-mode .shape-correct-line{stroke:#00e5ff}.shape-handle-group{pointer-events:all}
+
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">COTEC JIG DRAWING</div>
+      <h1>HOOK 모바일 자동도면 <small>v0.8.7</small></h1>
+      <p>치구 · 제품 공용 / 촬영 원본은 사진첩에 저장하지 않음 / 저장된 사진 첨부 가능</p>
+    </div>
+    <span id="statusPill" class="pill">준비</span>
+  </header>
+
+  <div class="mode-tabs card slim-card">
+    <button id="tabJigBtn" class="tab-btn active">치구 촬영</button>
+    <button id="tabProductBtn" class="tab-btn">제품 촬영</button>
+  </div>
+
+  <main>
+    <section class="card camera-card camera-primary">
+      <div class="section-title">
+        <span>1</span>
+        <div><h2>사진 촬영 / 불러오기</h2><p>카메라 촬영 또는 저장된 사진 첨부 후 자동 인식으로 도면을 생성합니다. 보정선은 자동 인식이 실패한 경우에만 사용합니다.</p></div>
+      </div>
+      <div id="cameraStage" class="camera-stage">
+        <video id="cameraVideo" playsinline muted autoplay></video>
+        <canvas id="captureCanvas" hidden></canvas>
+        <div id="cameraGuide" class="camera-guide">
+          <div class="guide-frame"></div>
+          <div class="guide-cross h"></div>
+          <div class="guide-cross v"></div>
+        </div>
+        <div id="cameraEmpty" class="camera-empty">
+          <strong>카메라를 시작하거나 저장 사진을 첨부하세요</strong>
+          <span>앱 내부 촬영이며 사진첩에는 저장되지 않습니다.</span>
+        </div>
+      </div>
+      <div class="camera-actions">
+        <button id="startCameraBtn" class="btn">카메라 시작</button>
+        <button id="captureBtn" class="capture-btn" disabled aria-label="촬영"><span></span></button>
+        <button id="stopCameraBtn" class="btn" disabled>카메라 끄기</button>
+      </div>
+      <div class="camera-tools">
+        <button id="uploadPhotoBtn" class="btn primary">저장된 사진 첨부</button>
+        <input id="filePicker" type="file" accept="image/*" multiple hidden />
+        <div class="shot-status inline-status"><b id="shotCount">0장</b><span>최대 30장까지 촬영/첨부 후 일괄 생성합니다.</span></div>
+      </div>
+      <div id="cameraError" class="message hidden"></div>
+      <div class="quick-mode-row">
+        <label>결과 표시 방식
+          <select id="quickRenderModeSelect">
+            <option value="drawing" selected>도면(기본)</option>
+            <option value="photo">실제 사진 위 치수 표시</option>
+          </select>
+        </label>
+        <div class="small quick-help">치구: 도면/실제사진 선택 가능 · 제품: 실제사진만 가능</div>
+      </div>
+    </section>
+
+    <details class="card menu-card" id="basicSettingsPanel">
+      <summary class="menu-summary">
+        <div class="summary-main"><span class="summary-no">2</span><div><b>기본 설정</b><small>치구번호, 재질, Ø, 최대 장수, 결과 표시 방식</small></div></div>
+        <span class="summary-arrow">⌄</span>
+      </summary>
+      <div class="menu-content">
+        <div class="form-grid">
+          <label>라인 코드
+            <select id="lineCodeSelect"></select>
+          </label>
+          <label>번호 입력 방식
+            <select id="numberingMode">
+              <option value="continuous" selected>연속 자동</option>
+              <option value="individual">개별 입력</option>
+            </select>
+          </label>
+          <label>시작 번호
+            <input id="startNumber" type="number" min="1" max="999" step="1" value="1" />
+          </label>
+          <label>최대 촬영 수
+            <select id="maxShots"><option>6</option><option>10</option><option>12</option><option>20</option><option selected>30</option></select>
+          </label>
+          <label>기본 선재 Ø (mm)
+            <input id="defaultDiameter" type="number" min="0.5" max="50" step="0.1" value="6.0" />
+          </label>
+          <label>기본 재질
+            <input id="defaultMaterial" type="text" value="SUS304" maxlength="40" />
+          </label>
+          <label>도면 보정 강도
+            <select id="straightenLevelSelect">
+              <option value="medium" selected>보통</option>
+              <option value="high">강</option>
+              <option value="max">최대</option>
+            </select>
+          </label>
+          <label>치수 표시
+            <select id="dimensionDetailSelect">
+              <option value="basic" selected>기본 - 전체/주요길이/R</option>
+              <option value="full">상세 - 길이/R/각도</option>
+            </select>
+          </label>
+          <label class="wide">결과 표시 방식
+            <select id="renderModeSelect">
+              <option value="drawing" selected>도면(현재 방식)</option>
+              <option value="photo">실제 사진 위 치수 표시</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="number-preview">
+          <span>자동 번호</span><b id="numberPreview">NNI-001 ~ NNI-030</b>
+          <button id="renumberBtn" class="btn small-btn">현재 촬영목록 재배정</button>
+        </div>
+
+        <div class="line-manager">
+          <input id="newLineCode" type="text" maxlength="10" placeholder="새 라인 코드 예: ZN" autocapitalize="characters" />
+          <button id="addLineCodeBtn" class="btn">라인코드 추가</button>
+          <button id="deleteLineCodeBtn" class="btn danger">선택 코드 삭제</button>
+        </div>
+        <p class="small">기본 코드: NNI, AG. 제품 촬영 모드에서는 자동으로 PRD-001 형식으로 번호를 사용합니다. 저장된 사진을 첨부해도 동일하게 분석됩니다. 도면 보정 강도를 높일수록 선이 더 직선화되고 제작용 도면 형태에 가깝게 정리됩니다.</p>
+      </div>
+    </details>
+
+    <details class="card menu-card" id="measurePanel">
+      <summary class="menu-summary">
+        <div class="summary-main"><span class="summary-no">3</span><div><b>측정 기준</b><small>격자 · AR · 대략치수 설정</small></div></div>
+        <span class="summary-arrow">⌄</span>
+      </summary>
+      <div class="menu-content">
+        <div class="form-grid measure-grid">
+          <label>측정 모드
+            <select id="measureMode">
+              <option value="auto" selected>자동 (대략치수 → 격자 → AR)</option>
+              <option value="grid">1cm 격자 우선</option>
+              <option value="ar">AR 자동 측정 우선</option>
+              <option value="manual">대략치수 입력</option>
+            </select>
+          </label>
+          <div class="ar-control">
+            <span>AR 스케일</span>
+            <b id="arStatus">미보정</b>
+            <button id="arMeasureBtn" class="btn primary">AR 자동 측정</button>
+          </div>
+        </div>
+        <div id="arHelp" class="message info">자동 인식을 최우선으로 사용합니다. 사진 위 보정선은 자동 형상이 실제와 다를 때만 최후 수단으로 사용합니다. 제품 촬영 모드는 실제 사진 위에 치수를 표시합니다.</div>
+      </div>
+    </details>
+
+    <details class="card menu-card" id="queueCard">
+      <summary class="menu-summary">
+        <div class="summary-main"><span class="summary-no">4</span><div><b>도면 생성</b><small>촬영 사진 확인 · 자동 인식 · 일괄 도면 생성</small></div></div>
+        <span class="summary-count" id="queueSummaryCount">0장</span>
+        <span class="summary-arrow">⌄</span>
+      </summary>
+      <div class="menu-content">
+        <div id="captureList" class="capture-list"><div class="empty-state">아직 촬영된/첨부된 사진이 없습니다.</div></div>
+        <div class="queue-actions">
+          <button id="clearShotsBtn" class="btn danger" disabled>촬영 전체 삭제</button>
+          <button id="batchAnalyzeBtn" class="btn primary big" disabled>촬영 완료 · 일괄 생성</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="card menu-card hidden" id="progressCard" open>
+      <summary class="menu-summary">
+        <div class="summary-main"><span class="summary-no">5</span><div><b>일괄 분석</b><small id="progressText">준비 중...</small></div></div>
+        <span class="summary-arrow">⌄</span>
+      </summary>
+      <div class="menu-content"><div class="progress"><div id="progressBar"></div></div></div>
+    </details>
+
+    <details class="card menu-card hidden" id="resultsSection">
+      <summary class="menu-summary">
+        <div class="summary-main"><span class="summary-no">6</span><div><b>생성 도면</b><small>실제 사진/도면 확인 · PDF/DXF 출력</small></div></div>
+        <span class="summary-arrow">⌄</span>
+      </summary>
+      <div class="menu-content">
+        <div id="resultList" class="result-list"></div>
+        <div class="export-actions">
+          <button id="exportPdfBtn" class="btn primary big">도면 전체 PDF</button>
+          <button id="exportDxfBtn" class="btn big">도면 전체 DXF</button>
+          <button id="newJobBtn" class="btn danger big">새 촬영 시작</button>
+        </div>
+        <p class="warn">치구 모드는 실제 사진 또는 설계도면 형식 중 선택할 수 있습니다. 제품 촬영 모드는 실제 사진 위 치수 표기만 적용됩니다.</p>
+      </div>
+    </details>
+
+    <details class="card menu-card compact install-card">
+      <summary class="menu-summary">
+        <div class="summary-main"><span class="install-mini">＋</span><div><b>휴대폰 설치 · 업데이트</b><small>iPhone / Android 홈 화면 설치 안내</small></div></div>
+        <span class="summary-arrow">⌄</span>
+      </summary>
+      <div class="menu-content">
+        <div class="install-grid">
+          <div><b>iPhone</b><span>Safari → 공유 → 홈 화면에 추가</span></div>
+          <div><b>Android</b><span>Chrome → 메뉴 → 앱 설치 또는 홈 화면에 추가</span></div>
+        </div>
+        <button id="installBtn" class="btn hidden">Android 앱으로 설치</button>
+      </div>
+    </details>
+  </main>
+
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <script>
+  if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{}); }
+  if ('caches' in window) { caches.keys().then(keys=>keys.forEach(k=>caches.delete(k))).catch(()=>{}); }
+  </script>
+
+  <script>
+(() => {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const video = $('cameraVideo');
+  const captureCanvas = $('captureCanvas');
+  const captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
+
+  const state = {
+    stream: null,
+    captures: [],
+    results: [],
+    seq: 1,
+    deferredInstall: null,
+    working: false,
+    arCalibration: null,
+    lineCodes: [],
+    lastNumbers: {},
+    appMode: 'jig'
+  };
+
+  const MAX_ANALYSIS_SIDE = 1000;
+  const MAX_CAPTURE_SIDE = 1600;
+
+  function setStatus(text, kind='normal') {
+    const el = $('statusPill');
+    el.textContent = text;
+    el.style.background = kind === 'ok' ? '#166534' : kind === 'warn' ? '#92400e' : kind === 'busy' ? '#075985' : '#334155';
+  }
+
+  function toast(text) {
+    const el = $('toast');
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(toast.t);
+    toast.t = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  function reportAppError(err, where='실행') {
+    const msg=(err&&err.message)?err.message:String(err||'알 수 없는 오류');
+    console.error(`[${where}]`,err);
+    try{setStatus('오류','warn');}catch(_){}
+    try{toast(`${where} 오류: ${msg}`);}catch(_){}
+    const box=$('cameraError');
+    if(box){box.classList.remove('hidden');box.textContent=`${where} 오류: ${msg}`;}
+  }
+  window.addEventListener('error',e=>{if(e?.error)reportAppError(e.error,'프로그램');});
+  window.addEventListener('unhandledrejection',e=>{reportAppError(e?.reason||'비동기 처리 실패','프로그램');});
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function n1(v) { return Number.isFinite(v) ? (Math.round(v * 10) / 10).toFixed(1) : ''; }
+  function n2(v) { return Number.isFinite(v) ? (Math.round(v * 100) / 100).toFixed(2) : ''; }
+  function ascii(s) { return String(s ?? '').replace(/[^\x20-\x7E]/g, '_'); }
+  function safeName(s) { return String(s || 'HOOK').replace(/[\\/:*?"<>|\s]+/g, '_'); }
+
+  // ---------------- Jig numbering / settings ----------------
+  const LINE_CODES_KEY = 'hookDrawing.lineCodes.v064';
+  const LAST_NUMBERS_KEY = 'hookDrawing.lastNumbers.v064';
+  const DEFAULT_LINE_CODES = ['NNI','AG'];
+
+  function padJigNo(n) { return String(clamp(Math.round(Number(n) || 1), 1, 999)).padStart(3,'0'); }
+  function cleanLineCode(v) { return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10); }
+  function currentLineCode() { return cleanLineCode($('lineCodeSelect').value) || 'NNI'; }
+  function currentCaptureCode() { return state.appMode==='product' ? 'PRD' : currentLineCode(); }
+  function currentRenderMode() { return state.appMode==='product' ? 'photo' : (($('renderModeSelect')?.value)||($('quickRenderModeSelect')?.value)||'drawing'); }
+  function currentStraightenLevel() { return ($('straightenLevelSelect')?.value) || 'medium'; }
+  function currentDimensionDetail() { return ($('dimensionDetailSelect')?.value) || 'basic'; }
+  function straightenLevelLabel(v){ return v==='medium' ? '보통' : v==='max' ? '최대' : '강'; }
+  function setRenderModeValue(mode){
+    const safe = mode==='photo' ? 'photo' : 'drawing';
+    if($('renderModeSelect')) $('renderModeSelect').value = safe;
+    if($('quickRenderModeSelect')) $('quickRenderModeSelect').value = safe;
+  }
+  function setAppMode(mode) {
+    state.appMode = mode==='product' ? 'product' : 'jig';
+    $('tabJigBtn')?.classList.toggle('active', state.appMode==='jig');
+    $('tabProductBtn')?.classList.toggle('active', state.appMode==='product');
+    const product = state.appMode==='product';
+    if(product){ setRenderModeValue('photo'); }
+    else if(!currentRenderMode()) { setRenderModeValue('drawing'); }
+    if($('renderModeSelect')) $('renderModeSelect').disabled = product;
+    if($('quickRenderModeSelect')) $('quickRenderModeSelect').disabled = product;
+    updateNumberPreview();
+    if($('numberingMode').value==='continuous') renumberCaptures(true);
+    renderCaptureList();
+    renderResults();
+  }
+  function makeJigNumber(code, n) { return `${cleanLineCode(code) || 'NNI'}-${padJigNo(n)}`; }
+  function parseJigNumber(v) {
+    const m=String(v||'').toUpperCase().match(/^([A-Z0-9]{1,10})-(\d{1,3})$/);
+    return m ? {code:m[1], number:parseInt(m[2],10)} : null;
+  }
+
+  function loadLineSettings() {
+    let custom=[]; try { custom=JSON.parse(localStorage.getItem(LINE_CODES_KEY)||'[]'); } catch(_) {}
+    state.lineCodes=[...new Set([...DEFAULT_LINE_CODES, ...(Array.isArray(custom)?custom:[]).map(cleanLineCode).filter(Boolean)])];
+    try { state.lastNumbers=JSON.parse(localStorage.getItem(LAST_NUMBERS_KEY)||'{}') || {}; } catch(_) { state.lastNumbers={}; }
+    renderLineCodes('NNI');
+    suggestNextStart();
+  }
+  function saveLineCodes() { try{localStorage.setItem(LINE_CODES_KEY, JSON.stringify(state.lineCodes.filter(c=>!DEFAULT_LINE_CODES.includes(c))));return true;}catch(err){console.warn('라인코드 저장 제한',err);return false;} }
+  function saveLastNumbers() { try{localStorage.setItem(LAST_NUMBERS_KEY, JSON.stringify(state.lastNumbers));return true;}catch(err){console.warn('번호 저장 제한',err);return false;} }
+  function renderLineCodes(selected) {
+    const sel=$('lineCodeSelect'); const keep=selected||sel.value||state.lineCodes[0]||'NNI';
+    sel.innerHTML=state.lineCodes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    if(state.lineCodes.includes(keep)) sel.value=keep;
+    updateNumberPreview();
+  }
+  function suggestNextStart() {
+    const code=currentCaptureCode(); const next=clamp((parseInt(state.lastNumbers[code],10)||0)+1,1,999);
+    $('startNumber').value=next; updateNumberPreview();
+  }
+  function updateNumberPreview() {
+    const code=currentCaptureCode(); const start=clamp(parseInt($('startNumber').value,10)||1,1,999); const count=parseInt($('maxShots').value,10)||10;
+    $('numberPreview').textContent=$('numberingMode').value==='continuous' ? `${makeJigNumber(code,start)} ~ ${makeJigNumber(code,Math.min(999,start+count-1))}` : `개별 입력 · 기본 ${makeJigNumber(code,start)}부터`;
+  }
+  function renumberCaptures(force=false) {
+    if(!force && $('numberingMode').value!=='continuous') return;
+    const code=currentCaptureCode(), start=clamp(parseInt($('startNumber').value,10)||1,1,999);
+    state.captures.forEach((c,i)=>{ c.name=makeJigNumber(code,Math.min(999,start+i)); });
+    renderCaptureList(); updateNumberPreview();
+  }
+  function persistUsedNumbers() {
+    for(const c of [...state.captures, ...state.results]) {
+      const p=parseJigNumber(c.name); if(!p) continue;
+      state.lastNumbers[p.code]=Math.max(parseInt(state.lastNumbers[p.code],10)||0,p.number);
+    }
+    saveLastNumbers();
+  }
+  function addLineCode() {
+    const code=cleanLineCode($('newLineCode').value);
+    if(!code) return toast('라인 코드를 입력하세요.');
+    if(!state.lineCodes.includes(code)){ state.lineCodes.push(code); saveLineCodes(); }
+    renderLineCodes(code); $('newLineCode').value=''; suggestNextStart();
+    toast(`${code} 라인코드를 저장했습니다.`);
+  }
+  function deleteLineCode() {
+    const code=currentCaptureCode();
+    if(DEFAULT_LINE_CODES.includes(code)) return toast('NNI와 AG 기본 코드는 삭제할 수 없습니다.');
+    if(!confirm(`${code} 라인코드를 삭제할까요?`)) return;
+    state.lineCodes=state.lineCodes.filter(c=>c!==code); saveLineCodes(); renderLineCodes('NNI'); suggestNextStart();
+  }
+
+  // ---------------- WebXR AR scale calibration ----------------
+  function medianValue(values) {
+    if(!values.length) return NaN; const a=values.slice().sort((x,y)=>x-y),m=a.length>>1; return a.length%2?a[m]:(a[m-1]+a[m])/2;
+  }
+  async function startArAutoMeasure() {
+    if(state.working) return;
+    stopCamera();
+    const btn=$('arMeasureBtn'); btn.disabled=true; setStatus('AR 평면 탐색중','busy'); $('arStatus').textContent='평면 탐색중';
+    try {
+      if(!navigator.xr || !navigator.xr.isSessionSupported || !(await navigator.xr.isSessionSupported('immersive-ar'))) {
+        throw new Error('이 브라우저는 WebXR AR 자동 측정을 지원하지 않습니다. Android Chrome에서 확인하거나 격자/대략치수를 사용하세요.');
+      }
+      const session=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['hit-test'],optionalFeatures:['dom-overlay'],domOverlay:{root:document.body}});
+      const glCanvas=document.createElement('canvas'); const gl=glCanvas.getContext('webgl',{alpha:true,xrCompatible:true});
+      if(!gl) throw new Error('AR 그래픽 초기화에 실패했습니다.');
+      if(gl.makeXRCompatible) await gl.makeXRCompatible();
+      const layer=new XRWebGLLayer(session,gl); session.updateRenderState({baseLayer:layer});
+      const refSpace=await session.requestReferenceSpace('local'); const viewerSpace=await session.requestReferenceSpace('viewer');
+      const hitSource=await session.requestHitTestSource({space:viewerSpace});
+      const widths=[],distances=[]; let ended=false;
+      const timeout=setTimeout(()=>{ if(!ended) session.end().catch(()=>{}); },15000);
+      await new Promise((resolve,reject)=>{
+        session.addEventListener('end',()=>{ended=true;clearTimeout(timeout);resolve();},{once:true});
+        const frameLoop=(time,frame)=>{
+          const pose=frame.getViewerPose(refSpace),hits=frame.getHitTestResults(hitSource);
+          if(pose && hits.length){
+            const hp=hits[0].getPose(refSpace),view=pose.views[0],vp=layer.getViewport(view);
+            if(hp&&view&&vp){
+              const a=view.transform.position,b=hp.transform.position,dist=Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+              const pm=view.projectionMatrix,fx=pm && Math.abs(pm[0])>.0001 ? Math.abs(pm[0]) : NaN;
+              if(Number.isFinite(dist)&&dist>.08&&dist<3&&Number.isFinite(fx)){
+                const fovX=2*Math.atan(1/fx),worldWidthMm=2*dist*Math.tan(fovX/2)*1000;
+                if(worldWidthMm>50&&worldWidthMm<5000){ widths.push(worldWidthMm); distances.push(dist*1000); if(widths.length>24) session.end().catch(()=>{}); }
+              }
+            }
+          }
+          if(!ended) session.requestAnimationFrame(frameLoop);
+        };
+        session.requestAnimationFrame(frameLoop);
+      });
+      if(widths.length<6) throw new Error('평면을 안정적으로 측정하지 못했습니다. 치구 바닥면을 향해 휴대폰을 천천히 움직인 뒤 다시 시도하세요.');
+      const fieldWidthMm=medianValue(widths.slice(-18)),distanceMm=medianValue(distances.slice(-18));
+      state.arCalibration={fieldWidthMm,distanceMm,at:Date.now()};
+      $('arStatus').textContent=`보정 완료 · 거리 약 ${Math.round(distanceMm)} mm`;
+      setStatus('AR 보정 완료','ok'); toast('AR 스케일 보정 완료 · 같은 높이에서 촬영하세요.');
+    } catch(err) {
+      state.arCalibration=null; $('arStatus').textContent='사용 불가/실패'; setStatus('AR 확인 필요','warn');
+      alert(`AR 자동 측정: ${err?.message||err}`);
+    } finally { btn.disabled=false; }
+  }
+
+  // ---------------- Camera ----------------
+  async function startCamera() {
+    if (state.working) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      showCameraError('이 브라우저에서 앱 내부 카메라를 사용할 수 없습니다. HTTPS 주소에서 Safari/Chrome으로 실행했는지 확인하세요.');
+      return;
+    }
+    try {
+      stopCamera();
+      setStatus('카메라 연결중', 'busy');
+      const constraints = {
+        audio: false,
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1920 },
+          height: { ideal: 2560 }
+        }
+      };
+      state.stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = state.stream;
+      await video.play();
+      $('cameraEmpty').classList.add('hidden');
+      $('captureBtn').disabled = false;
+      $('stopCameraBtn').disabled = false;
+      $('startCameraBtn').textContent = '카메라 재시작';
+      $('cameraError').classList.add('hidden');
+      setStatus('촬영 가능', 'ok');
+    } catch (err) {
+      const msg = err?.name === 'NotAllowedError'
+        ? '카메라 권한이 거부되었습니다. 휴대폰 설정에서 이 웹앱/사이트의 카메라 권한을 허용한 뒤 다시 시도하세요.'
+        : `카메라 시작 실패: ${err?.message || err}`;
+      showCameraError(msg);
+      setStatus('카메라 확인 필요', 'warn');
+    }
+  }
+
+  function stopCamera() {
+    if (state.stream) {
+      state.stream.getTracks().forEach(t => t.stop());
+      state.stream = null;
+    }
+    video.srcObject = null;
+    $('captureBtn').disabled = true;
+    $('stopCameraBtn').disabled = true;
+    $('cameraEmpty').classList.remove('hidden');
+  }
+
+  function showCameraError(msg) {
+    const el = $('cameraError');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+
+  function canvasToBlob(canvas, type='image/jpeg', quality=.88) {
+    return new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('이미지 캡처 실패')), type, quality));
+  }
+  function blobToDataURL(blob){
+    return new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(String(fr.result||''));fr.onerror=()=>reject(new Error('이미지 읽기 실패'));fr.readAsDataURL(blob);});
+  }
+  async function addCaptureBlob(blob, sourceType='camera', originalName='') {
+    const max = parseInt($('maxShots').value, 10) || 30;
+    if (state.captures.length >= max) { toast(`최대 ${max}장까지 가능합니다.`); return false; }
+    const url = URL.createObjectURL(blob);
+    const code=currentCaptureCode(), start=clamp(parseInt($('startNumber').value,10)||1,1,999);
+    const captureIndex=state.captures.length;
+    const jigNo=makeJigNumber(code,Math.min(999,start+captureIndex));
+    const freshAr=state.arCalibration && (Date.now()-state.arCalibration.at)<10*60*1000 ? state.arCalibration : null;
+    const item = {
+      id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random()}`,
+      seq: state.seq++,
+      blob, url, originalName, sourceType, captureType: state.appMode,
+      name: jigNo,
+      diameter: parseFloat($('defaultDiameter').value) || 6,
+      material: $('defaultMaterial').value.trim() || 'SUS304',
+      approxWidth: '',
+      approxHeight: '',
+      measureMode: $('measureMode').value || 'auto',
+      arMmPerPx: freshAr ? freshAr.fieldWidthMm / 1000 : null,
+      arDistanceMm: freshAr ? freshAr.distanceMm : null
+    };
+    state.captures.push(item);
+    renderCaptureList();
+    updateShotUI();
+    if($('queueCard')) $('queueCard').open=true;
+    setStatus(`${state.captures.length}장 촬영`, 'ok');
+    updateNumberPreview();
+    return true;
+  }
+
+  async function captureShot() {
+    const max = parseInt($('maxShots').value, 10) || 10;
+    if (!state.stream || !video.videoWidth || state.captures.length >= max) return;
+    try {
+      const vw = video.videoWidth, vh = video.videoHeight;
+      const s = Math.min(1, MAX_CAPTURE_SIDE / Math.max(vw, vh));
+      const w = Math.max(1, Math.round(vw * s));
+      const h = Math.max(1, Math.round(vh * s));
+      captureCanvas.width = w; captureCanvas.height = h;
+      captureCtx.drawImage(video, 0, 0, w, h);
+      const blob = await canvasToBlob(captureCanvas, 'image/jpeg', .90);
+      // The hidden capture canvas must not retain the camera frame after the JPEG blob is created.
+      captureCtx.clearRect(0, 0, captureCanvas.width, captureCanvas.height);
+      captureCanvas.width = 1; captureCanvas.height = 1;
+      await addCaptureBlob(blob,'camera');
+      toast(`촬영 완료 · 사진첩 저장 안 함`);
+      if (state.captures.length >= max) {
+        $('captureBtn').disabled = true;
+        toast(`최대 ${max}장 촬영 완료`);
+      }
+    } catch (err) {
+      showCameraError(`촬영 실패: ${err?.message || err}`);
+    }
+  }
+
+  function revokeCapture(item) {
+    try { if (item.url) URL.revokeObjectURL(item.url); } catch (_) {}
+    item.url = null; item.blob = null;
+  }
+
+  function clearCaptures() {
+    state.captures.forEach(revokeCapture);
+    state.captures = [];
+    renderCaptureList();
+    updateShotUI();
+    setStatus('촬영 대기');
+  }
+
+  function updateShotUI() {
+    const count = state.captures.length;
+    $('shotCount').textContent = `${count}장`;
+    $('clearShotsBtn').disabled = count === 0 || state.working;
+    if($('queueSummaryCount')) $('queueSummaryCount').textContent = `${count}장`;
+    $('batchAnalyzeBtn').disabled = count === 0 || state.working;
+    if (state.stream) $('captureBtn').disabled = count >= (parseInt($('maxShots').value,10)||10) || state.working;
+  }
+
+  function renderCaptureList() {
+    const host = $('captureList');
+    if (!state.captures.length) {
+      host.innerHTML = '<div class="empty-state">아직 촬영된/첨부된 사진이 없습니다.</div>';
+      return;
+    }
+    host.innerHTML = state.captures.map((c, i) => `
+      <div class="capture-item" data-id="${c.id}">
+        <img class="capture-thumb" src="${c.url}" alt="촬영 ${i+1}">
+        <div>
+          <div class="capture-head"><b>${i+1}. ${esc(c.name)}</b><span class="capture-type-badge">${c.captureType==='product'?'제품':'치구'} · ${c.sourceType==='upload'?'첨부':'촬영'}</span><button class="icon-btn delete-shot" data-id="${c.id}">삭제</button></div>
+          <div class="capture-fields">
+            <label class="wide jig-no">치구번호<input data-field="name" value="${esc(c.name)}" maxlength="20" autocapitalize="characters"></label>
+            <label>Ø mm<input data-field="diameter" type="number" min="0.5" max="50" step="0.1" value="${esc(c.diameter)}"></label>
+            <label>재질<input data-field="material" value="${esc(c.material)}" maxlength="40"></label>
+            <label>대략 폭 mm<input data-field="approxWidth" type="number" min="1" max="3000" step="1" value="${esc(c.approxWidth)}" placeholder="선택"></label>
+            <label>대략 높이 mm<input data-field="approxHeight" type="number" min="1" max="3000" step="1" value="${esc(c.approxHeight)}" placeholder="선택"></label>
+          </div>
+          <span class="field-note">측정 모드: ${esc(c.measureMode==='ar'?'AR 우선':c.measureMode==='grid'?'격자 우선':c.measureMode==='manual'?'대략치수':'자동')} ${Number.isFinite(c.arMmPerPx)?`· AR 보정 있음 (거리 약 ${Math.round(c.arDistanceMm||0)} mm)`:''}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  $('captureList').addEventListener('input', e => {
+    const field = e.target.dataset?.field;
+    if (!field) return;
+    const row = e.target.closest('.capture-item');
+    const item = state.captures.find(c => c.id === row?.dataset.id);
+    if (!item) return;
+    if (field==='name') { item[field]=String(e.target.value||'').toUpperCase(); }
+    else item[field] = e.target.value;
+  });
+
+  $('captureList').addEventListener('click', e => {
+    const btn = e.target.closest('.delete-shot');
+    if (!btn || state.working) return;
+    const idx = state.captures.findIndex(c => c.id === btn.dataset.id);
+    if (idx < 0) return;
+    revokeCapture(state.captures[idx]);
+    state.captures.splice(idx, 1);
+    if($('numberingMode').value==='continuous') renumberCaptures(true); else renderCaptureList();
+    updateShotUI();
+  });
+
+  // ---------------- Image / analysis helpers ----------------
+  async function blobToCanvas(blob, maxSide=MAX_ANALYSIS_SIDE) {
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await new Promise((resolve, reject) => {
+        const im = new Image();
+        im.onload = () => resolve(im);
+        im.onerror = () => reject(new Error('촬영 이미지를 읽지 못했습니다.'));
+        im.src = url;
+      });
+      const s = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.max(1, Math.round(img.naturalWidth * s));
+      const h = Math.max(1, Math.round(img.naturalHeight * s));
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const cx = c.getContext('2d', { willReadFrequently: true });
+      cx.drawImage(img, 0, 0, w, h);
+      return { canvas:c, ctx:cx, imageData:cx.getImageData(0,0,w,h), w, h, scale:s };
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  function grayArray(imageData) {
+    const d = imageData.data, g = new Uint8Array(d.length / 4);
+    for (let i=0,j=0; i<d.length; i+=4,j++) g[j] = (0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]) | 0;
+    return g;
+  }
+
+  function scanlinePeriod(values, minLag=6, maxLag=96) {
+    const n=values.length;if(n<40)return{lag:0,score:0};
+    const grad=new Float64Array(n);let mean=0;
+    for(let i=1;i<n;i++){grad[i]=Math.abs(values[i]-values[i-1]);mean+=grad[i];}
+    mean/=Math.max(1,n-1);let variance=0;
+    for(let i=0;i<n;i++){grad[i]-=mean;variance+=grad[i]*grad[i];}
+    if(variance<1e-6)return{lag:0,score:0};
+    maxLag=Math.min(maxLag,Math.floor(n/3));const scores=new Float64Array(maxLag+1);let bestLag=0,best=-1;
+    for(let lag=minLag;lag<=maxLag;lag++){let num=0,a2=0,b2=0;for(let i=0;i<n-lag;i+=2){const a=grad[i],b=grad[i+lag];num+=a*b;a2+=a*a;b2+=b*b;}const sc=num/(Math.sqrt(a2*b2)+1e-9);scores[lag]=sc;if(sc>best){best=sc;bestLag=lag;}}
+    for(const div of [2,3,4]){const cand=Math.round(bestLag/div);if(cand<minLag)continue;const sc=scores[cand]||0;if(sc>.14&&sc>best*.48){bestLag=cand;best=sc;}}
+    return{lag:bestLag,score:clamp(best,0,1)};
+  }
+  function clusteredPeriod(samples){const good=samples.filter(v=>v.lag>=6&&v.score>=.18);if(good.length<3)return{lag:0,score:0,support:0};let best=null;for(const c of good){const tol=Math.max(2,c.lag*.12),near=good.filter(v=>Math.abs(v.lag-c.lag)<=tol),weight=near.reduce((a,v)=>a+v.score,0);if(!best||weight>best.weight)best={near,weight};}if(!best||best.near.length<3)return{lag:0,score:0,support:0};const lags=best.near.map(v=>v.lag).sort((a,b)=>a-b),m=lags.length>>1,lag=lags.length%2?lags[m]:(lags[m-1]+lags[m])/2,score=best.near.reduce((a,v)=>a+v.score,0)/best.near.length;return{lag,score,support:best.near.length};}
+  function projectionLinePitch(gray,w,h,axis){
+    const len=axis==='x'?w:h,other=axis==='x'?h:w,proj=new Float64Array(len),step=Math.max(1,Math.floor(other/320));
+    for(let i=0;i<len;i++){let sum=0,n=0;for(let j=0;j<other;j+=step){const x=axis==='x'?i:j,y=axis==='x'?j:i;sum+=255-gray[y*w+x];n++;}proj[i]=sum/Math.max(1,n);}
+    let mean=0;for(const v of proj)mean+=v;mean/=len;let sd=0;for(const v of proj)sd+=(v-mean)*(v-mean);sd=Math.sqrt(sd/Math.max(1,len));
+    const peaks=[],thr=mean+sd*.50;for(let i=2;i<len-2;i++)if(proj[i]>=thr&&proj[i]>=proj[i-1]&&proj[i]>=proj[i+1])peaks.push(i);
+    const merged=[];for(const p of peaks){if(!merged.length||p-merged[merged.length-1]>3)merged.push(p);else if(proj[p]>proj[merged[merged.length-1]])merged[merged.length-1]=p;}
+    const dif=[];for(let i=1;i<merged.length;i++){const d=merged[i]-merged[i-1];if(d>=5&&d<=Math.min(120,len/4))dif.push(d);}if(dif.length<4)return{pitch:0,support:0};
+    let best={pitch:0,support:0};for(const seed of dif){const near=dif.filter(d=>Math.abs(d-seed)<=Math.max(2,seed*.12));if(near.length<4)continue;near.sort((a,b)=>a-b);const med=near[(near.length/2)|0];if(near.length>best.support||(near.length===best.support&&(!best.pitch||med<best.pitch)))best={pitch:med,support:near.length};}return best;
+  }
+  function normalizeGridFundamental(p,alt){if(!p)return alt||0;if(!alt)return p;let a=Math.min(p,alt),b=Math.max(p,alt),r=b/a;if(Math.abs(r-2)<.18||Math.abs(r-3)<.22||Math.abs(r-4)<.28)return a;return Math.abs(a-b)/Math.max(a,b)<.22?(a+b)/2:p;}
+  function detectGrid(gray,w,h){
+    const rowSamples=[],colSamples=[],lineCount=14,minLag=Math.max(5,Math.floor(Math.min(w,h)/180)),maxLag=Math.min(110,Math.floor(Math.min(w,h)/5));
+    for(let k=0;k<lineCount;k++){const y=clamp(Math.round(h*(.10+.80*k/(lineCount-1))),1,h-2),row=new Uint8Array(w);for(let x=0;x<w;x++)row[x]=gray[y*w+x];rowSamples.push(scanlinePeriod(row,minLag,maxLag));const x=clamp(Math.round(w*(.10+.80*k/(lineCount-1))),1,w-2),col=new Uint8Array(h);for(let yy=0;yy<h;yy++)col[yy]=gray[yy*w+x];colSamples.push(scanlinePeriod(col,minLag,maxLag));}
+    const px=clusteredPeriod(rowSamples),py=clusteredPeriod(colSamples),qx=projectionLinePitch(gray,w,h,'x'),qy=projectionLinePitch(gray,w,h,'y');
+    let gx=normalizeGridFundamental(px.lag,qx.pitch),gy=normalizeGridFundamental(py.lag,qy.pitch);if(!gx||!gy)return{pitch:null,confidence:0,reason:'양방향 격자 미검출'};
+    let a=Math.min(gx,gy),b=Math.max(gx,gy),rr=b/a;if(Math.abs(rr-2)<.18||Math.abs(rr-3)<.22||Math.abs(rr-4)<.28){gx=gy=a;}
+    const ratio=Math.max(gx,gy)/Math.max(1,Math.min(gx,gy));if(ratio>1.28)return{pitch:null,confidence:0,reason:'가로/세로 격자 간격 불일치'};
+    const pitch=(gx+gy)/2,support=Math.min(1,((px.support||0)+(py.support||0)+(qx.support||0)+(qy.support||0))/24),confidence=clamp(.34+support*.46+(1-Math.abs(gx-gy)/Math.max(gx,gy))*.20,0,.99);
+    return (pitch>=6&&pitch<=Math.min(120,Math.min(w,h)/4))?{pitch,confidence,reason:`기본격자 검증 ${n1(gx)}/${n1(gy)}px`}:{pitch:null,confidence:0,reason:'격자 피치 범위 오류'};
+  }
+
+  function medianFromHist(hist,total){let acc=0,target=Math.max(1,Math.floor(total/2));for(let i=0;i<hist.length;i++){acc+=hist[i];if(acc>=target)return i;}return 0;}
+
+  function dominantBackgroundYCbCr(imageData,w,h){
+    // 이미지 전체의 중앙값을 사용한다. 치구가 화면의 일부만 차지한다는 촬영 조건에서
+    // 녹색/청색 매트, 흰 격자지 모두 배경색 추정이 안정적이다.
+    const hy=new Uint32Array(256),hcb=new Uint32Array(256),hcr=new Uint32Array(256),d=imageData.data;
+    let n=0; const step=Math.max(1,Math.floor(Math.min(w,h)/260));
+    for(let y=0;y<h;y+=step) for(let x=0;x<w;x+=step){
+      const i=(y*w+x)*4,r=d[i],g=d[i+1],b=d[i+2];
+      const yy=clamp(Math.round(.299*r+.587*g+.114*b),0,255);
+      const cb=clamp(Math.round(128-.168736*r-.331264*g+.5*b),0,255);
+      const cr=clamp(Math.round(128+.5*r-.418688*g-.081312*b),0,255);
+      hy[yy]++;hcb[cb]++;hcr[cr]++;n++;
+    }
+    return {y:medianFromHist(hy,n),cb:medianFromHist(hcb,n),cr:medianFromHist(hcr,n)};
+  }
+
+  function backgroundDifferenceMask(imageData,w,h,pitchPx){
+    const bg=dominantBackgroundYCbCr(imageData,w,h),d=imageData.data,raw=new Uint8Array(w*h);
+    for(let p=0,i=0;p<raw.length;p++,i+=4){
+      const r=d[i],g=d[i+1],b=d[i+2];
+      const yy=.299*r+.587*g+.114*b;
+      const cb=128-.168736*r-.331264*g+.5*b;
+      const cr=128+.5*r-.418688*g-.081312*b;
+      const chroma=Math.hypot(cb-bg.cb,cr-bg.cr),lum=Math.abs(yy-bg.y),bgSat=Math.hypot(bg.cb-128,bg.cr-128);
+      // 색이 있는 촬영 매트에서는 색차를 주 기준으로 사용해 그림자를 제외한다.
+      // 흰/회색 격자지에서는 명암차도 함께 사용한다.
+      raw[p]=(bgSat>12 ? chroma>16 : (chroma>14||lum>45))?1:0;
+    }
+    const r=pitchPx?clamp(Math.round(pitchPx*.10),2,7):2;
+    // 얇은 격자선은 밀도 필터에서 제거하고, 선재처럼 일정 두께가 있는 물체를 보존한다.
+    let m=densityFilter(raw,w,h,r,pitchPx?.24:.18);
+    m=dilate(m,w,h);m=erode(m,w,h);
+    return {mask:m,bg};
+  }
+
+  function otsu(gray) {
+    const hist=new Uint32Array(256);for(const v of gray)hist[v]++;
+    const total=gray.length;let sum=0;for(let i=0;i<256;i++)sum+=i*hist[i];
+    let sumB=0,wB=0,maxVar=0,thr=105;
+    for(let t=0;t<256;t++){wB+=hist[t];if(!wB)continue;const wF=total-wB;if(!wF)break;sumB+=t*hist[t];const mB=sumB/wB,mF=(sum-sumB)/wF,v=wB*wF*(mB-mF)*(mB-mF);if(v>maxVar){maxVar=v;thr=t;}}
+    return thr;
+  }
+
+  function integralMask(mask,w,h){const iw=w+1,out=new Uint32Array((w+1)*(h+1));for(let y=1;y<=h;y++){let row=0;for(let x=1;x<=w;x++){row+=mask[(y-1)*w+x-1];out[y*iw+x]=out[(y-1)*iw+x]+row;}}return out;}
+  function boxSum(ii,w,h,x0,y0,x1,y1){const iw=w+1;x0=Math.max(0,x0);y0=Math.max(0,y0);x1=Math.min(w-1,x1);y1=Math.min(h-1,y1);return ii[(y1+1)*iw+x1+1]-ii[y0*iw+x1+1]-ii[(y1+1)*iw+x0]+ii[y0*iw+x0];}
+  function densityFilter(raw,w,h,r,ratio){const ii=integralMask(raw,w,h),out=new Uint8Array(raw.length);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const idx=y*w+x;if(!raw[idx])continue;const x0=Math.max(0,x-r),x1=Math.min(w-1,x+r),y0=Math.max(0,y-r),y1=Math.min(h-1,y+r),area=(x1-x0+1)*(y1-y0+1),sum=boxSum(ii,w,h,x0,y0,x1,y1);if(sum/area>=ratio)out[idx]=1;}return out;}
+  function dilate(mask,w,h){const out=new Uint8Array(mask.length);for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){let v=0;for(let dy=-1;dy<=1&&!v;dy++)for(let dx=-1;dx<=1;dx++)if(mask[(y+dy)*w+x+dx]){v=1;break;}out[y*w+x]=v;}return out;}
+  function erode(mask,w,h){const out=new Uint8Array(mask.length);for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){let v=1;for(let dy=-1;dy<=1&&v;dy++)for(let dx=-1;dx<=1;dx++)if(!mask[(y+dy)*w+x+dx]){v=0;break;}out[y*w+x]=v;}return out;}
+
+  function integralGray(gray,w,h){const iw=w+1,out=new Uint32Array((w+1)*(h+1));for(let y=1;y<=h;y++){let row=0;for(let x=1;x<=w;x++){row+=gray[(y-1)*w+x-1];out[y*iw+x]=out[(y-1)*iw+x]+row;}}return out;}
+  function adaptiveDarkMask(gray,w,h,pitchPx){const ii=integralGray(gray,w,h),out=new Uint8Array(gray.length),r=clamp(Math.round((pitchPx||30)*.34),8,18),bias=7,iw=w+1;for(let y=0;y<h;y++)for(let x=0;x<w;x++){const x0=Math.max(0,x-r),x1=Math.min(w-1,x+r),y0=Math.max(0,y-r),y1=Math.min(h-1,y+r),sum=ii[(y1+1)*iw+x1+1]-ii[y0*iw+x1+1]-ii[(y1+1)*iw+x0]+ii[y0*iw+x0],mean=sum/((x1-x0+1)*(y1-y0+1));if(gray[y*w+x]<mean-bias)out[y*w+x]=1;}return out;}
+  function crossDilate(mask,w,h){const out=new Uint8Array(mask.length);for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;out[i]=(mask[i]||mask[i-1]||mask[i+1]||mask[i-w]||mask[i+w])?1:0;}return out;}
+  function crossErode(mask,w,h){const out=new Uint8Array(mask.length);for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;out[i]=(mask[i]&&mask[i-1]&&mask[i+1]&&mask[i-w]&&mask[i+w])?1:0;}return out;}
+  function morphDilate(mask,w,h,r){let out=new Uint8Array(mask);for(let k=0;k<r;k++)out=crossDilate(out,w,h);return out;}
+  function morphErode(mask,w,h,r){let out=new Uint8Array(mask);for(let k=0;k<r;k++)out=crossErode(out,w,h);return out;}
+  function morphOpen(mask,w,h,r){return morphDilate(morphErode(mask,w,h,r),w,h,r);}
+  function morphClose(mask,w,h,r){return morphErode(morphDilate(mask,w,h,r),w,h,r);}
+  function estimatePeriodicGridPhase(gray,w,h,pitchPx){
+    if(!pitchPx||pitchPx<6)return null;
+    const p=Math.max(6,Math.round(pitchPx));
+    const sx=new Float64Array(p),cx=new Uint32Array(p),sy=new Float64Array(p),cy=new Uint32Array(p);
+    const stepY=Math.max(1,Math.floor(h/360)),stepX=Math.max(1,Math.floor(w/360));
+    for(let x=0;x<w;x++){
+      let s=0,n=0;for(let y=0;y<h;y+=stepY){s+=255-gray[y*w+x];n++;}
+      const ph=x%p;sx[ph]+=s/Math.max(1,n);cx[ph]++;
+    }
+    for(let y=0;y<h;y++){
+      let s=0,n=0;for(let x=0;x<w;x+=stepX){s+=255-gray[y*w+x];n++;}
+      const ph=y%p;sy[ph]+=s/Math.max(1,n);cy[ph]++;
+    }
+    let px=0,py=0,bx=-Infinity,by=-Infinity;
+    for(let i=0;i<p;i++){const vx=sx[i]/Math.max(1,cx[i]);if(vx>bx){bx=vx;px=i;}const vy=sy[i]/Math.max(1,cy[i]);if(vy>by){by=vy;py=i;}}
+    return{p,px,py};
+  }
+  function bestWireComponent(mask,w,h){
+    const seen=new Uint8Array(mask.length),q=new Int32Array(mask.length);let best=null;
+    const dirs=[-1,1,-w,w,-w-1,-w+1,w-1,w+1];
+    for(let i=0;i<mask.length;i++){
+      if(!mask[i]||seen[i])continue;let qs=0,qe=0;q[qe++]=i;seen[i]=1;let area=0,minX=w,minY=h,maxX=0,maxY=0;const pix=[];
+      while(qs<qe){const p=q[qs++],y=(p/w)|0,x=p-y*w;pix.push(p);area++;if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
+        for(const dd of dirs){const n=p+dd;if(n<0||n>=mask.length||seen[n]||!mask[n])continue;const ny=(n/w)|0,nx=n-ny*w;if(Math.abs(nx-x)>1||Math.abs(ny-y)>1)continue;seen[n]=1;q[qe++]=n;}
+      }
+      const bw=maxX-minX+1,bh=maxY-minY+1,spanRatio=Math.max(bw/w,bh/h),small=Math.max(1,Math.min(bw,bh)),elong=Math.max(bw,bh)/small,fill=area/(bw*bh),border=(minX<2||minY<2||maxX>w-3||maxY>h-3),areaRatio=area/(w*h);
+      if(border||spanRatio<.14||areaRatio<.00045||fill<.018||fill>.48)continue;
+      if(spanRatio>.72&&fill<.09)continue;
+      const fillFit=Math.max(.05,1-Math.abs(fill-.11)/.11),spanFit=(spanRatio>=.20&&spanRatio<=.64)?1:.35,elongFit=(elong>=1.30&&elong<=7)?1:.45;
+      const score=Math.sqrt(area)*spanRatio*fillFit*spanFit*elongFit;
+      if(!best||score>best.score)best={area,minX,minY,maxX,maxY,pix,score,fill,elong,border,spanRatio,areaRatio};
+    }
+    return best;
+  }
+
+  function detectPaperRect(imageData,w,h,pitchPx){
+    const data=imageData.data,mask=new Uint8Array(w*h);
+    for(let i=0,j=0;i<data.length;i+=4,j++){
+      const r=data[i],g=data[i+1],b=data[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+      const lum=r*.299+g*.587+b*.114,sat=mx-mn;
+      if((lum>=158&&sat<=62)||(lum>=175&&sat<=88))mask[j]=1;
+    }
+    let m=mask;
+    const rr=clamp(Math.round((pitchPx||24)*.16),1,5);
+    m=morphClose(m,w,h,Math.max(2,rr+1));
+    m=morphOpen(m,w,h,1);
+    const comp=largestComponent(m,w,h,false);
+    if(!comp)return null;
+    const bw=comp.maxX-comp.minX+1,bh=comp.maxY-comp.minY+1,fill=comp.area/Math.max(1,bw*bh),areaRatio=comp.area/Math.max(1,w*h),aspect=bw/Math.max(1,bh);
+    const spanX=bw/Math.max(1,w),spanY=bh/Math.max(1,h);
+    if(areaRatio<.10||fill<.42||spanX<.28||spanY<.28||spanX>.96||spanY>.96)return null;
+    if(aspect<.45||aspect>1.35)return null;
+    const margin=Math.max(6,Math.round((pitchPx||24)*.9));
+    const inner={x0:clamp(comp.minX+margin,0,w-1),y0:clamp(comp.minY+margin,0,h-1),x1:clamp(comp.maxX-margin,0,w-1),y1:clamp(comp.maxY-margin,0,h-1)};
+    inner.w=Math.max(1,inner.x1-inner.x0+1);inner.h=Math.max(1,inner.y1-inner.y0+1);
+    return {outer:{x0:comp.minX,y0:comp.minY,x1:comp.maxX,y1:comp.maxY,w:bw,h:bh},inner,fill,areaRatio,aspect,method:'촬영판(격자지) 내부 제한'};
+  }
+  function bestWireComponentInRect(mask,w,h,rect,pitchPx){
+    const seen=new Uint8Array(mask.length),q=new Int32Array(mask.length);let best=null;
+    const dirs=[-1,1,-w,w,-w-1,-w+1,w-1,w+1];
+    const rw=Math.max(1,rect.x1-rect.x0+1),rh=Math.max(1,rect.y1-rect.y0+1),edgeBand=Math.max(4,Math.round((pitchPx||24)*.45));
+    for(let yy=rect.y0;yy<=rect.y1;yy++)for(let xx=rect.x0;xx<=rect.x1;xx++){
+      const i=yy*w+xx;if(!mask[i]||seen[i])continue;let qs=0,qe=0;q[qe++]=i;seen[i]=1;let area=0,minX=w,minY=h,maxX=0,maxY=0;const pix=[];
+      while(qs<qe){const pp=q[qs++],y=(pp/w)|0,x=pp-y*w;pix.push(pp);area++;if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
+        for(const dd of dirs){const n=pp+dd;if(n<0||n>=mask.length||seen[n]||!mask[n])continue;const ny=(n/w)|0,nx=n-ny*w;if(nx<rect.x0||nx>rect.x1||ny<rect.y0||ny>rect.y1)continue;if(Math.abs(nx-x)>1||Math.abs(ny-y)>1)continue;seen[n]=1;q[qe++]=n;}
+      }
+      const bw=maxX-minX+1,bh=maxY-minY+1,rx=bw/rw,ry=bh/rh,small=Math.max(1,Math.min(bw,bh)),elong=Math.max(bw,bh)/small,fill=area/Math.max(1,bw*bh),areaRatio=area/Math.max(1,rw*rh);
+      const touches=[minX<=rect.x0+edgeBand,maxX>=rect.x1-edgeBand,minY<=rect.y0+edgeBand,maxY>=rect.y1-edgeBand].filter(Boolean).length;
+      // 격자판 외곽선/테두리는 보통 3~4면에 닿고, 내부 치구는 대부분 0~1면에만 닿는다.
+      if(touches>=3)continue;
+      if(rx>.88&&ry>.88)continue;
+      if((rx>.94||ry>.94)&&touches>=2)continue;
+      if(areaRatio<.00035||fill<.010||fill>.58)continue;
+      if(Math.max(rx,ry)<.12)continue;
+      let score=Math.sqrt(area)*Math.pow(Math.max(rx,ry),1.18)*(1+Math.min(6,elong)*.10);
+      if(touches===2)score*=.45;else if(touches===1)score*=.82;
+      if(rx>.78&&ry>.78)score*=.20;
+      if(fill>.38)score*=.45;
+      if(!best||score>best.score)best={area,minX,minY,maxX,maxY,pix,score,fill,elong,border:false,spanRatio:Math.max(rx,ry),areaRatio,touches,roiRx:rx,roiRy:ry};
+    }
+    return best;
+  }
+  function restrictCandidateToRect(candidate,w,h,rect,pitchPx){
+    if(!candidate?.mask||!rect)return candidate;
+    const x0=Math.max(0,rect.x0|0),y0=Math.max(0,rect.y0|0),x1=Math.min(w-1,rect.x1|0),y1=Math.min(h-1,rect.y1|0);
+    if(x1<=x0||y1<=y0)return null;
+    const m=new Uint8Array(w*h);
+    for(let y=y0;y<=y1;y++){
+      const off=y*w;
+      for(let x=x0;x<=x1;x++){
+        const i=off+x;
+        if(candidate.mask[i])m[i]=1;
+      }
+    }
+    const comp=bestWireComponentInRect(m,w,h,rect,pitchPx);
+    return comp?{comp,mask:m,threshold:candidate.threshold,invert:candidate.invert,method:`${candidate.method} · 촬영판 내부 제한`}:null;
+  }
+  function periodicGridWireComponent(gray,w,h,pitchPx){
+    if(!pitchPx)return null;
+    const phase=estimatePeriodicGridPhase(gray,w,h,pitchPx);if(!phase)return null;
+    let m=adaptiveDarkMask(gray,w,h,pitchPx),p=phase.p;
+    const band=clamp(Math.round(pitchPx*.055),1,2);
+    const modDist=(v,ph)=>{const a=((v-ph)%p+p)%p;return Math.min(a,p-a);};
+    // 주기 격자선의 중심부만 제거한다. 선재가 교차해도 뒤 단계 close에서 연결되도록 좁게 제거한다.
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const i=y*w+x;if(!m[i])continue;
+      if(modDist(x,phase.px)<=band||modDist(y,phase.py)<=band)m[i]=0;
+    }
+    const closeR=clamp(Math.round(pitchPx*.14),2,4),openR=1;
+    m=morphClose(m,w,h,closeR);m=morphOpen(m,w,h,openR);
+    const comp=bestWireComponent(m,w,h);if(!comp)return null;
+    if(comp.spanRatio<.16||comp.fill<.018||comp.fill>.46)return null;
+    return{comp,mask:m,threshold:null,invert:false,method:'1cm 주기격자 제거 + 선재 중심 추출'};
+  }
+  function gridWireComponent(gray,w,h,pitchPx){if(!pitchPx)return null;let m=adaptiveDarkMask(gray,w,h,pitchPx);const openR=clamp(Math.round(pitchPx*.06),1,2),closeR=clamp(Math.round(pitchPx*.10),2,4);m=morphOpen(m,w,h,openR);m=morphClose(m,w,h,closeR);const comp=largestComponent(m,w,h,true);if(!comp)return null;return{comp,mask:m,threshold:null,invert:false,method:'10mm 격자선 제거 + 선재 추출'};}
+
+  function largestComponent(mask,w,h,rejectFrame=false) {
+    const seen=new Uint8Array(mask.length),q=new Int32Array(mask.length);let best=null;
+    const dirs=[-1,1,-w,w,-w-1,-w+1,w-1,w+1];
+    for(let i=0;i<mask.length;i++){
+      if(!mask[i]||seen[i])continue;let qs=0,qe=0;q[qe++]=i;seen[i]=1;let area=0,minX=w,minY=h,maxX=0,maxY=0;const pix=[];
+      while(qs<qe){const p=q[qs++],y=(p/w)|0,x=p-y*w;pix.push(p);area++;if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
+        for(const dd of dirs){const n=p+dd;if(n<0||n>=mask.length||seen[n]||!mask[n])continue;const ny=(n/w)|0,nx=n-ny*w;if(Math.abs(nx-x)>1||Math.abs(ny-y)>1)continue;seen[n]=1;q[qe++]=n;}
+      }
+      const bw=maxX-minX+1,bh=maxY-minY+1,span=Math.max(bw,bh),small=Math.max(1,Math.min(bw,bh)),fill=area/(bw*bh),border=(minX<2||minY<2||maxX>w-3||maxY>h-3),elong=span/small;
+      const spanRatio=Math.max(bw/w,bh/h),areaRatio=area/(w*h);
+      if(rejectFrame && spanRatio>.76 && fill<.11)continue;
+      let shapeFactor=1;
+      if(fill<.012||fill>.68)shapeFactor*=.18;else if(fill<.025||fill>.48)shapeFactor*=.48;
+      if(elong>14)shapeFactor*=.22;else if(elong>9)shapeFactor*=.55;
+      if(spanRatio<.12||areaRatio<.0004)shapeFactor*=.25;
+      if(border)shapeFactor*=.14;
+      // S/J/U형 선재는 큰 영역을 차지하지만 bounding box 내부 충전율은 낮은 편이다.
+      const score=Math.sqrt(area)*Math.pow(Math.max(.02,spanRatio),1.35)*shapeFactor*(1+Math.min(2.5,elong)*.12);
+      if(!best||score>best.score)best={area,minX,minY,maxX,maxY,pix,score,fill,elong,border,spanRatio,areaRatio};
+    }
+    return best;
+  }
+
+  function processedComponent(gray,w,h,threshold,invert,pitchPx) {
+    const raw=new Uint8Array(gray.length);
+    for(let i=0;i<gray.length;i++)raw[i]=(invert?gray[i]>threshold:gray[i]<threshold)?1:0;
+    const r=Math.max(1,Math.min(7,Math.round((pitchPx||40)*.07)));
+    let m=densityFilter(raw,w,h,r,.37);m=erode(dilate(m,w,h),w,h);
+    return {comp:largestComponent(m,w,h),mask:m};
+  }
+
+  function refineGridPitch(pitchPx,wirePx,diameter){
+    if(!(Number.isFinite(pitchPx)&&pitchPx>0&&Number.isFinite(wirePx)&&wirePx>0&&Number.isFinite(diameter)&&diameter>0)) return pitchPx||0;
+    let best=pitchPx,bestErr=Infinity;
+    for(const mul of [1,2,3,4]){
+      const p=pitchPx*mul,expected=p*diameter/10;
+      if(expected<=0) continue;
+      const err=Math.abs(Math.log(Math.max(.05,wirePx/expected)));
+      if(err<bestErr){bestErr=err;best=p;}
+    }
+    return best;
+  }
+  function wireThicknessFit(comp,path,pitchPx,diameter){
+    if(!comp||!path?.length) return {wirePx:NaN,fit:0,refinedPitch:pitchPx||0};
+    const wirePx=Math.max(.1,(comp.area||1)/Math.max(1,pathLength(path)));
+    const rp=refineGridPitch(pitchPx,wirePx,diameter);
+    if(!(rp>0&&diameter>0)) return {wirePx,fit:.5,refinedPitch:rp};
+    const expected=rp*diameter/10,ratio=wirePx/Math.max(.1,expected);
+    const fit=Math.exp(-Math.abs(Math.log(Math.max(.05,ratio)))*1.5);
+    return {wirePx,fit,refinedPitch:rp};
+  }
+  function candidateCenterPath(candidate,w,h,pitchPx,diameter){
+    if(!candidate?.comp)return null;
+    try{
+      const crop=cropComponent(candidate.comp,w,h,5),sk=skeletonize(crop.mask,crop.w,crop.h);
+      let path=skeletonPath(sk,crop.w,crop.h);if(path.length<8)return null;
+      path=path.map(p=>({x:p.x+crop.x0,y:p.y+crop.y0}));
+      path=smoothPath(path,Math.max(1,Math.round((pitchPx||30)*.010)));
+      path=decimatePath(path,Math.max(1.0,(pitchPx||30)*.016));
+      const pb=pathBBox(path),spanX=pb.w/w,spanY=pb.h/h,span=Math.max(spanX,spanY),minor=Math.min(spanX,spanY),plen=pathLength(path),diag=Math.hypot(pb.w,pb.h),curve=plen/Math.max(1,diag),comp=candidate.comp,fill=comp.fill||0;
+      const wf=wireThicknessFit(comp,path,pitchPx,diameter);
+      const endSep=dist(path[0],path[path.length-1])/Math.max(1,diag);
+      let score=span*3.0+Math.min(2.6,curve)*1.25+Math.sqrt(Math.max(1,plen))/38+Math.min(.35,minor)*1.8+wf.fit*3.2+Math.min(.8,endSep)*.8;
+      if(span<.20)score-=2.5;if(minor<.045)score-=1.2;if(curve<1.14)score-=1.0;if(comp.border)score-=3.0;if(fill>.52)score-=2.0;if(wf.fit<.22)score-=2.8;
+      return{...candidate,path,pb,pathScore:score,curve,spanX,spanY,span,minor,wirePx: wf.wirePx,refinedPitch:wf.refinedPitch,wireFit:wf.fit};
+    }catch(_){return null;}
+  }
+  function consensusComponentCandidate(base,w,h,pitchPx){
+    const valid=base.filter(c=>c?.comp&&!c.comp.border&&c.comp.spanRatio>=.14&&c.comp.spanRatio<=.82&&c.comp.fill>=.012&&c.comp.fill<=.52);
+    if(valid.length<2)return null;
+    const votes=new Uint8Array(w*h);
+    for(const c of valid){for(const px of c.comp.pix){if(votes[px]<255)votes[px]++;}}
+    const need=valid.length>=4?2:2,mask=new Uint8Array(w*h);
+    for(let i=0;i<mask.length;i++)if(votes[i]>=need)mask[i]=1;
+    let m=morphClose(mask,w,h,clamp(Math.round((pitchPx||30)*.09),1,3));
+    m=morphOpen(m,w,h,1);
+    const comp=bestWireComponent(m,w,h)||largestComponent(m,w,h,true);
+    return comp?{comp,mask:m,threshold:null,invert:false,method:'다중 인식 합의 + 전체 선재 추출'}:null;
+  }
+  function samplePathForAgreement(path,count=32){
+    if(!path?.length)return[];if(path.length<=count)return path;
+    const cum=[0];for(let i=1;i<path.length;i++)cum.push(cum[i-1]+dist(path[i-1],path[i]));
+    const total=cum[cum.length-1]||1,out=[];let j=1;
+    for(let k=0;k<count;k++){
+      const t=total*k/(count-1);while(j<cum.length&&cum[j]<t)j++;
+      if(j>=cum.length){out.push(path[path.length-1]);continue;}
+      const a=path[j-1],b=path[j],u=(t-cum[j-1])/Math.max(1e-9,cum[j]-cum[j-1]);out.push({x:a.x+(b.x-a.x)*u,y:a.y+(b.y-a.y)*u});
+    }
+    return out;
+  }
+  function pathAgreement(a,b,pitchPx){
+    const pa=samplePathForAgreement(a.path),pb=samplePathForAgreement(b.path);if(!pa.length||!pb.length)return 0;
+    const nearest=(p,arr)=>{let d=Infinity;for(const q of arr)d=Math.min(d,dist(p,q));return d;};
+    const ds=[];for(const p of pa)ds.push(nearest(p,pb));for(const p of pb)ds.push(nearest(p,pa));ds.sort((x,y)=>x-y);
+    const med=ds[(ds.length/2)|0],scale=Math.max(5,(pitchPx||30)*.65);return Math.exp(-med/scale);
+  }
+  function collectComponentCandidates(imageData,gray,w,h,pitchPx,paperRect){
+    const arr=[],pg=periodicGridWireComponent(gray,w,h,pitchPx),gw=gridWireComponent(gray,w,h,pitchPx);
+    const add=(c)=>{
+      if(!c?.comp)return;
+      if(paperRect?.inner){
+        const rc=restrictCandidateToRect(c,w,h,paperRect.inner,pitchPx);
+        if(rc?.comp)arr.push(rc);
+      }
+      arr.push(c);
+    };
+    add(pg);add(gw);
+    const bg=backgroundDifferenceMask(imageData,w,h,pitchPx),bgComp=largestComponent(bg.mask,w,h);
+    if(bgComp)add({comp:bgComp,mask:bg.mask,threshold:null,invert:false,method:'배경색/명암 분리'});
+    const t=otsu(gray);
+    for(const [thr,invert] of [[clamp(Math.round(t*.72),25,215),false],[clamp(Math.round(t*.82),25,220),false],[clamp(Math.round(t*.92),30,225),false],[clamp(Math.round(t*1.04),30,230),true]]){
+      const rr=processedComponent(gray,w,h,thr,invert,pitchPx);if(rr.comp)add({...rr,threshold:thr,invert,method:'명암 보조'});
+    }
+    const cc=consensusComponentCandidate(arr,w,h,pitchPx);if(cc)arr.unshift(cc);
+    return arr;
+  }
+  function chooseComponent(imageData,gray,w,h,pitchPx,diameter,paperRect) {
+    const candidates=collectComponentCandidates(imageData,gray,w,h,pitchPx,paperRect).map(c=>candidateCenterPath(c,w,h,pitchPx,diameter)).filter(Boolean);
+    if(!candidates.length)return null;
+    for(let i=0;i<candidates.length;i++){
+      let sum=0,ws=0,bestAgree=0;
+      for(let j=0;j<candidates.length;j++)if(i!==j){const ag=pathAgreement(candidates[i],candidates[j],pitchPx);const wt=candidates[j].method.includes('다중 인식 합의')?1.3:1;sum+=ag*wt;ws+=wt;bestAgree=Math.max(bestAgree,ag);}
+      const consensus=ws?sum/ws:0;
+      candidates[i].consensus=consensus;
+      let roiBonus=0; if(candidates[i].method.includes('촬영판 내부 제한')) roiBonus+=2.4; if(paperRect?.inner){ const pb=candidates[i].pb||{}; const cx=(pb.minX+pb.maxX)/2,cy=(pb.minY+pb.maxY)/2,ir=paperRect.inner,rw=Math.max(1,ir.w),rh=Math.max(1,ir.h),rx=(pb.w||0)/rw,ry=(pb.h||0)/rh,band=Math.max(5,(pitchPx||24)*.55); const touches=[pb.minX<=ir.x0+band,pb.maxX>=ir.x1-band,pb.minY<=ir.y0+band,pb.maxY>=ir.y1-band].filter(Boolean).length; if(cx<ir.x0||cx>ir.x1||cy<ir.y0||cy>ir.y1) roiBonus-=5.0; if(touches>=3)roiBonus-=12; else if(touches===2)roiBonus-=3.0; if(rx>.86&&ry>.86)roiBonus-=10; if(rx>.96||ry>.96)roiBonus-=5; if(rx>.10&&rx<.72&&ry>.18&&ry<.86)roiBonus+=1.2; } candidates[i].finalScore=candidates[i].pathScore+consensus*4.2+bestAgree*1.1+(candidates[i].method.includes('다중 인식 합의')?.65:0)+roiBonus;
+    }
+    candidates.sort((a,b)=>b.finalScore-a.finalScore);
+    return candidates[0];
+  }
+
+  function cropComponent(comp,w,h,pad=4){const x0=Math.max(0,comp.minX-pad),y0=Math.max(0,comp.minY-pad),x1=Math.min(w-1,comp.maxX+pad),y1=Math.min(h-1,comp.maxY+pad),cw=x1-x0+1,ch=y1-y0+1,m=new Uint8Array(cw*ch);for(const p of comp.pix){const y=(p/w)|0,x=p-y*w;m[(y-y0)*cw+(x-x0)]=1;}return{mask:m,w:cw,h:ch,x0,y0};}
+
+  function skeletonize(input,w,h) {
+    const a=new Uint8Array(input);let changed=true,iter=0,mark=new Uint8Array(a.length);
+    const N=(x,y)=>[a[(y-1)*w+x],a[(y-1)*w+x+1],a[y*w+x+1],a[(y+1)*w+x+1],a[(y+1)*w+x],a[(y+1)*w+x-1],a[y*w+x-1],a[(y-1)*w+x-1]];
+    while(changed&&iter++<120){changed=false;mark.fill(0);for(let pass=0;pass<2;pass++){
+      for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const idx=y*w+x;if(!a[idx])continue;const p=N(x,y),B=p.reduce((s,v)=>s+v,0);if(B<2||B>6)continue;let A=0;for(let k=0;k<8;k++)if(p[k]===0&&p[(k+1)%8]===1)A++;if(A!==1)continue;if(pass===0){if(p[0]*p[2]*p[4]!==0||p[2]*p[4]*p[6]!==0)continue;}else{if(p[0]*p[2]*p[6]!==0||p[0]*p[4]*p[6]!==0)continue;}mark[idx]=1;}
+      for(let i=0;i<a.length;i++)if(mark[i]){a[i]=0;changed=true;}mark.fill(0);
+    }}return a;
+  }
+
+  class MinHeap{constructor(){this.a=[];}push(item){const a=this.a;a.push(item);let i=a.length-1;while(i){const p=(i-1)>>1;if(a[p][0]<=item[0])break;a[i]=a[p];i=p;}a[i]=item;}pop(){const a=this.a;if(!a.length)return null;const root=a[0],last=a.pop();if(a.length){let i=0;while(true){let l=i*2+1,r=l+1;if(l>=a.length)break;let c=r<a.length&&a[r][0]<a[l][0]?r:l;if(a[c][0]>=last[0])break;a[i]=a[c];i=c;}a[i]=last;}return root;}}
+
+  function skeletonPath(sk,w,h){const nodes=[];for(let i=0;i<sk.length;i++)if(sk[i])nodes.push(i);if(nodes.length<2)return[];function degree(p){const y=(p/w)|0,x=p-y*w;let n=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const xx=x+dx,yy=y+dy;if(xx>=0&&xx<w&&yy>=0&&yy<h&&sk[yy*w+xx])n++;}return n;}const ends=nodes.filter(p=>degree(p)===1),seed=ends[0]||nodes[0];function dijkstra(start,needPrev=false){const dist=new Float64Array(sk.length);dist.fill(Infinity);const prev=needPrev?new Int32Array(sk.length):null;if(prev)prev.fill(-1);const heap=new MinHeap();dist[start]=0;heap.push([0,start]);let far=start,farD=0;while(heap.a.length){const [d,p]=heap.pop();if(d!==dist[p])continue;if(d>farD){farD=d;far=p;}const y=(p/w)|0,x=p-y*w;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const xx=x+dx,yy=y+dy;if(xx<0||xx>=w||yy<0||yy>=h)continue;const n=yy*w+xx;if(!sk[n])continue;const nd=d+((dx&&dy)?Math.SQRT2:1);if(nd<dist[n]){dist[n]=nd;if(prev)prev[n]=p;heap.push([nd,n]);}}}return{far,dist,prev};}const a=dijkstra(seed).far,bres=dijkstra(a,true),b=bres.far,path=[];let p=b,guard=0;while(p!==-1&&guard++<sk.length){const y=(p/w)|0,x=p-y*w;path.push({x,y});if(p===a)break;p=bres.prev[p];}path.reverse();return path;}
+  function smoothPath(path,win=3){if(path.length<win*2+1)return path.slice();const out=[];for(let i=0;i<path.length;i++){let sx=0,sy=0,n=0;for(let k=Math.max(0,i-win);k<=Math.min(path.length-1,i+win);k++){sx+=path[k].x;sy+=path[k].y;n++;}out.push({x:sx/n,y:sy/n});}return out;}
+  function decimatePath(path,minDist=2){if(path.length<3)return path;const out=[path[0]];let last=path[0];for(let i=1;i<path.length-1;i++){const p=path[i];if(Math.hypot(p.x-last.x,p.y-last.y)>=minDist){out.push(p);last=p;}}out.push(path[path.length-1]);return out;}
+  function pathLength(path){let s=0;for(let i=1;i<path.length;i++)s+=Math.hypot(path[i].x-path[i-1].x,path[i].y-path[i-1].y);return s;}
+  function median(a){if(!a.length)return NaN;const b=a.slice().sort((x,y)=>x-y),m=b.length>>1;return b.length%2?b[m]:(b[m-1]+b[m])/2;}
+  function circleRadius(a,b,c){const A=Math.hypot(b.x-c.x,b.y-c.y),B=Math.hypot(a.x-c.x,a.y-c.y),C=Math.hypot(a.x-b.x,a.y-b.y),area2=Math.abs((b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x));if(area2<1e-5)return Infinity;return A*B*C/(2*area2);}
+  function estimateRadii(path,mmPerPx,bbox,diameter){if(path.length<15)return{r1:NaN,r2:NaN};const sep=Math.max(3,Math.floor(path.length/45)),cy=(bbox.minY+bbox.maxY)/2,upper=[],lower=[];for(let i=sep;i<path.length-sep;i+=Math.max(1,Math.floor(sep/2))){const r=circleRadius(path[i-sep],path[i],path[i+sep])*mmPerPx;if(!Number.isFinite(r)||r<diameter*.55||r>Math.max((bbox.maxX-bbox.minX),(bbox.maxY-bbox.minY))*mmPerPx*1.8)continue;(path[i].y<cy?upper:lower).push(r);}return{r1:median(upper),r2:median(lower)};}
+
+  function pathBBox(path){let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;for(const p of path){if(p.x<minX)minX=p.x;if(p.x>maxX)maxX=p.x;if(p.y<minY)minY=p.y;if(p.y>maxY)maxY=p.y;}return{minX,minY,maxX,maxY,w:Math.max(1,maxX-minX),h:Math.max(1,maxY-minY)};}
+  function estimateWirePx(comp,path){
+    const lenPx=Math.max(1,pathLength(path));
+    const areaPx=Math.max(1,comp?.area||0);
+    const bboxSpan=Math.max(1,Math.min(comp?.maxX-comp?.minX||1, comp?.maxY-comp?.minY||1));
+    const raw=areaPx/lenPx;
+    return clamp(raw, 2, Math.max(6, bboxSpan*.35));
+  }
+
+  function emergencyHookPath(widthPx=600,heightPx=1000) {
+    const w=Math.max(120,widthPx), h=Math.max(180,heightPx);
+    return [
+      {x:w*.30,y:h*.22},{x:w*.28,y:h*.14},{x:w*.36,y:h*.08},{x:w*.48,y:h*.08},
+      {x:w*.56,y:h*.14},{x:w*.57,y:h*.31},{x:w*.55,y:h*.56},{x:w*.60,y:h*.77},
+      {x:w*.68,y:h*.88},{x:w*.77,y:h*.90},{x:w*.84,y:h*.84},{x:w*.86,y:h*.72}
+    ];
+  }
+
+  async function makeEmergencyResult(item, reason='자동 인식 실패') {
+    let iw=600, ih=1000;
+    try {
+      if(item.blob){ const ds=await blobToCanvas(item.blob); iw=ds.w; ih=ds.h; }
+    } catch(_) {}
+    const diameter=Math.max(.1,parseFloat(item.diameter)||6);
+    const approxW=parseFloat(item.approxWidth), approxH=parseFloat(item.approxHeight);
+    let width=Number.isFinite(approxW)&&approxW>0?approxW:Math.max(diameter*18,90);
+    let height=Number.isFinite(approxH)&&approxH>0?approxH:Math.max(diameter*40,220);
+    if(iw>ih && !Number.isFinite(approxW) && !Number.isFinite(approxH)){ const t=width;width=height;height=t; }
+    let p=emergencyHookPath(iw,ih), pb=pathBBox(p);
+    const sx=(width-diameter)/Math.max(1,pb.w), sy=(height-diameter)/Math.max(1,pb.h);
+    p=p.map(q=>({x:(q.x-pb.minX)*sx,y:(q.y-pb.minY)*sy}));
+    const length=pathLength(p);
+    return {
+      id:item.id,name:item.name.trim()||makeJigNumber(currentLineCode(),item.seq),material:item.material.trim()||'SUS304',diameter,
+      baseWidth:width,baseHeight:height,baseLength:length,baseR1:NaN,baseR2:NaN,
+      width,height,length,r1:NaN,r2:NaN,pathBase:p,path:p.map(q=>({...q})), rawPath:p.map(q=>({...q})), rawBBox:{minX:0,minY:0,maxX:width,maxY:height,w:width,h:height}, imageW:iw,imageH:ih,
+      scaleSource:'자동 인식 실패 · 임시도면',scaleConfidence:.05,quality:.05,threshold:null,invert:false,
+      segmentMethod:'임시 HOOK 형상',gridDetected:false,arDetected:false,gridReason:'',shapeFill:0,arDistanceMm:item.arDistanceMm||null,
+      dimensionEstimated:true,shapeEstimated:true,warning:reason, photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx:1, mmPerPxX:1, mmPerPxY:1, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:false, shapeDrawMode:'auto'
+    };
+  }
+
+  async function analyzeCapture(item) {
+    if (!item.blob) throw new Error('촬영 원본이 없습니다. 새로 촬영하세요.');
+    const ds=await blobToCanvas(item.blob),gray=grayArray(ds.imageData),grid=detectGrid(gray,ds.w,ds.h);
+    const diameter=Math.max(.1,parseFloat(item.diameter)||6);
+    const pitch=grid.pitch||Math.max(18,Math.min(ds.w,ds.h)/20);
+    const paperRect=detectPaperRect(ds.imageData,ds.w,ds.h,pitch);
+    const seg=chooseComponent(ds.imageData,gray,ds.w,ds.h,grid.pitch||null,diameter,paperRect);
+    if(!seg?.comp||seg.comp.area<Math.max(70,ds.w*ds.h*.00035)) return await makeEmergencyResult(item,'치구 형상을 충분히 찾지 못해 임시 형상으로 생성했습니다.');
+    const comp=seg.comp;
+    const suspiciousShape=!!(comp.border||comp.fill>.62||comp.spanRatio<.14||seg.span<.20||seg.curve<1.12);
+    let path=(seg.path||[]).map(p=>({...p}));if(path.length<8)return await makeEmergencyResult(item,'중심선 추출이 불안정하여 임시 형상으로 생성했습니다.');
+
+    const pb=pathBBox(path),approxW=parseFloat(item.approxWidth),approxH=parseFloat(item.approxHeight);
+    const userScales=[];
+    // 입력 폭/높이는 선재 외곽 전체치수로 간주하고, 중심선 span에서 Ø를 뺀 값으로 스케일을 구한다.
+    if(Number.isFinite(approxW)&&approxW>diameter)userScales.push((approxW-diameter)/pb.w);
+    if(Number.isFinite(approxH)&&approxH>diameter)userScales.push((approxH-diameter)/pb.h);
+    let mmPerPx,scaleSource,scaleConfidence;
+    const mode=item.measureMode||'auto', arScale=parseFloat(item.arMmPerPx);
+    const wirePxEst=Number.isFinite(seg.wirePx)?seg.wirePx:estimateWirePx(comp,path);
+    const refinedGridPitch=(grid.pitch&&wirePxEst)?refineGridPitch(grid.pitch,wirePxEst,diameter):grid.pitch;
+    const wireDerivedScale=Number.isFinite(wirePxEst)&&wirePxEst>0 ? diameter/wirePxEst : NaN;
+    const gridDerivedScale=Number.isFinite(refinedGridPitch)&&refinedGridPitch>0 ? 10/refinedGridPitch : NaN;
+    if(userScales.length){
+      mmPerPx=userScales.reduce((a,b)=>a+b,0)/userScales.length;scaleSource='사용자 대략치수';scaleConfidence=.92;
+    } else if(mode==='manual') {
+      if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0){
+        mmPerPx=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.38;
+      } else {
+        mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.12;
+      }
+    } else if(mode==='ar' && Number.isFinite(arScale) && arScale>0) {
+      mmPerPx=arScale;scaleSource='AR 자동 측정';scaleConfidence=.68;
+    } else if(mode==='grid' && grid.pitch) {
+      mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
+    } else if(mode==='grid') {
+      if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0){
+        mmPerPx=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.36;
+      } else {
+        mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.12;
+      }
+    } else if(mode==='auto' && grid.pitch) {
+      mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
+    } else if(Number.isFinite(arScale) && arScale>0) {
+      mmPerPx=arScale;scaleSource='AR 자동 측정';scaleConfidence=.64;
+    } else if(grid.pitch) {
+      mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
+    } else if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0) {
+      mmPerPx=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.34;
+    } else {
+      mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.10;
+    }
+
+    if(Number.isFinite(gridDerivedScale)&&Number.isFinite(wireDerivedScale)){
+      const ratio=gridDerivedScale/wireDerivedScale;
+      if(ratio<.55||ratio>1.80){mmPerPx=wireDerivedScale;scaleSource='격자 검증 불일치 · Ø 보정';scaleConfidence=Math.min(scaleConfidence,.55);}
+      else if(scaleSource.startsWith('1cm 격자')){mmPerPx=gridDerivedScale*.75+wireDerivedScale*.25;}
+    }
+    const width=pb.w*mmPerPx+diameter,height=pb.h*mmPerPx+diameter,length=pathLength(path)*mmPerPx;
+    const r=estimateRadii(path,mmPerPx,pb,diameter);
+    const pathMm=path.map(p=>({x:(p.x-pb.minX)*mmPerPx,y:(p.y-pb.minY)*mmPerPx}));
+    const aspect=Math.max(width,height)/Math.max(1,Math.min(width,height)),curveRatio=length/Math.max(1,Math.hypot(width,height));
+    let quality=scaleConfidence*.38+(comp.fill>=.025&&comp.fill<=.35?.22:.08)+(comp.border?0:.16)+(path.length>24?.14:.08)+(curveRatio>1.20?.10:.04)+(seg.method.includes('주기격자')?.14:seg.method.includes('격자선 제거')?.08:0);
+    quality=clamp(quality,.08,.99);
+    return {
+      id:item.id,name:item.name.trim()||makeJigNumber(currentLineCode(),item.seq),material:item.material.trim()||'SUS304',diameter,
+      baseWidth:width,baseHeight:height,baseLength:length,baseR1:r.r1,baseR2:r.r2,
+      width,height,length,r1:r.r1,r2:r.r2,pathBase:pathMm,path:pathMm.map(p=>({...p})), rawPath:path.map(p=>({...p})), rawBBox:pb, imageW:ds.w, imageH:ds.h,
+      scaleSource,scaleConfidence,quality,threshold:seg.threshold,invert:seg.invert,segmentMethod:`${seg.method} · 다중후보 자동선택`,consensus:Number.isFinite(seg.consensus)?seg.consensus:0,
+      gridDetected:!!grid.pitch,arDetected:scaleSource==='AR 자동 측정',gridReason:grid.reason||'',shapeFill:comp.fill,arDistanceMm:item.arDistanceMm||null,
+      dimensionEstimated:scaleSource.includes('추정')||scaleSource.includes('임시'), wirePxEstimate:wirePxEst,
+      shapeEstimated:suspiciousShape, warning:suspiciousShape?'배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':'', photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx, mmPerPxX:mmPerPx, mmPerPxY:mmPerPx, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:false, shapeDrawMode:'auto', paperRect
+    };
+  }
+
+  async function batchAnalyze() {
+    if(!state.captures.length||state.working)return;
+    state.working=true;updateShotUI();stopCamera();
+    $('progressCard').classList.remove('hidden');$('progressCard').open=true;$('resultsSection').classList.add('hidden');$('resultsSection').open=false;
+    state.results=[];setStatus('일괄 분석중','busy');
+    const total=state.captures.length;
+    for(let i=0;i<total;i++){
+      const item=state.captures[i];
+      $('progressText').textContent=`${i+1} / ${total} · ${item.name} 분석 중`;
+      $('progressBar').style.width=`${Math.round((i/total)*100)}%`;
+      await new Promise(r=>setTimeout(r,25));
+      try{
+        item.photoDataUrl = item.photoDataUrl || await blobToDataURL(item.blob).catch(()=> '');
+        const result=await analyzeCapture(item);if(result.captureType==='product'){result.shapeConfirmed=true;result.shapeEditMode=false;}else{const emergency=(result.segmentMethod||'').includes('임시 HOOK');result.shapeConfirmed=!emergency;result.shapeEditMode=false;result.autoShapeAccepted=!emergency;}state.results.push({...result,ok:true});
+        revokeCapture(item);
+      }catch(err){
+        try{item.photoDataUrl = item.photoDataUrl || await blobToDataURL(item.blob).catch(()=> ''); const fallback=await makeEmergencyResult(item,err?.message||String(err));state.results.push({...fallback,ok:true});revokeCapture(item);}catch(_){state.results.push({id:item.id,name:item.name,material:item.material,diameter:parseFloat(item.diameter)||6,ok:false,error:err?.message||String(err)});}
+      }
+    }
+    $('progressBar').style.width='100%';$('progressText').textContent=`${total}장 처리 완료`;
+    // Remove successfully analyzed photographs from the capture queue/DOM as well.
+    state.captures = state.captures.filter(c => c.blob);
+    try{
+      renderCaptureList();
+      try{persistUsedNumbers();}catch(storageErr){console.warn('사용번호 저장 생략',storageErr);}
+      renderResults();
+      $('resultsSection').classList.remove('hidden');$('resultsSection').open=true;
+      $('resultsSection').scrollIntoView({behavior:'smooth',block:'start'});
+      const ok=state.results.filter(r=>r.ok).length;
+      setStatus(`${ok}/${total} 도면 생성`,ok===total?'ok':'warn');
+      toast(`도면 ${ok}장 생성 완료`);
+    }catch(finalErr){
+      reportAppError(finalErr,'도면 표시');
+      $('resultsSection').classList.remove('hidden');$('resultsSection').open=true;
+    }finally{
+      state.working=false;updateShotUI();
+    }
+  }
+
+  function transformedPath(r) {
+    if(!r.ok)return[];
+    const sx=(parseFloat(r.width)||r.baseWidth)/Math.max(.001,r.baseWidth),sy=(parseFloat(r.height)||r.baseHeight)/Math.max(.001,r.baseHeight);
+    return r.pathBase.map(p=>({x:p.x*sx,y:p.y*sy}));
+  }
+
+  function recalcFromDimensions(r) {
+    if(!r.ok)return;
+    const p=transformedPath(r),avgScale=((parseFloat(r.width)||r.baseWidth)/r.baseWidth+(parseFloat(r.height)||r.baseHeight)/r.baseHeight)/2;
+    r.path=p;r.length=pathLength(p);if(Number.isFinite(r.baseR1))r.r1=r.baseR1*avgScale;if(Number.isFinite(r.baseR2))r.r2=r.baseR2*avgScale;
+  }
+
+  function readDimValue(r,key,def){
+    if(['width','height','length','r1','r2','diameter'].includes(key)) return Number.isFinite(parseFloat(r[key])) ? parseFloat(r[key]) : def;
+    return Number.isFinite(parseFloat(r.manualDims?.[key])) ? parseFloat(r.manualDims[key]) : def;
+  }
+  function writeDimValue(r,key,val){
+    if(['width','height','length','r1','r2','diameter'].includes(key)) r[key]=val;
+    else { r.manualDims=r.manualDims||{}; r.manualDims[key]=val; }
+  }
+  function dist(a,b){return Math.hypot((b.x||0)-(a.x||0),(b.y||0)-(a.y||0));}
+  function localRadius(path,idx){
+    const s=Math.max(2,Math.floor(path.length/40));
+    const i0=Math.max(0,idx-s), i2=Math.min(path.length-1,idx+s);
+    return circleRadius(path[i0],path[idx],path[i2]);
+  }
+  function buildAnchorIndices(path){
+    if(path.length<4) return [0,path.length-1];
+    const step=Math.max(2,Math.floor(path.length/28)); const cand=[];
+    for(let i=step;i<path.length-step;i++){
+      const a=path[i-step],b=path[i],c=path[i+step];
+      const v1x=b.x-a.x,v1y=b.y-a.y,v2x=c.x-b.x,v2y=c.y-b.y;
+      const m1=Math.hypot(v1x,v1y),m2=Math.hypot(v2x,v2y); if(m1<1e-3||m2<1e-3) continue;
+      const ang=Math.acos(clamp((v1x*v2x+v1y*v2y)/(m1*m2),-1,1))*180/Math.PI;
+      if(ang>14) cand.push({i,ang});
+    }
+    const out=[0];
+    for(const c of cand.sort((x,y)=>y.ang-x.ang)){
+      if(out.some(v=>Math.abs(v-c.i)<step*2)) continue;
+      out.push(c.i);
+    }
+    out.push(path.length-1);
+    return [...new Set(out)].sort((a,b)=>a-b);
+  }
+  function rdpSimplify(points, epsilon){
+    if(points.length<3) return points.slice();
+    const first=points[0], last=points[points.length-1];
+    const dx=last.x-first.x, dy=last.y-first.y, den=Math.max(1e-9,Math.hypot(dx,dy));
+    let maxDist=-1, idx=-1;
+    for(let i=1;i<points.length-1;i++){
+      const p=points[i];
+      const d=Math.abs(dy*p.x-dx*p.y+last.x*first.y-last.y*first.x)/den;
+      if(d>maxDist){maxDist=d;idx=i;}
+    }
+    if(maxDist>epsilon){
+      const left=rdpSimplify(points.slice(0,idx+1),epsilon), right=rdpSimplify(points.slice(idx),epsilon);
+      return left.slice(0,-1).concat(right);
+    }
+    return [first,last];
+  }
+  function snapAngleDeg(deg,tol=7){
+    const targets=[0,15,30,45,60,75,90,105,120,135,150,165,180,-15,-30,-45,-60,-75,-90,-105,-120,-135,-150,-165,-180];
+    let best=deg,bd=999;
+    for(const t of targets){const d=Math.abs((((deg-t)+180)%360)-180);if(d<bd){bd=d;best=t;}}
+    return bd<=tol?best:deg;
+  }
+  function extremaIndices(path){
+    if(!path.length) return [];
+    let minX=0,maxX=0,minY=0,maxY=0;
+    for(let i=1;i<path.length;i++){
+      if(path[i].x<path[minX].x) minX=i;
+      if(path[i].x>path[maxX].x) maxX=i;
+      if(path[i].y<path[minY].y) minY=i;
+      if(path[i].y>path[maxY].y) maxY=i;
+    }
+    return [minX,maxX,minY,maxY];
+  }
+  function fidelityPath(path){
+    if(path.length<3) return path.slice();
+    const pb=pathBounds(path);
+    const sm=smoothPath(path, Math.max(1, Math.round(Math.min(pb.w,pb.h)*0.004)));
+    return decimatePath(sm, Math.max(1.2, Math.min(pb.w,pb.h)*0.006));
+  }
+  function engineeringPath(path,diameter=6){
+    const raw=fidelityPath(path);if(raw.length<9)return raw;
+    const out=raw.map(p=>({...p})),n=raw.length,step=Math.max(2,Math.floor(n/55)),straight=new Uint8Array(n);
+    for(let i=step;i<n-step;i++){
+      const a=raw[i-step],b=raw[i],c=raw[i+step],v1x=b.x-a.x,v1y=b.y-a.y,v2x=c.x-b.x,v2y=c.y-b.y,m1=Math.hypot(v1x,v1y),m2=Math.hypot(v2x,v2y);
+      if(m1<1e-6||m2<1e-6)continue;const turn=Math.acos(clamp((v1x*v2x+v1y*v2y)/(m1*m2),-1,1))*180/Math.PI;if(turn<7.5)straight[i]=1;
+    }
+    const minLen=Math.max((Number(diameter)||6)*3.0,pathLength(raw)*.055),maxMove=Math.max((Number(diameter)||6)*.34,pathBounds(raw).w*.004);
+    let s=0;
+    while(s<n){while(s<n&&!straight[s])s++;if(s>=n)break;let e=s;while(e+1<n&&straight[e+1])e++;const a=Math.max(0,s-step),b=Math.min(n-1,e+step);let segLen=0;for(let i=a+1;i<=b;i++)segLen+=dist(raw[i-1],raw[i]);
+      if(segLen>=minLen&&b-a>=4){
+        let mx=0,my=0,cnt=0;for(let i=a;i<=b;i++){mx+=raw[i].x;my+=raw[i].y;cnt++;}mx/=cnt;my/=cnt;let xx=0,yy=0,xy=0;for(let i=a;i<=b;i++){const dx=raw[i].x-mx,dy=raw[i].y-my;xx+=dx*dx;yy+=dy*dy;xy+=dx*dy;}const ang=.5*Math.atan2(2*xy,xx-yy),ux=Math.cos(ang),uy=Math.sin(ang);
+        for(let i=a;i<=b;i++){const dx=raw[i].x-mx,dy=raw[i].y-my,t=dx*ux+dy*uy,px=mx+t*ux,py=my+t*uy,move=Math.hypot(px-raw[i].x,py-raw[i].y);if(move<=maxMove){const edge=Math.min((i-a)/Math.max(1,step),(b-i)/Math.max(1,step),1),blend=.78*clamp(edge,0,1);out[i].x=raw[i].x+(px-raw[i].x)*blend;out[i].y=raw[i].y+(py-raw[i].y)*blend;}}
+      }
+      s=e+1;
+    }
+    const rb=pathBounds(raw),ob=pathBounds(out),rl=pathLength(raw),ol=pathLength(out);if(ob.w<rb.w*.94||ob.h<rb.h*.94||ol<rl*.91||ol>rl*1.06)return raw;return out;
+  }
+  function simplifyAnchors(path){
+    if(path.length<3) return path.slice();
+    const lvl=currentStraightenLevel();
+    const base=buildAnchorIndices(path);
+    const ext=extremaIndices(path);
+    const stride=lvl==='medium'?Math.max(10,Math.floor(path.length/7)):lvl==='max'?Math.max(6,Math.floor(path.length/12)):Math.max(8,Math.floor(path.length/9));
+    const ptsIdx=[0,path.length-1,...base,...ext];
+    for(let i=stride;i<path.length-1;i+=stride) ptsIdx.push(i);
+    const uniq=[...new Set(ptsIdx)].sort((a,b)=>a-b);
+    const minGap=lvl==='max'?2:lvl==='medium'?8:5;
+    const keep=[];
+    for(const i of uniq){
+      if(!keep.length || i-keep[keep.length-1]>=minGap || i===path.length-1) keep.push(i);
+      else {
+        const prev=keep[keep.length-1];
+        const pi=path[i], pp=path[prev];
+        if(Math.hypot(pi.x-pp.x,pi.y-pp.y)>minGap*1.5) keep.push(i);
+      }
+    }
+    return keep.map(i=>({...path[i]}));
+  }
+  function collapseMinorKinks(path,minSeg=6,angleTol=12){
+    if(!Array.isArray(path)||path.length<3) return Array.isArray(path)?path.slice():[];
+    const src=path.map(p=>({...p}));
+    const out=[src[0]];
+    for(let i=1;i<src.length-1;i++){
+      const prev=out[out.length-1],cur=src[i],next=src[i+1];
+      const l1=dist(prev,cur),l2=dist(cur,next);
+      if(l1<Math.max(1,minSeg*.45) || l2<Math.max(1,minSeg*.45)) continue;
+      const v1x=cur.x-prev.x,v1y=cur.y-prev.y,v2x=next.x-cur.x,v2y=next.y-cur.y,m1=Math.hypot(v1x,v1y),m2=Math.hypot(v2x,v2y);
+      if(m1<1e-6||m2<1e-6) continue;
+      const turn=Math.acos(clamp((v1x*v2x+v1y*v2y)/(m1*m2),-1,1))*180/Math.PI;
+      if(turn<angleTol) continue;
+      out.push(cur);
+    }
+    out.push(src[src.length-1]);
+    return out;
+  }
+  function snapSegmentsToDominantAngles(path,diameter=6){
+    if(!Array.isArray(path)||path.length<2) return Array.isArray(path)?path.slice():[];
+    const tol=currentStraightenLevel()==='max'?8:6;
+    const out=[{...path[0]}];
+    for(let i=1;i<path.length;i++){
+      const prev=out[out.length-1],src=path[i],dx=src.x-prev.x,dy=src.y-prev.y,len=Math.hypot(dx,dy);
+      if(len<1) continue;
+      const deg=Math.atan2(dy,dx)*180/Math.PI;
+      const snapped=snapAngleDeg(deg,tol);
+      let nx=prev.x+Math.cos(snapped*Math.PI/180)*len,ny=prev.y+Math.sin(snapped*Math.PI/180)*len;
+      const allow=Math.max((Number(diameter)||6)*0.9,len*0.1,2.5);
+      if(Math.hypot(nx-src.x,ny-src.y)>allow){nx=src.x;ny=src.y;}
+      out.push({x:nx,y:ny});
+    }
+    return out;
+  }
+  function majorCenterline(path,diameter=6){
+    const raw=fidelityPath(path);
+    if(raw.length<3) return raw;
+    const eng=engineeringPath(raw,diameter);
+    const pb=pathBounds(eng),span=Math.max(pb.w,pb.h),minor=Math.min(pb.w,pb.h),plen=pathLength(eng);
+    let eps=Math.max((Number(diameter)||6)*0.35,minor*0.010,span*0.0045,1.2);
+    if(currentStraightenLevel()==='max') eps*=1.2;
+    let pts=rdpSimplify(eng,eps);
+    if(pts.length<4) pts=rdpSimplify(eng,Math.max(0.8,eps*0.65));
+    pts=collapseMinorKinks(pts,Math.max((Number(diameter)||6)*1.8,plen*0.012),13);
+    pts=snapSegmentsToDominantAngles(pts,diameter);
+    pts=collapseMinorKinks(pts,Math.max((Number(diameter)||6)*1.4,plen*0.009),9);
+    const rb=pathBounds(raw),ob=pathBounds(pts),ol=pathLength(pts),rl=pathLength(raw);
+    if(pts.length<3||ob.w<rb.w*.82||ob.h<rb.h*.82||ol<rl*.76||ol>rl*1.18) return eng;
+    return pts;
+  }
+  function straightenPath(path){
+    const raw=fidelityPath(path);
+    if(raw.length<3)return raw;
+    const lvl=currentStraightenLevel();
+    // 형상 보존이 최우선이다. RDP로 미세 떨림만 제거하고, 강/최대에서만 가까운 직선 각도를 제한적으로 스냅한다.
+    const pb=pathBounds(raw),eps=Math.max(.35,Math.min(pb.w,pb.h)*(lvl==='medium'?.004:lvl==='max'?.008:.006));
+    let pts=rdpSimplify(raw,eps);
+    if(pts.length<5)return raw;
+    if(lvl==='medium')return pts;
+    const tol=lvl==='max'?6:4,out=[{...pts[0]}];
+    for(let i=1;i<pts.length;i++){
+      const prev=out[out.length-1],src=pts[i],dx=src.x-prev.x,dy=src.y-prev.y,len=Math.hypot(dx,dy);if(len<1)continue;
+      const deg=Math.atan2(dy,dx)*180/Math.PI,sn=snapAngleDeg(deg,tol),rad=sn*Math.PI/180;
+      let nx=prev.x+Math.cos(rad)*len,ny=prev.y+Math.sin(rad)*len;
+      // 스냅으로 원본 점에서 지나치게 멀어지면 원본 좌표를 유지한다.
+      if(Math.hypot(nx-src.x,ny-src.y)>Math.max(2,len*.08)){nx=src.x;ny=src.y;}
+      out.push({x:nx,y:ny});
+    }
+    const rb=pathBounds(raw),ob=pathBounds(out),rl=pathLength(raw),ol=pathLength(out);
+    if(out.length<5||ol<rl*.82||ol>rl*1.14||ob.w<rb.w*.85||ob.h<rb.h*.85)return pts;
+    return out;
+  }
+  function cornerArcData(path){
+    const out=[];
+    for(let i=1;i<path.length-1;i++){
+      const a=path[i-1],b=path[i],c=path[i+1],ab=dist(a,b),bc=dist(b,c);
+      if(ab<3||bc<3) continue;
+      const v1={x:(a.x-b.x)/ab,y:(a.y-b.y)/ab},v2={x:(c.x-b.x)/bc,y:(c.y-b.y)/bc};
+      const theta=Math.acos(clamp(v1.x*v2.x+v1.y*v2.y,-1,1));
+      if(theta<0.18||theta>2.95) continue;
+      const t=Math.min(ab,bc)*0.22;
+      const p1={x:b.x+v1.x*t,y:b.y+v1.y*t},p2={x:b.x+v2.x*t,y:b.y+v2.y*t};
+      const r=t/Math.tan(theta/2);
+      out.push({i,p1,p2,r,corner:b});
+    }
+    return out;
+  }
+  function buildCadPath(path, scale=1, diameter=6){
+    const pts=majorCenterline(path,diameter); if(pts.length<2) return {points:pts,d:'',arcs:[]};
+    const arcs=cornerArcData(pts), amap=new Map(arcs.map(a=>[a.i,a]));
+    let d=`M ${pts[0].x*scale} ${pts[0].y*scale}`;
+    for(let i=1;i<pts.length;i++){
+      const a=amap.get(i);
+      if(a){
+        d+=` L ${a.p1.x*scale} ${a.p1.y*scale}`;
+        const prev=pts[i-1],next=pts[i+1];
+        const cross=(pts[i].x-prev.x)*(next.y-pts[i].y)-(pts[i].y-prev.y)*(next.x-pts[i].x);
+        const sweep=cross>0?1:0;
+        d+=` A ${Math.max(1,a.r*scale)} ${Math.max(1,a.r*scale)} 0 0 ${sweep} ${a.p2.x*scale} ${a.p2.y*scale}`;
+      } else d+=` L ${pts[i].x*scale} ${pts[i].y*scale}`;
+    }
+    return {points:pts,d,arcs};
+  }
+  function pathBounds(path){
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    for(const p of path){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);}
+    return {minX,minY,maxX,maxY,w:Math.max(1,maxX-minX),h:Math.max(1,maxY-minY)};
+  }
+  function fitRect(srcW,srcH,box){
+    const sc=Math.min(box.w/srcW, box.h/srcH);
+    const w=srcW*sc,h=srcH*sc; return {x:box.x+(box.w-w)/2,y:box.y+(box.h-h)/2,w,h,scale:sc};
+  }
+  function escAttr(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+  function layoutDimensionLabels(specs,W,H){
+    const placed=[];
+    return specs.map((s,idx)=>{
+      const lbl=(s.prefix||'')+n1(s.value);
+      const w=Math.max(50,lbl.length*8+14), h=24;
+      let tx=s.textX, ty=s.textY;
+      for(let t=0;t<14;t++){
+        const box={x:tx-w/2,y:ty-h/2,w,h};
+        const hit=placed.some(p=>!(box.x+box.w<p.x || p.x+p.w<box.x || box.y+box.h<p.y || p.y+p.h<box.y));
+        if(!hit && box.x>10 && box.y>10 && box.x+box.w<W-10 && box.y+box.h<H-10) break;
+        tx=clamp(tx + (t%2===0?18:-12) + (idx%2===0?6:-6), w/2+10, W-w/2-10);
+        ty=clamp(ty + 18, h/2+10, H-h/2-10);
+      }
+      placed.push({x:tx-w/2,y:ty-h/2,w,h});
+      return {...s,textX:tx,textY:ty};
+    });
+  }
+  function placeDimBox(x,y,w,h,used,W,H){
+    const tries=[[0,0],[0,-30],[0,30],[34,0],[-34,0],[48,-28],[-48,-28],[48,28],[-48,28],[0,-58],[0,58]];
+    for(const [dx,dy] of tries){
+      const bx=clamp(x+dx,w/2+6,W-w/2-6),by=clamp(y+dy,h/2+6,H-h/2-6);
+      const rect={x1:bx-w/2,y1:by-h/2,x2:bx+w/2,y2:by+h/2};
+      const hit=used.some(r=>!(rect.x2<r.x1||rect.x1>r.x2||rect.y2<r.y1||rect.y1>r.y2));
+      if(!hit){used.push(rect);return {x:bx,y:by};}
+    }
+    return {x:clamp(x,w/2+6,W-w/2-6),y:clamp(y,h/2+6,H-h/2-6)};
+  }
+  function buildDimensionSpecs(pathMm, pathScreen, W, H, opt={}){
+    const specs=[];
+    if(pathScreen.length<2 || pathMm.length<2) return specs;
+    const b=pathBounds(pathScreen), mb=pathBounds(pathMm);
+    const left=pathScreen.reduce((a,p)=>p.x<a.x?p:a,pathScreen[0]);
+    const right=pathScreen.reduce((a,p)=>p.x>a.x?p:a,pathScreen[0]);
+    const top=pathScreen.reduce((a,p)=>p.y<a.y?p:a,pathScreen[0]);
+    const bottom=pathScreen.reduce((a,p)=>p.y>a.y?p:a,pathScreen[0]);
+    const widthVal=mb.w, heightVal=mb.h;
+    const widthY=Math.max(42,b.minY-42), heightX=Math.max(42,b.minX-52);
+    specs.push({key:'width', value:widthVal, kind:'overallH', textX:(left.x+right.x)/2, textY:widthY-13, x1:left.x, y1:widthY, x2:right.x, y2:widthY, ext:[[left.x,left.y,left.x,widthY],[right.x,right.y,right.x,widthY]]});
+    specs.push({key:'height', value:heightVal, kind:'overallV', textX:heightX-12, textY:(top.y+bottom.y)/2, x1:heightX, y1:top.y, x2:heightX, y2:bottom.y, ext:[[top.x,top.y,heightX,top.y],[bottom.x,bottom.y,heightX,bottom.y]]});
+
+    const count=Math.min(pathMm.length,pathScreen.length);
+    const minSeg=Math.max(10,Math.max(mb.w,mb.h)*0.10);
+    const segCandidates=[];
+    for(let i=0;i<count-1;i++){
+      const p1=pathMm[i],p2=pathMm[i+1],s1=pathScreen[i],s2=pathScreen[i+1];
+      const len=dist(p1,p2); if(len<minSeg) continue;
+      segCandidates.push({i,len,p1,p2,s1,s2});
+    }
+    const segLimit=currentDimensionDetail()==='full'?10:6;
+    const selectedSeg=new Set(segCandidates.slice().sort((a,b)=>b.len-a.len).slice(0,segLimit).map(x=>x.i));
+    let segNo=1;
+    for(const g of segCandidates){
+      if(!selectedSeg.has(g.i)) continue;
+      const {len,s1,s2}=g;
+      const dx=s2.x-s1.x,dy=s2.y-s1.y,mag=Math.max(1,Math.hypot(dx,dy));
+      let nx=-dy/mag,ny=dx/mag;
+      const center={x:(s1.x+s2.x)/2,y:(s1.y+s2.y)/2};
+      const shapeCenter={x:(b.minX+b.maxX)/2,y:(b.minY+b.maxY)/2};
+      if((center.x-shapeCenter.x)*nx+(center.y-shapeCenter.y)*ny<0){nx=-nx;ny=-ny;}
+      const off=34+(segNo%2)*12;
+      const d1={x:s1.x+nx*off,y:s1.y+ny*off},d2={x:s2.x+nx*off,y:s2.y+ny*off};
+      specs.push({key:`seg${segNo++}`,value:len,kind:'segment',textX:clamp((d1.x+d2.x)/2+nx*10,58,W-58),textY:clamp((d1.y+d2.y)/2+ny*10,42,H-42),x1:d1.x,y1:d1.y,x2:d2.x,y2:d2.y,ext:[[s1.x,s1.y,d1.x,d1.y],[s2.x,s2.y,d2.x,d2.y]]});
+    }
+
+    const arcsMm=Array.isArray(opt.arcsMm)?opt.arcsMm:[];
+    const arcsScreen=Array.isArray(opt.arcsScreen)?opt.arcsScreen:[];
+    if(arcsMm.length && arcsScreen.length){
+      const limit=currentDimensionDetail()==='full'?8:5;
+      for(let k=0;k<Math.min(limit,arcsMm.length,arcsScreen.length);k++){
+        const am=arcsMm[k],as=arcsScreen[k];
+        if(!(Number.isFinite(am.r)&&am.r>0.5)) continue;
+        const v1x=as.p1.x-as.corner.x,v1y=as.p1.y-as.corner.y,v2x=as.p2.x-as.corner.x,v2y=as.p2.y-as.corner.y;
+        const m1=Math.hypot(v1x,v1y)||1,m2=Math.hypot(v2x,v2y)||1;
+        let nx=v1x/m1+v2x/m2,ny=v1y/m1+v2y/m2; const nm=Math.hypot(nx,ny)||1; nx/=nm; ny/=nm;
+        const tx=clamp(as.corner.x+nx*(52+(k%2)*18),60,W-60),ty=clamp(as.corner.y+ny*(52+(k%2)*18),44,H-44);
+        specs.push({key:`bendR${k+1}`,value:am.r,kind:'leader',prefix:'R',textX:tx,textY:ty,x1:as.corner.x,y1:as.corner.y,x2:tx-8*nx,y2:ty-8*ny});
+        if(currentDimensionDetail()==='full'){
+          const a1=Math.atan2(as.corner.y-as.p1.y,as.corner.x-as.p1.x),a2=Math.atan2(as.p2.y-as.corner.y,as.p2.x-as.corner.x);let deg=Math.abs((a2-a1)*180/Math.PI);if(deg>180)deg=360-deg;
+          specs.push({key:`bendA${k+1}`,value:deg,kind:'leader',prefix:'A',suffix:'°',textX:clamp(tx+18,60,W-60),textY:clamp(ty+18,44,H-44),x1:as.corner.x,y1:as.corner.y,x2:tx+10,y2:ty+10});
+        }
+      }
+    } else {
+      let bendNo=1;
+      for(let i=1;i<count-1;i++){
+        const a=pathScreen[i-1],p=pathScreen[i],c=pathScreen[i+1];
+        const v1x=p.x-a.x,v1y=p.y-a.y,v2x=c.x-p.x,v2y=c.y-p.y;
+        const m1=Math.hypot(v1x,v1y),m2=Math.hypot(v2x,v2y); if(m1<4||m2<4) continue;
+        const turn=Math.acos(clamp((v1x*v2x+v1y*v2y)/(m1*m2),-1,1))*180/Math.PI;
+        if(turn<24) continue;
+        const rmm=localRadius(pathMm,i); if(!(Number.isFinite(rmm)&&rmm>0.5)) continue;
+        let nx=-(v1y/m1+v2y/m2),ny=(v1x/m1+v2x/m2); const nm=Math.hypot(nx,ny)||1; nx/=nm;ny/=nm;
+        const tx=clamp(p.x+nx*(58+(bendNo%2)*16),60,W-60),ty=clamp(p.y+ny*(58+(bendNo%2)*16),44,H-44);
+        specs.push({key:`bendR${bendNo}`,value:rmm,kind:'leader',prefix:'R',textX:tx,textY:ty,x1:p.x,y1:p.y,x2:tx-10,y2:ty});
+        bendNo++;
+        if(bendNo>(currentDimensionDetail()==='full'?7:4)) break;
+      }
+    }
+    return layoutDimensionLabels(specs,W,H);
+  }
+  function svgArrow(x1,y1,x2,y2,size=6){
+    const dx=x2-x1,dy=y2-y1,m=Math.hypot(dx,dy)||1,ux=dx/m,uy=dy/m,nx=-uy,ny=ux;
+    const ax=x2-ux*size,ay=y2-uy*size;
+    return `<path d="M ${x2.toFixed(1)} ${y2.toFixed(1)} L ${(ax+nx*size*.45).toFixed(1)} ${(ay+ny*size*.45).toFixed(1)} L ${(ax-nx*size*.45).toFixed(1)} ${(ay-ny*size*.45).toFixed(1)} Z" fill="#111"/>`;
+  }
+  function makeDimSvg(specs,r,forExport){
+    const parts=[];
+    for(const s of specs){
+      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#111" stroke-width="1.1" fill="none"/>`).join('');
+      const main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1.1" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6)}${svgArrow(s.x1,s.y1,s.x2,s.y2,6)}`;
+      const val=readDimValue(r,s.key,s.value),label=(s.prefix||'')+n1(val)+(s.suffix||'');
+      parts.push(`<g>${ext}${main}<text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="#111" stroke="#fff" stroke-width="3" paint-order="stroke" stroke-linejoin="round">${esc(label)}</text></g>`);
+    }
+    return parts.join('');
+  }
+  function buildSvgOnly(r){
+    const W=1189,H=841, draw={x:95,y:90,w:760,h:610}, title={x:875,y:88,w:230,h:665};
+    const variant = r.captureType==='product' ? 'photo' : currentRenderMode();
+    const mmRaw=transformedPath(r);
+    const cadMm=buildCadPath(mmRaw,1,r.diameter);
+    const mmForDrawing=r.userShapeCorrected?fidelityPath(mmRaw):cadMm.points;
+    const mmForDims=mmForDrawing;
+    const date=new Date().toLocaleDateString('sv-SE');
+    const width=parseFloat(r.width)||r.baseWidth, height=parseFloat(r.height)||r.baseHeight, length=parseFloat(r.length)||pathLength(mmForDrawing);
+    let screen=[], shapeMarkup='', photoInset='', dimOpt={};
+    if(variant==='photo'){
+      const fit=fitRect(r.imageW||1000, r.imageH||1000, draw);
+      const raw=r.rawPath&&r.rawPath.length?r.rawPath:mmRaw;
+      const rawBounds=pathBounds(raw);
+      const fit2=fitRect(rawBounds.w||1, rawBounds.h||1, {x:fit.x,y:fit.y,w:fit.w,h:fit.h});
+      const rawScreen=raw.map(p=>({x:fit2.x+(p.x-rawBounds.minX)*fit2.scale,y:fit2.y+(p.y-rawBounds.minY)*fit2.scale}));
+      screen=rawScreen;
+      shapeMarkup=`<rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}" fill="none" stroke="#bbb"/>${r.photoDataUrl?`<image href="${r.photoDataUrl}" x="${fit.x}" y="${fit.y}" width="${fit.w}" height="${fit.h}" preserveAspectRatio="xMidYMid meet"/>`:''}<polyline points="${rawScreen.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}" fill="none" stroke="rgba(17,17,17,.55)" stroke-width="3"/>`;
+    } else {
+      const pb=pathBounds(mmForDrawing), sc=Math.min(draw.w/pb.w, draw.h/pb.h)*0.82, ox=draw.x+(draw.w-pb.w*sc)/2, oy=draw.y+(draw.h-pb.h*sc)/2;
+      screen=mmForDrawing.map(p=>({x:ox+(p.x-pb.minX)*sc,y:oy+(p.y-pb.minY)*sc}));
+      const cadScreen=buildCadPath(screen,1,r.diameter);
+      const wirePx=clamp((parseFloat(r.diameter)||6)*sc,4,24);
+      photoInset = r.photoDataUrl ? `<rect x="75" y="575" width="145" height="205" fill="none" stroke="#888"/><image href="${r.photoDataUrl}" x="78" y="578" width="139" height="199" preserveAspectRatio="xMidYMid meet"/>` : '';
+      shapeMarkup=`<path d="${cadScreen.d}" fill="none" stroke="#111" stroke-width="${wirePx.toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${cadScreen.d}" fill="none" stroke="#d1d5db" stroke-width="1.6" stroke-dasharray="6 4" opacity="0.95"/>${photoInset}`;
+      dimOpt={arcsMm:cadMm.arcs,arcsScreen:cadScreen.arcs};
+      screen=cadScreen.points;
+    }
+    const specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);
+    const dimSvg=makeDimSvg(specs,r,true);
+    const sideTitle = r.captureType==='product' ? '제품 사진 치수도' : (variant==='photo' ? '치구 사진 치수도' : '치구 자동도면');
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff"/><rect x="28" y="28" width="1133" height="785" fill="none" stroke="#111" stroke-width="1.4"/><text x="85" y="58" font-size="13" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">3. 도면 (치수표기)</text><text x="85" y="82" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">※ 치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${n1(r.diameter)}</text>${shapeMarkup}${dimSvg}<rect x="${title.x}" y="${title.y}" width="${title.w}" height="${title.h}" fill="none" stroke="#111"/><text x="${title.x+14}" y="${title.y+24}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${sideTitle}</text><text x="${title.x+14}" y="${title.y+54}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">NO : ${esc(r.name)}</text><text x="${title.x+14}" y="${title.y+78}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">재질 : ${esc(r.material)}</text><text x="${title.x+14}" y="${title.y+102}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">Ø : ${n1(r.diameter)}</text><text x="${title.x+14}" y="${title.y+126}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">전체 높이 : ${n1(height)}</text><text x="${title.x+14}" y="${title.y+150}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">전체 폭 : ${n1(width)}</text><text x="${title.x+14}" y="${title.y+174}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">전개길이 : ${n1(length)}</text><text x="${title.x+14}" y="${title.y+198}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">작성일 : ${date}</text><text x="${title.x+14}" y="${title.y+222}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">직선부는 단일선, 곡선부는 R 표기</text>${variant==='drawing'?`<text x="${title.x+14}" y="${title.y+240}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">실제 사진은 좌하단 참고</text>`:''}</svg>`;
+  }
+  function makeFigureHtml(r){
+    const svg=buildSvgOnly(r);
+    const variant = r.captureType==='product' ? 'photo' : currentRenderMode();
+    const W=1189,H=841, draw={x:95,y:90,w:760,h:610};
+    const mmBase = transformedPath(r);
+    const cadMm = buildCadPath(mmBase,1,r.diameter);
+    const mmPath = variant==='drawing' ? (r.userShapeCorrected?fidelityPath(mmBase):cadMm.points) : (r.rawPath&&r.rawPath.length?r.rawPath:mmBase);
+    let screen=[],dimOpt={};
+    if(variant==='photo'){
+      const fit=fitRect(r.imageW||1000, r.imageH||1000, draw); const pb=pathBounds(mmPath); const fit2=fitRect(pb.w||1,pb.h||1,{x:fit.x,y:fit.y,w:fit.w,h:fit.h});
+      screen=mmPath.map(p=>({x:fit2.x+(p.x-pb.minX)*fit2.scale,y:fit2.y+(p.y-pb.minY)*fit2.scale}));
+    } else {
+      const pb=pathBounds(mmPath), sc=Math.min(draw.w/pb.w, draw.h/pb.h)*0.82, ox=draw.x+(draw.w-pb.w*sc)/2, oy=draw.y+(draw.h-pb.h*sc)/2;
+      const screenBase=mmPath.map(p=>({x:ox+(p.x-pb.minX)*sc,y:oy+(p.y-pb.minY)*sc}));
+      const cadScreen=buildCadPath(screenBase,1,r.diameter);
+      screen=cadScreen.points;
+      dimOpt={arcsMm:cadMm.arcs,arcsScreen:cadScreen.arcs};
+    }
+    const specs=buildDimensionSpecs(variant==='drawing'?mmPath:transformedPath(r),screen,W,H,dimOpt);
+    const inputs = r.dimEditMode ? specs.map(s=>`<input class="dim-input-overlay" data-id="${escAttr(r.id)}" data-dimkey="${escAttr(s.key)}" type="number" inputmode="decimal" step="0.1" value="${escAttr(n1(readDimValue(r,s.key,s.value)))}" style="left:${(s.textX/W*100).toFixed(2)}%;top:${(s.textY/H*100).toFixed(2)}%;" title="${escAttr(s.key)}">`).join('') : '';
+    return `<div class="figure-frame ${variant==='photo'?'photo-variant':''}">${svg}${inputs}</div>${r.dimEditMode?'<div class="dim-edit-note">치수 편집 중 · 숫자 입력 후 「편집 종료」를 누르면 도면에 반영됩니다.</div>':''}`;
+  }
+
+  function samplePathEvenly(path,count=14){
+    if(!path?.length)return[];if(path.length<=count)return path.map(p=>({...p}));
+    const cum=[0];for(let i=1;i<path.length;i++)cum.push(cum[i-1]+dist(path[i-1],path[i]));
+    const total=cum[cum.length-1]||1,out=[];
+    for(let k=0;k<count;k++){
+      const target=total*k/(count-1);let i=1;while(i<cum.length&&cum[i]<target)i++;
+      if(i>=cum.length){out.push({...path[path.length-1]});continue;}
+      const a=path[i-1],b=path[i],d0=cum[i-1],d1=cum[i],t=(target-d0)/Math.max(1e-9,d1-d0);
+      out.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
+    }
+    return out;
+  }
+  function initShapeNodes(r,force=false){
+    if(!force&&Array.isArray(r.shapeNodes)&&r.shapeNodes.length>=2)return;
+    const raw=(r.rawPath&&r.rawPath.length?r.rawPath:[]);
+    r.shapeNodes=samplePathEvenly(raw,Math.min(32,Math.max(16,Math.round(pathLength(raw)/38))));
+    r.shapeDrawMode='auto';
+  }
+  function densifyPolyline(nodes,maxStep=4){
+    if(!nodes?.length)return[];const out=[{...nodes[0]}];
+    for(let i=1;i<nodes.length;i++){
+      const a=nodes[i-1],b=nodes[i],len=dist(a,b),n=Math.max(1,Math.ceil(len/maxStep));
+      for(let k=1;k<=n;k++){const t=k/n;out.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});}
+    }
+    return out;
+  }
+  function applyShapeCorrection(r){
+    if(!Array.isArray(r.shapeNodes)||r.shapeNodes.length<4){toast('중심선 기준점을 4개 이상 지정하세요.');return false;}
+    let raw=densifyPolyline(r.shapeNodes,3.5);raw=smoothPath(raw,1);const pb=pathBBox(raw);
+    const dia=Math.max(.1,parseFloat(r.diameter)||6);
+    let sx=Number(r.mmPerPxX),sy=Number(r.mmPerPxY);
+    if(!(sx>0)){const old=r.rawBBox||pathBBox(r.rawPath||raw);sx=(Math.max(dia+.1,r.baseWidth)-dia)/Math.max(1,old.w);}
+    if(!(sy>0)){const old=r.rawBBox||pathBBox(r.rawPath||raw);sy=(Math.max(dia+.1,r.baseHeight)-dia)/Math.max(1,old.h);}
+    const mm=raw.map(p=>({x:(p.x-pb.minX)*sx,y:(p.y-pb.minY)*sy}));
+    const mb=pathBBox(mm),width=mb.w+dia,height=mb.h+dia,length=pathLength(mm),rr=estimateRadii(mm,1,mb,dia);
+    r.rawPath=raw;r.rawBBox=pb;r.pathBase=mm;r.path=mm.map(p=>({...p}));
+    r.baseWidth=width;r.baseHeight=height;r.baseLength=length;r.baseR1=rr.r1;r.baseR2=rr.r2;
+    r.width=width;r.height=height;r.length=length;r.r1=rr.r1;r.r2=rr.r2;
+    r.userShapeCorrected=true;r.shapeConfirmed=true;r.shapeEditMode=false;r.quality=.99;r.shapeEstimated=false;
+    r.segmentMethod=(r.segmentMethod||'자동')+' · 사용자 중심선 보정';r.warning='사진 위 중심선을 사용자가 직접 보정한 결과입니다.';
+    return true;
+  }
+  function shapeEditorHtml(r){
+    if(!r.shapeEditMode)return'';initShapeNodes(r);
+    const iw=Math.max(1,r.imageW||1000),ih=Math.max(1,r.imageH||1000),nodes=r.shapeNodes||[],manual=r.shapeDrawMode==='manual';
+    const nodePts=nodes.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const circles=nodes.map((p,i)=>`<g class="shape-handle-group"><circle class="shape-node-hit" data-node-index="${i}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${Math.max(18,Math.min(iw,ih)*.027).toFixed(1)}"/><circle class="shape-node" data-node-index="${i}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${Math.max(8,Math.min(iw,ih)*.013).toFixed(1)}"/><text class="shape-node-label" x="${(p.x+11).toFixed(1)}" y="${(p.y-11).toFixed(1)}">${i+1}</text></g>`).join('');
+    const modeTitle=manual?'직접 찍기 모드':'자동선 점 조정 모드';
+    const modeHelp=manual?'기존 자동선은 제거되었습니다. 치구 한쪽 끝에서 반대쪽 끝까지 중심을 순서대로 터치하세요.':'파란 점 하나하나가 자동선의 기준점입니다. 점을 손가락으로 드래그하여 실제 치구 중심에 맞추세요.';
+    return `<div class="shape-editor" data-shape-id="${escAttr(r.id)}"><div class="shape-editor-head"><b>보정선 · 최후 수단</b><span>${modeTitle}</span></div><div class="shape-editor-stage"><svg class="shape-editor-svg ${manual?'manual-mode':'auto-mode'}" data-id="${escAttr(r.id)}" viewBox="0 0 ${iw} ${ih}" preserveAspectRatio="xMidYMid meet"><image href="${r.photoDataUrl||''}" x="0" y="0" width="${iw}" height="${ih}" preserveAspectRatio="xMidYMid meet"/><polyline class="shape-correct-line" points="${nodePts}"/>${circles}</svg></div><div class="shape-editor-actions"><button class="btn shape-reset" data-id="${r.id}">자동선 다시 맞춤</button><button class="btn shape-clear" data-id="${r.id}">직접 다시 찍기</button><button class="btn shape-undo" data-id="${r.id}">마지막 점 삭제</button><button class="btn shape-approve" data-id="${r.id}">현재 선 승인</button><button class="btn primary-action shape-apply" data-id="${r.id}">이 중심선으로 도면 확정</button></div><div class="shape-editor-help"><b>${modeTitle}</b> · ${modeHelp}</div></div>`;
+  }
+  function renderResults() {
+    const host=$('resultList');
+    if(!state.results.length){host.innerHTML='<div class="empty-state">생성된 도면이 없습니다.</div>';return;}
+    host.innerHTML=state.results.map((r,i)=>{
+      if(!r.ok)return `<div class="result-item failed" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge quality bad">생성 실패</span></div><div class="result-msg">${esc(r.error)}</div></div>`;
+      const quality=r.quality>.76?'양호':r.quality>.53?'보통':'확인필요';
+      const modeText=(r.captureType==='product')?'제품 실제사진':'치구 '+(currentRenderMode()==='photo'?'실제사진':'도면');
+      const autoOk=r.shapeConfirmed&&!r.userShapeCorrected,autoLabel=autoOk?(r.quality>.76?'자동 인식 · 양호':r.quality>.53?'자동 인식 · 보통':'자동 인식 · 확인권장'):'보정 필요';
+      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}<div class="edit-grid"><label>전체 폭 mm<input data-rfield="width" type="number" step="0.1" value="${n1(r.width)}"></label><label>전체 높이 mm<input data-rfield="height" type="number" step="0.1" value="${n1(r.height)}"></label><label>전개길이 mm<input data-rfield="length" type="number" step="0.1" value="${n1(r.length)}"></label><label>상부 R mm<input data-rfield="r1" type="number" step="0.1" value="${n1(r.r1)}"></label><label>하부 R mm<input data-rfield="r2" type="number" step="0.1" value="${n1(r.r2)}"></label><label>Ø mm<input data-rfield="diameter" type="number" step="0.1" value="${n1(r.diameter)}"></label></div><div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-edit-btn ${r.dimEditMode?'active':''}" data-id="${r.id}">${r.dimEditMode?'편집 종료':'치수 편집'}</button><button class="btn apply-dims" data-id="${r.id}">폭/높이 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 도면 PDF</button></div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. 자동 형상 보존을 우선하며, 실제 직선으로 판단된 구간만 제한적으로 직선화합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
+    }).join('');
+  }
+
+  $('resultList').addEventListener('input',e=>{
+    const row=e.target.closest('.result-item'),r=state.results.find(x=>x.id===row?.dataset.id);if(!r?.ok)return;
+    const f=e.target.dataset?.rfield,dk=e.target.dataset?.dimkey;const v=parseFloat(e.target.value);
+    if(f && Number.isFinite(v)) r[f]=v;
+    if(dk && Number.isFinite(v)){ writeDimValue(r,dk,v); return; }
+  });
+
+  $('resultList').addEventListener('click',async e=>{
+    const shape=e.target.closest('.shape-edit-btn'),reset=e.target.closest('.shape-reset'),clear=e.target.closest('.shape-clear'),undo=e.target.closest('.shape-undo'),approve=e.target.closest('.shape-approve'),shapeApply=e.target.closest('.shape-apply'),edit=e.target.closest('.dim-edit-btn'),apply=e.target.closest('.apply-dims'),one=e.target.closest('.export-one');
+    if(shape){const r=state.results.find(x=>x.id===shape.dataset.id);if(!r?.ok)return;r.shapeEditMode=!r.shapeEditMode;if(r.shapeEditMode){if(!Array.isArray(r.shapeNodes)||r.shapeNodes.length<2)initShapeNodes(r,true);}renderResults();return;}
+    if(reset){const r=state.results.find(x=>x.id===reset.dataset.id);if(!r?.ok)return;r.shapeDrawMode='auto';initShapeNodes(r,true);renderResults();toast('자동선 기준점을 불러왔습니다. 파란 점을 드래그해 수정할 수 있습니다.');return;}
+    if(clear){const r=state.results.find(x=>x.id===clear.dataset.id);if(!r?.ok)return;r.shapeDrawMode='manual';r.shapeNodes=[];renderResults();toast('기존 자동선을 모두 제거했습니다. 치구 한쪽 끝부터 중심점을 순서대로 터치하세요.');return;}
+    if(undo){const r=state.results.find(x=>x.id===undo.dataset.id);if(!r?.ok)return;r.shapeNodes?.pop();renderResults();return;}
+    if(approve){const r=state.results.find(x=>x.id===approve.dataset.id);if(!r?.ok)return;if(!Array.isArray(r.shapeNodes)||r.shapeNodes.length<4)initShapeNodes(r,true);if(applyShapeCorrection(r)){r.segmentMethod=(r.segmentMethod||'자동')+' · 현재 중심선 승인';renderResults();toast('현재 중심선을 제작 형상으로 확정했습니다.');}return;}
+    if(shapeApply){const r=state.results.find(x=>x.id===shapeApply.dataset.id);if(!r?.ok)return;if(applyShapeCorrection(r)){renderResults();toast('보정한 중심선으로 도면을 다시 생성했습니다.');}return;}
+    if(edit){const r=state.results.find(x=>x.id===edit.dataset.id);if(!r?.ok)return;r.dimEditMode=!r.dimEditMode;renderResults();return;}
+    if(apply){const r=state.results.find(x=>x.id===apply.dataset.id);if(!r?.ok)return;recalcFromDimensions(r);renderResults();toast('폭/높이를 형상에 반영했습니다.');}
+    if(one){const r=state.results.find(x=>x.id===one.dataset.id);if(r?.ok)await exportPdf([r],`${safeName(r.name)}_drawing.pdf`);}
+  });
+
+  let shapeDrag=null,shapeMoved=false;
+  function svgPointFromEvent(svg,e){
+    const r=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
+    return{x:vb.x+(e.clientX-r.left)*vb.width/Math.max(1,r.width),y:vb.y+(e.clientY-r.top)*vb.height/Math.max(1,r.height)};
+  }
+  $('resultList').addEventListener('pointerdown',e=>{
+    const node=e.target.closest('.shape-node,.shape-node-hit');if(!node)return;const svg=node.closest('.shape-editor-svg'),r=state.results.find(x=>x.id===svg?.dataset.id);if(!r)return;
+    shapeDrag={r,svg,index:parseInt(node.dataset.nodeIndex,10),pointerId:e.pointerId};shapeMoved=false;node.setPointerCapture?.(e.pointerId);e.preventDefault();
+  });
+  $('resultList').addEventListener('pointermove',e=>{
+    if(!shapeDrag||shapeDrag.pointerId!==e.pointerId)return;const p=svgPointFromEvent(shapeDrag.svg,e),r=shapeDrag.r,i=shapeDrag.index;if(!r.shapeNodes?.[i])return;
+    r.shapeNodes[i]={x:clamp(p.x,0,r.imageW||1000),y:clamp(p.y,0,r.imageH||1000)};shapeMoved=true;
+    const svg=shapeDrag.svg,poly=svg.querySelector('.shape-correct-line'),node=svg.querySelector(`.shape-node[data-node-index="${i}"]`),label=node?.parentElement?.querySelector('text');
+    if(poly)poly.setAttribute('points',r.shapeNodes.map(q=>`${q.x.toFixed(1)},${q.y.toFixed(1)}`).join(' '));
+    if(node){node.setAttribute('cx',p.x);node.setAttribute('cy',p.y);}if(label){label.setAttribute('x',p.x+10);label.setAttribute('y',p.y-10);}e.preventDefault();
+  });
+  $('resultList').addEventListener('pointerup',e=>{if(shapeDrag?.pointerId===e.pointerId){shapeDrag=null;setTimeout(()=>shapeMoved=false,30);e.preventDefault();}});
+  $('resultList').addEventListener('pointercancel',()=>{shapeDrag=null;shapeMoved=false;});
+  $('resultList').addEventListener('click',e=>{
+    const svg=e.target.closest('.shape-editor-svg');if(!svg||e.target.closest('.shape-node')||shapeMoved)return;const r=state.results.find(x=>x.id===svg.dataset.id);if(!r?.shapeEditMode||r.shapeDrawMode!=='manual')return;
+    if(!Array.isArray(r.shapeNodes))r.shapeNodes=[];const p=svgPointFromEvent(svg,e);r.shapeNodes.push({x:p.x,y:p.y});renderResults();
+  });
+
+  // ---------------- Export ----------------
+  function textBytes(s){return new TextEncoder().encode(s);}
+  function concatBytes(parts){let n=0;for(const p of parts)n+=p.length;const out=new Uint8Array(n);let o=0;for(const p of parts){out.set(p,o);o+=p.length;}return out;}
+  function base64ToBytes(b64){const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
+
+  function canvasArrow(ctx,x1,y1,x2,y2,size=7){
+    const dx=x2-x1,dy=y2-y1,m=Math.hypot(dx,dy)||1,ux=dx/m,uy=dy/m,nx=-uy,ny=ux;
+    const ax=x2-ux*size,ay=y2-uy*size;
+    ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(ax+nx*size*.45,ay+ny*size*.45);ctx.lineTo(ax-nx*size*.45,ay-ny*size*.45);ctx.closePath();ctx.fill();
+  }
+  async function loadCanvasImage(src){
+    if(!src) return null;
+    return await new Promise((resolve)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>resolve(null);im.src=src;});
+  }
+  async function renderPdfPageJpeg(r){
+    const W=1680,H=1188, sx=W/1189, sy=H/841;
+    const c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.save();ctx.scale(sx,sy);
+    const draw={x:95,y:90,w:760,h:610},title={x:875,y:88,w:230,h:665};
+    const variant=r.captureType==='product'?'photo':currentRenderMode();
+    const mmRaw=transformedPath(r), mmDraw=r.userShapeCorrected?fidelityPath(mmRaw):engineeringPath(mmRaw,r.diameter), date=new Date().toLocaleDateString('sv-SE');
+    const width=parseFloat(r.width)||r.baseWidth,height=parseFloat(r.height)||r.baseHeight,length=parseFloat(r.length)||pathLength(mmRaw);
+    ctx.strokeStyle='#111';ctx.lineWidth=1.4;ctx.strokeRect(28,28,1133,785);
+    ctx.fillStyle='#111';ctx.font='700 13px sans-serif';ctx.fillText('3. 도면 (치수표기)',85,58);
+    ctx.font='12px sans-serif';ctx.fillText(`※ 치수 단위 : mm / 재질 : ${r.material||''} / 환봉 Ø${n1(r.diameter)}`,85,82);
+    let screen=[];
+    if(variant==='photo'){
+      const fit=fitRect(r.imageW||1000,r.imageH||1000,draw);const im=await loadCanvasImage(r.photoDataUrl);
+      if(im) ctx.drawImage(im,fit.x,fit.y,fit.w,fit.h);
+      ctx.strokeStyle='#bbb';ctx.lineWidth=1;ctx.strokeRect(draw.x,draw.y,draw.w,draw.h);
+      const raw=r.rawPath&&r.rawPath.length?r.rawPath:mmRaw,pb=pathBounds(raw),fit2=fitRect(pb.w||1,pb.h||1,{x:fit.x,y:fit.y,w:fit.w,h:fit.h});
+      screen=raw.map(p=>({x:fit2.x+(p.x-pb.minX)*fit2.scale,y:fit2.y+(p.y-pb.minY)*fit2.scale}));
+    }else{
+      const pb=pathBounds(mmDraw),sc=Math.min(draw.w/pb.w,draw.h/pb.h)*.82,ox=draw.x+(draw.w-pb.w*sc)/2,oy=draw.y+(draw.h-pb.h*sc)/2;
+      screen=mmDraw.map(p=>({x:ox+(p.x-pb.minX)*sc,y:oy+(p.y-pb.minY)*sc}));
+      ctx.strokeStyle='#111';ctx.lineWidth=clamp((parseFloat(r.diameter)||6)*sc,4,24);ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();screen.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();
+      ctx.setLineDash([8,5]);ctx.strokeStyle='#777';ctx.lineWidth=1;ctx.beginPath();screen.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();ctx.setLineDash([]);
+      if(r.photoDataUrl){const im=await loadCanvasImage(r.photoDataUrl);ctx.strokeStyle='#888';ctx.lineWidth=1;ctx.strokeRect(75,575,145,205);if(im){const fit=fitRect(im.naturalWidth||im.width,im.naturalHeight||im.height,{x:78,y:578,w:139,h:199});ctx.drawImage(im,fit.x,fit.y,fit.w,fit.h);}}
+    }
+    const specs=buildDimensionSpecs(variant==='drawing'?mmDraw:mmRaw,screen,1189,841);
+    ctx.strokeStyle='#111';ctx.fillStyle='#111';ctx.lineWidth=1.1;ctx.font='700 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    for(const s of specs){
+      for(const e of (s.ext||[])){ctx.beginPath();ctx.moveTo(e[0],e[1]);ctx.lineTo(e[2],e[3]);ctx.stroke();}
+      ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();canvasArrow(ctx,s.x2,s.y2,s.x1,s.y1,6);canvasArrow(ctx,s.x1,s.y1,s.x2,s.y2,6);
+      const label=(s.prefix||'')+n1(readDimValue(r,s.key,s.value))+(s.suffix||'');
+      ctx.save();ctx.lineWidth=4;ctx.strokeStyle='#fff';ctx.strokeText(label,s.textX,s.textY);ctx.fillStyle='#111';ctx.fillText(label,s.textX,s.textY);ctx.restore();
+    }
+    ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.strokeStyle='#111';ctx.lineWidth=1;ctx.strokeRect(title.x,title.y,title.w,title.h);ctx.fillStyle='#111';ctx.font='700 14px sans-serif';ctx.fillText(r.captureType==='product'?'제품 사진 치수도':variant==='photo'?'치구 사진 치수도':'치구 자동도면',title.x+14,title.y+24);ctx.font='12px sans-serif';
+    const rows=[`NO : ${r.name||''}`,`재질 : ${r.material||''}`,`Ø : ${n1(r.diameter)}`,`전체 높이 : ${n1(height)}`,`전체 폭 : ${n1(width)}`,`전개길이 : ${n1(length)}`,`작성일 : ${date}`];rows.forEach((t,i)=>ctx.fillText(t,title.x+14,title.y+54+i*24));
+    ctx.restore();
+    const data=c.toDataURL('image/jpeg',.93).split(',')[1];return {bytes:base64ToBytes(data),w:W,h:H};
+  }
+
+  async function svgToJpeg(svg) {
+    const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+    const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('도면 이미지 변환 실패'));im.src=url;});
+    const c=document.createElement('canvas');c.width=1680;c.height=1185;const cx=c.getContext('2d');cx.fillStyle='white';cx.fillRect(0,0,c.width,c.height);cx.drawImage(img,0,0,c.width,c.height);
+    const data=c.toDataURL('image/jpeg',.91).split(',')[1];return {bytes:base64ToBytes(data),w:c.width,h:c.height};
+  }
+
+  async function makePdf(results) {
+    const imgs=[];for(const r of results)imgs.push(await renderPdfPageJpeg(r));
+    const objectCount=2+results.length*3,objects=new Array(objectCount+1);
+    objects[1]=textBytes('<< /Type /Catalog /Pages 2 0 R >>');
+    const kids=[];for(let i=0;i<results.length;i++)kids.push(`${5+i*3} 0 R`);
+    objects[2]=textBytes(`<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${results.length} >>`);
+    for(let i=0;i<results.length;i++){
+      const imNo=3+i*3,ctNo=4+i*3,pgNo=5+i*3,img=imgs[i];
+      objects[imNo]=concatBytes([textBytes(`<< /Type /XObject /Subtype /Image /Width ${img.w} /Height ${img.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${img.bytes.length} >>\nstream\n`),img.bytes,textBytes('\nendstream')]);
+      const content='q\n842 0 0 595 0 0 cm\n/Im0 Do\nQ\n';
+      objects[ctNo]=textBytes(`<< /Length ${content.length} >>\nstream\n${content}endstream`);
+      objects[pgNo]=textBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /XObject << /Im0 ${imNo} 0 R >> >> /Contents ${ctNo} 0 R >>`);
+    }
+    const parts=[textBytes('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n')],offsets=new Array(objectCount+1).fill(0);let pos=parts[0].length;
+    for(let i=1;i<=objectCount;i++){offsets[i]=pos;const block=concatBytes([textBytes(`${i} 0 obj\n`),objects[i],textBytes('\nendobj\n')]);parts.push(block);pos+=block.length;}
+    const xrefPos=pos;let xref=`xref\n0 ${objectCount+1}\n0000000000 65535 f \n`;for(let i=1;i<=objectCount;i++)xref+=`${String(offsets[i]).padStart(10,'0')} 00000 n \n`;
+    xref+=`trailer\n<< /Size ${objectCount+1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
+    parts.push(textBytes(xref));return new Blob(parts,{type:'application/pdf'});
+  }
+
+  function makeBatchDxf(results) {
+    const lines=[],add=(...a)=>lines.push(...a.map(String));add('0','SECTION','2','HEADER','9','$ACADVER','1','AC1009','0','ENDSEC','0','SECTION','2','ENTITIES');
+    let offsetX=0;
+    for(const r of results){const path=transformedPath(r),maxY=Math.max(...path.map(p=>p.y));add('0','POLYLINE','8','CENTER','66','1','70','0');for(const p of path)add('0','VERTEX','8','CENTER','10',(p.x+offsetX).toFixed(4),'20',(maxY-p.y).toFixed(4),'30','0');add('0','SEQEND','8','CENTER');
+      const width=parseFloat(r.width)||r.baseWidth,height=parseFloat(r.height)||r.baseHeight,length=parseFloat(r.length)||pathLength(path),tx=offsetX+Math.max(width,100)+15,ty=Math.max(height,100);
+      const text=(x,y,h,t)=>add('0','TEXT','8','TEXT','10',x.toFixed(3),'20',y.toFixed(3),'30','0','40',h,'1',t);
+      text(tx,ty,5,ascii(r.name));text(tx,ty-10,4,`MATERIAL ${ascii(r.material)}`);text(tx,ty-20,4,`WIRE DIA ${n1(r.diameter)} mm`);text(tx,ty-30,4,`WIDTH ${n1(width)} mm`);text(tx,ty-40,4,`HEIGHT ${n1(height)} mm`);text(tx,ty-50,4,`DEVELOPED ${n1(length)} mm`);text(tx,ty-60,4,`MEASURE ${ascii(r.scaleSource)}`);if(Number.isFinite(parseFloat(r.r1)))text(tx,ty-70,4,`R1 ~ ${n1(parseFloat(r.r1))} mm`);if(Number.isFinite(parseFloat(r.r2)))text(tx,ty-80,4,`R2 ~ ${n1(parseFloat(r.r2))} mm`);
+      offsetX+=Math.max(width+170,280);
+    }
+    add('0','ENDSEC','0','EOF');return lines.join('\r\n');
+  }
+
+  async function shareOrDownload(blob,name) {
+    const file=new File([blob],name,{type:blob.type||'application/octet-stream'});
+    if(navigator.share && navigator.canShare?.({files:[file]})){
+      try{await navigator.share({files:[file],title:name});return;}catch(err){if(err?.name==='AbortError')return;}
+    }
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2500);
+  }
+
+  async function exportPdf(results,name='HOOK_batch_drawings.pdf') {
+    if(!results.length)return;
+    const unconfirmed=results.filter(r=>r.captureType!=='product'&&!r.shapeConfirmed);
+    if(unconfirmed.length){setStatus('형상 확인 필요','warn');alert(`자동 인식 실패 건은 보정선 적용 후 PDF를 생성하세요. 미처리 ${unconfirmed.length}건`);return;}
+    setStatus('PDF 생성중','busy');try{const pdf=await makePdf(results);await shareOrDownload(pdf,name);setStatus('PDF 생성 완료','ok');}catch(err){setStatus('PDF 실패','warn');alert(`PDF 생성 실패: ${err?.message||err}`);}
+  }
+
+  async function exportDxf() {
+    const ok=state.results.filter(r=>r.ok);if(!ok.length)return;
+    const unconfirmed=ok.filter(r=>r.captureType!=='product'&&!r.shapeConfirmed);if(unconfirmed.length){alert(`자동 인식 실패 건은 보정선 적용 후 DXF를 생성하세요. 미처리 ${unconfirmed.length}건`);return;}
+    const text=makeBatchDxf(ok),blob=new Blob([text],{type:'application/dxf;charset=utf-8'});await shareOrDownload(blob,'HOOK_batch_drawings.dxf');
+  }
+
+  function newJob() {
+    if(!confirm('현재 도면과 촬영 정보를 모두 지우고 새 촬영을 시작할까요?'))return;
+    persistUsedNumbers();clearCaptures();state.results=[];$('resultsSection').classList.add('hidden');$('resultsSection').open=false;$('progressCard').classList.add('hidden');$('progressCard').open=false;$('progressBar').style.width='0';state.seq=1;suggestNextStart();renderResults();setStatus('새 작업');window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  // ---------------- PWA install ----------------
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();state.deferredInstall=e;$('installBtn').classList.remove('hidden');});
+  $('installBtn').addEventListener('click',async()=>{if(!state.deferredInstall)return;state.deferredInstall.prompt();await state.deferredInstall.userChoice;state.deferredInstall=null;$('installBtn').classList.add('hidden');});
+
+  // ---------------- Events ----------------
+  $('startCameraBtn').addEventListener('click',startCamera);
+  $('stopCameraBtn').addEventListener('click',()=>{stopCamera();setStatus('카메라 꺼짐');});
+  $('captureBtn').addEventListener('click',captureShot);
+  $('uploadPhotoBtn').addEventListener('click',()=>$('filePicker').click());
+  $('filePicker').addEventListener('change',async e=>{
+    const files=[...(e.target.files||[])].filter(f=>String(f.type||'').startsWith('image/'));
+    for(const f of files){ if(state.captures.length >= (parseInt($('maxShots').value,10)||30)) break; await addCaptureBlob(f,'upload',f.name); }
+    if(files.length) toast(`${files.length}장 첨부 완료`);
+    e.target.value='';
+  });
+  $('tabJigBtn').addEventListener('click',()=>setAppMode('jig'));
+  $('tabProductBtn').addEventListener('click',()=>setAppMode('product'));
+  $('renderModeSelect').addEventListener('change',e=>{setRenderModeValue(e.target.value);renderResults();});
+  $('quickRenderModeSelect').addEventListener('change',e=>{setRenderModeValue(e.target.value);renderResults();});
+  $('straightenLevelSelect').addEventListener('change',()=>renderResults());
+  $('dimensionDetailSelect').addEventListener('change',()=>renderResults());
+  $('clearShotsBtn').addEventListener('click',()=>{if(confirm('촬영한 사진을 모두 삭제할까요?'))clearCaptures();});
+  $('batchAnalyzeBtn').addEventListener('click',()=>{setStatus('분석 시작','busy');batchAnalyze().catch(err=>{state.working=false;updateShotUI();reportAppError(err,'일괄 분석');});});
+  $('exportPdfBtn').addEventListener('click',()=>exportPdf(state.results.filter(r=>r.ok),'HOOK_batch_drawings.pdf'));
+  $('exportDxfBtn').addEventListener('click',exportDxf);
+  $('newJobBtn').addEventListener('click',newJob);
+  $('arMeasureBtn').addEventListener('click',startArAutoMeasure);
+  $('addLineCodeBtn').addEventListener('click',addLineCode);
+  $('deleteLineCodeBtn').addEventListener('click',deleteLineCode);
+  $('renumberBtn').addEventListener('click',()=>{renumberCaptures(true);toast('현재 촬영목록의 치구번호를 다시 배정했습니다.');});
+  $('lineCodeSelect').addEventListener('change',()=>{suggestNextStart();if($('numberingMode').value==='continuous')renumberCaptures(true);});
+  $('startNumber').addEventListener('input',()=>{updateNumberPreview();if($('numberingMode').value==='continuous')renumberCaptures(true);});
+  $('numberingMode').addEventListener('change',()=>{updateNumberPreview();if($('numberingMode').value==='continuous')renumberCaptures(true);});
+  $('maxShots').addEventListener('change',()=>{updateShotUI();updateNumberPreview();});
+  $('newLineCode').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addLineCode();}});
+
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCamera();});
+  window.addEventListener('pagehide',()=>{stopCamera();state.captures.forEach(revokeCapture);});
+
+  // Test hooks are available only when ?test=1 is present. They are not shown in normal use.
+  if(new URLSearchParams(location.search).get('test')==='1'){
+    window.__HOOK_TEST={
+      async addFile(file,opts={}){const url=URL.createObjectURL(file),item={id:`test_${Date.now()}_${Math.random()}`,seq:state.seq++,blob:file,url,name:opts.name||makeJigNumber(currentCaptureCode(),state.seq),diameter:opts.diameter||6,material:opts.material||'SUS304',approxWidth:opts.approxWidth||'',approxHeight:opts.approxHeight||'',measureMode:opts.measureMode||'manual',arMmPerPx:opts.arMmPerPx||null,arDistanceMm:opts.arDistanceMm||null};state.captures.push(item);renderCaptureList();updateShotUI();return item.id;},
+      analyze:batchAnalyze,
+      pdfBlob:()=>makePdf(state.results.filter(r=>r.ok)),
+      state
+    };
+  }
+
+  try{
+    loadLineSettings(); setAppMode('jig'); renderCaptureList();updateShotUI();renderResults();updateNumberPreview();setStatus('준비');
+  }catch(initErr){reportAppError(initErr,'초기화');}
+})();
+
+  </script>
+</body>
+</html>
