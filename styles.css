@@ -28,3 +28,20 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 .toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:#0f172a;border:1px solid #475569;color:#f8fafc;padding:10px 14px;border-radius:999px;font-size:11px;box-shadow:0 10px 35px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:.22s;z-index:100;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}.toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-width:560px){.form-grid{grid-template-columns:1fr 1fr}.camera-actions{grid-template-columns:1fr 76px 1fr}.capture-btn{width:70px;height:70px}.capture-item{grid-template-columns:76px 1fr}.capture-thumb{width:76px;height:104px}.capture-fields{grid-template-columns:1fr 1fr}.edit-grid{grid-template-columns:1fr 1fr}.install-grid{grid-template-columns:1fr}.topbar p{display:none}}
 @media(min-width:700px){.camera-stage{aspect-ratio:4/3;max-height:620px}.capture-list{grid-template-columns:1fr 1fr}.result-list{grid-template-columns:1fr 1fr}}
+
+/* v0.4 additions */
+.topbar h1 small{font-size:.42em;opacity:.58}
+.number-preview{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;background:#0b1220;border:1px solid #263247;border-radius:12px;flex-wrap:wrap}
+.number-preview span{font-size:10px;color:#94a3b8;font-weight:800}
+.number-preview b{font-size:13px;color:#7dd3fc;flex:1;min-width:150px}
+.small-btn{min-height:36px;padding:7px 10px;font-size:11px}
+.line-manager{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px;margin-top:10px}
+.line-manager input{min-height:42px;text-transform:uppercase}
+.measure-grid{align-items:end}
+.ar-control{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:8px 9px;background:#0b1220;border:1px solid #334155;border-radius:11px;min-height:42px}
+.ar-control span{font-size:10px;color:#94a3b8;font-weight:800}.ar-control b{font-size:12px;color:#cbd5e1}.ar-control .btn{min-height:34px;padding:6px 9px;font-size:10px}
+.message.info{background:#0a2234;border-color:#075985;color:#bae6fd}
+.capture-fields .jig-no input{font-weight:900;letter-spacing:.04em;color:#7dd3fc}
+.source-badge.ar{background:#3b0764;border-color:#7e22ce;color:#e9d5ff}
+.drawing-wrap{aspect-ratio:1.414/1}
+@media(max-width:560px){.line-manager{grid-template-columns:1fr 1fr}.line-manager input{grid-column:1/-1}.ar-control{grid-template-columns:auto 1fr}.ar-control .btn{grid-column:1/-1}.number-preview .small-btn{width:100%}}

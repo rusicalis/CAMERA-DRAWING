@@ -1,7 +1,7 @@
 {
-  "name": "S-Hook 모바일 자동도면",
-  "short_name": "S-Hook 도면",
-  "description": "1cm 그리드 위 치구를 연속 촬영해 대략 제작도면을 일괄 생성합니다.",
+  "name": "HOOK 모바일 자동도면",
+  "short_name": "HOOK 도면",
+  "description": "HOOK 치구를 연속 촬영하고 1cm 격자, AR 자동 스케일 또는 대략치수를 이용해 일반 설계도면 형식으로 일괄 생성합니다.",
   "id": "./",
   "start_url": "./",
   "scope": "./",

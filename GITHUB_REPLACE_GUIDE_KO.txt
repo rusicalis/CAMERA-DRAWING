@@ -1,0 +1,12 @@
+GitHub Pages 기존 버전 삭제 후 v0.4.0 교체 방법
+================================================
+1. GitHub에서 기존 hook-drawing 저장소를 엽니다.
+2. 저장소의 기존 index.html, app.js, styles.css, manifest.json, sw.js 및 icons 폴더 파일을 삭제하거나 새 파일로 덮어씁니다.
+3. 이 ZIP의 압축을 풉니다.
+4. 압축을 푼 폴더 안의 파일(index.html이 보이는 위치)을 전부 선택합니다.
+5. GitHub 저장소에서 Add file > Upload files 를 누르고 새 파일을 업로드합니다.
+6. Commit changes 를 누릅니다.
+7. Settings > Pages 에서 Source=Deploy from a branch, Branch=main, Folder=/(root) 가 기존대로 유지되는지 확인합니다.
+8. 1~3분 후 기존 GitHub Pages 주소를 새로고침합니다. 주소는 바뀌지 않습니다.
+9. 휴대폰 홈 화면에 설치한 구버전이 계속 보이면 기존 HOOK 앱 아이콘을 제거한 후 Safari/Chrome에서 Pages 주소를 다시 열어 홈 화면에 추가합니다.
+10. 그래도 구버전이면 해당 github.io 사이트 데이터/캐시를 삭제한 뒤 다시 접속합니다.
