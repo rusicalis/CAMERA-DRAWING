@@ -3,7 +3,7 @@
   "short_name": "HOOK 도면",
   "description": "HOOK 치구를 모바일에서 연속 촬영하고 격자, AR 자동 스케일 또는 대략치수를 이용해 일반 설계도면 형식으로 일괄 생성합니다.",
   "id": "./hook-drawing",
-  "start_url": "./?v=0.6.2",
+  "start_url": "./?v=0.6.1",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

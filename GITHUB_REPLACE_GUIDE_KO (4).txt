@@ -11,16 +11,16 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; img-src 'self' blob: data:; media-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; worker-src 'self' blob:;" />
-  <title>HOOK 모바일 자동도면 v0.6.2</title>
-  <link rel="manifest" href="manifest.json?v=0.6.2" />
+  <title>HOOK 모바일 자동도면 v0.6.1</title>
+  <link rel="manifest" href="manifest.json?v=0.6.1" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.6.2" />
+  <link rel="stylesheet" href="styles.css?v=0.6.1" />
 </head>
 <body>
   <header class="topbar">
     <div>
       <div class="eyebrow">COTEC JIG DRAWING</div>
-      <h1>HOOK 모바일 자동도면 <small>v0.6.2</small></h1>
+      <h1>HOOK 모바일 자동도면 <small>v0.6.1</small></h1>
       <p>치구 · 제품 공용 / 촬영 원본은 사진첩에 저장하지 않음 / 저장된 사진 첨부 가능</p>
     </div>
     <span id="statusPill" class="pill">준비</span>
@@ -100,13 +100,6 @@
           <label>기본 재질
             <input id="defaultMaterial" type="text" value="SUS304" maxlength="40" />
           </label>
-          <label>도면 보정 강도
-            <select id="straightenLevelSelect">
-              <option value="medium">보통</option>
-              <option value="high" selected>강</option>
-              <option value="max">최대</option>
-            </select>
-          </label>
           <label class="wide">결과 표시 방식
             <select id="renderModeSelect">
               <option value="drawing" selected>도면(현재 방식)</option>
@@ -125,7 +118,7 @@
           <button id="addLineCodeBtn" class="btn">라인코드 추가</button>
           <button id="deleteLineCodeBtn" class="btn danger">선택 코드 삭제</button>
         </div>
-        <p class="small">기본 코드: NNI, AG. 제품 촬영 모드에서는 자동으로 PRD-001 형식으로 번호를 사용합니다. 저장된 사진을 첨부해도 동일하게 분석됩니다. 도면 보정 강도를 높일수록 선이 더 직선화되고 제작용 도면 형태에 가깝게 정리됩니다.</p>
+        <p class="small">기본 코드: NNI, AG. 제품 촬영 모드에서는 자동으로 PRD-001 형식으로 번호를 사용합니다. 저장된 사진을 첨부해도 동일하게 분석됩니다.</p>
       </div>
     </details>
 
@@ -220,6 +213,6 @@
   </main>
 
   <div id="toast" class="toast" aria-live="polite"></div>
-  <script src="app.js?v=0.6.2"></script>
+  <script src="app.js?v=0.6.1"></script>
 </body>
 </html>
