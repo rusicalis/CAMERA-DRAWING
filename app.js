@@ -15,7 +15,8 @@
     working: false,
     arCalibration: null,
     lineCodes: [],
-    lastNumbers: {}
+    lastNumbers: {},
+    appMode: 'jig'
   };
 
   const MAX_ANALYSIS_SIDE = 1000;
@@ -46,13 +47,28 @@
   function safeName(s) { return String(s || 'HOOK').replace(/[\\/:*?"<>|\s]+/g, '_'); }
 
   // ---------------- Jig numbering / settings ----------------
-  const LINE_CODES_KEY = 'hookDrawing.lineCodes.v040';
-  const LAST_NUMBERS_KEY = 'hookDrawing.lastNumbers.v040';
+  const LINE_CODES_KEY = 'hookDrawing.lineCodes.v060';
+  const LAST_NUMBERS_KEY = 'hookDrawing.lastNumbers.v060';
   const DEFAULT_LINE_CODES = ['NNI','AG'];
 
   function padJigNo(n) { return String(clamp(Math.round(Number(n) || 1), 1, 999)).padStart(3,'0'); }
   function cleanLineCode(v) { return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10); }
   function currentLineCode() { return cleanLineCode($('lineCodeSelect').value) || 'NNI'; }
+  function currentCaptureCode() { return state.appMode==='product' ? 'PRD' : currentLineCode(); }
+  function currentRenderMode() { return state.appMode==='product' ? 'photo' : (($('renderModeSelect')?.value)||'drawing'); }
+  function setAppMode(mode) {
+    state.appMode = mode==='product' ? 'product' : 'jig';
+    $('tabJigBtn')?.classList.toggle('active', state.appMode==='jig');
+    $('tabProductBtn')?.classList.toggle('active', state.appMode==='product');
+    if($('renderModeSelect')){
+      if(state.appMode==='product'){ $('renderModeSelect').value='photo'; $('renderModeSelect').disabled=true; }
+      else $('renderModeSelect').disabled=false;
+    }
+    updateNumberPreview();
+    if($('numberingMode').value==='continuous') renumberCaptures(true);
+    renderCaptureList();
+    renderResults();
+  }
   function makeJigNumber(code, n) { return `${cleanLineCode(code) || 'NNI'}-${padJigNo(n)}`; }
   function parseJigNumber(v) {
     const m=String(v||'').toUpperCase().match(/^([A-Z0-9]{1,10})-(\d{1,3})$/);
@@ -75,16 +91,16 @@
     updateNumberPreview();
   }
   function suggestNextStart() {
-    const code=currentLineCode(); const next=clamp((parseInt(state.lastNumbers[code],10)||0)+1,1,999);
+    const code=currentCaptureCode(); const next=clamp((parseInt(state.lastNumbers[code],10)||0)+1,1,999);
     $('startNumber').value=next; updateNumberPreview();
   }
   function updateNumberPreview() {
-    const code=currentLineCode(); const start=clamp(parseInt($('startNumber').value,10)||1,1,999); const count=parseInt($('maxShots').value,10)||10;
+    const code=currentCaptureCode(); const start=clamp(parseInt($('startNumber').value,10)||1,1,999); const count=parseInt($('maxShots').value,10)||10;
     $('numberPreview').textContent=$('numberingMode').value==='continuous' ? `${makeJigNumber(code,start)} ~ ${makeJigNumber(code,Math.min(999,start+count-1))}` : `개별 입력 · 기본 ${makeJigNumber(code,start)}부터`;
   }
   function renumberCaptures(force=false) {
     if(!force && $('numberingMode').value!=='continuous') return;
-    const code=currentLineCode(), start=clamp(parseInt($('startNumber').value,10)||1,1,999);
+    const code=currentCaptureCode(), start=clamp(parseInt($('startNumber').value,10)||1,1,999);
     state.captures.forEach((c,i)=>{ c.name=makeJigNumber(code,Math.min(999,start+i)); });
     renderCaptureList(); updateNumberPreview();
   }
@@ -103,7 +119,7 @@
     toast(`${code} 라인코드를 저장했습니다.`);
   }
   function deleteLineCode() {
-    const code=currentLineCode();
+    const code=currentCaptureCode();
     if(DEFAULT_LINE_CODES.includes(code)) return toast('NNI와 AG 기본 코드는 삭제할 수 없습니다.');
     if(!confirm(`${code} 라인코드를 삭제할까요?`)) return;
     state.lineCodes=state.lineCodes.filter(c=>c!==code); saveLineCodes(); renderLineCodes('NNI'); suggestNextStart();
@@ -216,6 +232,37 @@
   function canvasToBlob(canvas, type='image/jpeg', quality=.88) {
     return new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('이미지 캡처 실패')), type, quality));
   }
+  function blobToDataURL(blob){
+    return new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(String(fr.result||''));fr.onerror=()=>reject(new Error('이미지 읽기 실패'));fr.readAsDataURL(blob);});
+  }
+  async function addCaptureBlob(blob, sourceType='camera', originalName='') {
+    const max = parseInt($('maxShots').value, 10) || 30;
+    if (state.captures.length >= max) { toast(`최대 ${max}장까지 가능합니다.`); return false; }
+    const url = URL.createObjectURL(blob);
+    const code=currentCaptureCode(), start=clamp(parseInt($('startNumber').value,10)||1,1,999);
+    const captureIndex=state.captures.length;
+    const jigNo=makeJigNumber(code,Math.min(999,start+captureIndex));
+    const freshAr=state.arCalibration && (Date.now()-state.arCalibration.at)<10*60*1000 ? state.arCalibration : null;
+    const item = {
+      id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random()}`,
+      seq: state.seq++,
+      blob, url, originalName, sourceType, captureType: state.appMode,
+      name: jigNo,
+      diameter: parseFloat($('defaultDiameter').value) || 6,
+      material: $('defaultMaterial').value.trim() || 'SUS304',
+      approxWidth: '',
+      approxHeight: '',
+      measureMode: $('measureMode').value || 'auto',
+      arMmPerPx: freshAr ? freshAr.fieldWidthMm / 1000 : null,
+      arDistanceMm: freshAr ? freshAr.distanceMm : null
+    };
+    state.captures.push(item);
+    renderCaptureList();
+    updateShotUI();
+    setStatus(`${state.captures.length}장 촬영`, 'ok');
+    updateNumberPreview();
+    return true;
+  }
 
   async function captureShot() {
     const max = parseInt($('maxShots').value, 10) || 10;
@@ -231,30 +278,8 @@
       // The hidden capture canvas must not retain the camera frame after the JPEG blob is created.
       captureCtx.clearRect(0, 0, captureCanvas.width, captureCanvas.height);
       captureCanvas.width = 1; captureCanvas.height = 1;
-      const url = URL.createObjectURL(blob);
-      const code=currentLineCode(), start=clamp(parseInt($('startNumber').value,10)||1,1,999);
-      const captureIndex=state.captures.length;
-      const jigNo=makeJigNumber(code,Math.min(999,start+captureIndex));
-      const freshAr=state.arCalibration && (Date.now()-state.arCalibration.at)<10*60*1000 ? state.arCalibration : null;
-      const item = {
-        id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random()}`,
-        seq: state.seq++,
-        blob, url,
-        name: jigNo,
-        diameter: parseFloat($('defaultDiameter').value) || 6,
-        material: $('defaultMaterial').value.trim() || 'SUS304',
-        approxWidth: '',
-        approxHeight: '',
-        measureMode: $('measureMode').value || 'auto',
-        arMmPerPx: freshAr ? freshAr.fieldWidthMm / w : null,
-        arDistanceMm: freshAr ? freshAr.distanceMm : null
-      };
-      state.captures.push(item);
-      renderCaptureList();
-      updateShotUI();
-      setStatus(`${state.captures.length}장 촬영`, 'ok');
-      toast(`${item.name} 촬영 완료 · 사진첩 저장 안 함`);
-      updateNumberPreview();
+      await addCaptureBlob(blob,'camera');
+      toast(`촬영 완료 · 사진첩 저장 안 함`);
       if (state.captures.length >= max) {
         $('captureBtn').disabled = true;
         toast(`최대 ${max}장 촬영 완료`);
@@ -289,14 +314,14 @@
   function renderCaptureList() {
     const host = $('captureList');
     if (!state.captures.length) {
-      host.innerHTML = '<div class="empty-state">아직 촬영된 치구가 없습니다.</div>';
+      host.innerHTML = '<div class="empty-state">아직 촬영된/첨부된 사진이 없습니다.</div>';
       return;
     }
     host.innerHTML = state.captures.map((c, i) => `
       <div class="capture-item" data-id="${c.id}">
         <img class="capture-thumb" src="${c.url}" alt="촬영 ${i+1}">
         <div>
-          <div class="capture-head"><b>${i+1}. ${esc(c.name)}</b><button class="icon-btn delete-shot" data-id="${c.id}">삭제</button></div>
+          <div class="capture-head"><b>${i+1}. ${esc(c.name)}</b><span class="capture-type-badge">${c.captureType==='product'?'제품':'치구'} · ${c.sourceType==='upload'?'첨부':'촬영'}</span><button class="icon-btn delete-shot" data-id="${c.id}">삭제</button></div>
           <div class="capture-fields">
             <label class="wide jig-no">치구번호<input data-field="name" value="${esc(c.name)}" maxlength="20" autocapitalize="characters"></label>
             <label>Ø mm<input data-field="diameter" type="number" min="0.5" max="50" step="0.1" value="${esc(c.diameter)}"></label>
@@ -528,10 +553,10 @@
     return {
       id:item.id,name:item.name.trim()||makeJigNumber(currentLineCode(),item.seq),material:item.material.trim()||'SUS304',diameter,
       baseWidth:width,baseHeight:height,baseLength:length,baseR1:NaN,baseR2:NaN,
-      width,height,length,r1:NaN,r2:NaN,pathBase:p,path:p.map(q=>({...q})),
+      width,height,length,r1:NaN,r2:NaN,pathBase:p,path:p.map(q=>({...q})), rawPath:p.map(q=>({...q})), rawBBox:{minX:0,minY:0,maxX:width,maxY:height,w:width,h:height}, imageW:iw,imageH:ih,
       scaleSource:'자동 인식 실패 · 임시도면',scaleConfidence:.05,quality:.05,threshold:null,invert:false,
       segmentMethod:'임시 HOOK 형상',gridDetected:false,arDetected:false,gridReason:'',shapeFill:0,arDistanceMm:item.arDistanceMm||null,
-      dimensionEstimated:true,shapeEstimated:true,warning:reason
+      dimensionEstimated:true,shapeEstimated:true,warning:reason, photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}
     };
   }
 
@@ -596,11 +621,11 @@
     return {
       id:item.id,name:item.name.trim()||makeJigNumber(currentLineCode(),item.seq),material:item.material.trim()||'SUS304',diameter,
       baseWidth:width,baseHeight:height,baseLength:length,baseR1:r.r1,baseR2:r.r2,
-      width,height,length,r1:r.r1,r2:r.r2,pathBase:pathMm,path:pathMm.map(p=>({...p})),
+      width,height,length,r1:r.r1,r2:r.r2,pathBase:pathMm,path:pathMm.map(p=>({...p})), rawPath:path.map(p=>({...p})), rawBBox:pb, imageW:ds.w, imageH:ds.h,
       scaleSource,scaleConfidence,quality,threshold:seg.threshold,invert:seg.invert,segmentMethod:seg.method,
       gridDetected:!!grid.pitch,arDetected:scaleSource==='AR 자동 측정',gridReason:grid.reason||'',shapeFill:comp.fill,arDistanceMm:item.arDistanceMm||null,
       dimensionEstimated:scaleSource.includes('추정')||scaleSource.includes('임시'), wirePxEstimate:wirePxEst,
-      shapeEstimated:suspiciousShape, warning:suspiciousShape?'배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':''
+      shapeEstimated:suspiciousShape, warning:suspiciousShape?'배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':'', photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}
     };
   }
 
@@ -616,11 +641,11 @@
       $('progressBar').style.width=`${Math.round((i/total)*100)}%`;
       await new Promise(r=>setTimeout(r,25));
       try{
+        item.photoDataUrl = item.photoDataUrl || await blobToDataURL(item.blob).catch(()=> '');
         const result=await analyzeCapture(item);state.results.push({...result,ok:true});
-        // Privacy: once analysis succeeds, original capture is discarded from memory.
         revokeCapture(item);
       }catch(err){
-        try{const fallback=await makeEmergencyResult(item,err?.message||String(err));state.results.push({...fallback,ok:true});revokeCapture(item);}catch(_){state.results.push({id:item.id,name:item.name,material:item.material,diameter:parseFloat(item.diameter)||6,ok:false,error:err?.message||String(err)});}
+        try{item.photoDataUrl = item.photoDataUrl || await blobToDataURL(item.blob).catch(()=> ''); const fallback=await makeEmergencyResult(item,err?.message||String(err));state.results.push({...fallback,ok:true});revokeCapture(item);}catch(_){state.results.push({id:item.id,name:item.name,material:item.material,diameter:parseFloat(item.diameter)||6,ok:false,error:err?.message||String(err)});}
       }
     }
     $('progressBar').style.width='100%';$('progressText').textContent=`${total}장 처리 완료`;
@@ -646,88 +671,139 @@
     r.path=p;r.length=pathLength(p);if(Number.isFinite(r.baseR1))r.r1=r.baseR1*avgScale;if(Number.isFinite(r.baseR2))r.r2=r.baseR2*avgScale;
   }
 
+  function readDimValue(r,key,def){
+    if(['width','height','length','r1','r2','diameter'].includes(key)) return Number.isFinite(parseFloat(r[key])) ? parseFloat(r[key]) : def;
+    return Number.isFinite(parseFloat(r.manualDims?.[key])) ? parseFloat(r.manualDims[key]) : def;
+  }
+  function writeDimValue(r,key,val){
+    if(['width','height','length','r1','r2','diameter'].includes(key)) r[key]=val;
+    else { r.manualDims=r.manualDims||{}; r.manualDims[key]=val; }
+  }
+  function dist(a,b){return Math.hypot((b.x||0)-(a.x||0),(b.y||0)-(a.y||0));}
+  function localRadius(path,idx){
+    const s=Math.max(2,Math.floor(path.length/40));
+    const i0=Math.max(0,idx-s), i2=Math.min(path.length-1,idx+s);
+    return circleRadius(path[i0],path[idx],path[i2]);
+  }
+  function buildAnchorIndices(path){
+    if(path.length<4) return [0,path.length-1];
+    const step=Math.max(2,Math.floor(path.length/28)); const cand=[];
+    for(let i=step;i<path.length-step;i++){
+      const a=path[i-step],b=path[i],c=path[i+step];
+      const v1x=b.x-a.x,v1y=b.y-a.y,v2x=c.x-b.x,v2y=c.y-b.y;
+      const m1=Math.hypot(v1x,v1y),m2=Math.hypot(v2x,v2y); if(m1<1e-3||m2<1e-3) continue;
+      const ang=Math.acos(clamp((v1x*v2x+v1y*v2y)/(m1*m2),-1,1))*180/Math.PI;
+      if(ang>18) cand.push({i,ang});
+    }
+    const out=[0];
+    for(const c of cand.sort((x,y)=>y.ang-x.ang)){
+      if(out.some(v=>Math.abs(v-c.i)<step*2)) continue;
+      out.push(c.i);
+    }
+    out.push(path.length-1);
+    return [...new Set(out)].sort((a,b)=>a-b);
+  }
+  function buildDimensionSpecs(r, screenPath, W, H){
+    const mmPath=transformedPath(r);
+    const anchors=buildAnchorIndices(mmPath);
+    const specs=[];
+    const minLen=(parseFloat(r.diameter)||6)*1.2;
+    const xs=screenPath.map(p=>p.x), ys=screenPath.map(p=>p.y);
+    const x1=Math.min(...xs), x2=Math.max(...xs), y1=Math.min(...ys), y2=Math.max(...ys);
+    specs.push({key:'width', value:parseFloat(r.width)||r.baseWidth, x:(x1+x2)/2, y:Math.max(35,y1-32)});
+    specs.push({key:'height', value:parseFloat(r.height)||r.baseHeight, x:Math.max(35,x1-40), y:(y1+y2)/2});
+    let segNo=1, bendNo=1;
+    for(let ai=0; ai<anchors.length-1; ai++){
+      const i1=anchors[ai], i2=anchors[ai+1], p1=mmPath[i1], p2=mmPath[i2], s1=screenPath[i1], s2=screenPath[i2];
+      const len=dist(p1,p2); if(len<minLen) continue;
+      const mx=(s1.x+s2.x)/2, my=(s1.y+s2.y)/2;
+      const dx=s2.x-s1.x, dy=s2.y-s1.y, m=Math.max(1,Math.hypot(dx,dy));
+      const nx=-dy/m, ny=dx/m, off=24 + (ai%3)*18;
+      specs.push({key:`seg${segNo}`, value:len, x:mx+nx*off, y:my+ny*off});
+      segNo++;
+      if(ai<anchors.length-2){
+        const bi=anchors[ai+1], b=screenPath[bi]; const rmm=localRadius(mmPath,bi);
+        if(Number.isFinite(rmm) && rmm>0.1) specs.push({key:`bendR${bendNo++}`, value:rmm, x:b.x+28, y:b.y-18});
+      }
+    }
+    return specs.map(s=>({...s, x:clamp(s.x,40,W-40), y:clamp(s.y,28,H-28)}));
+  }
+  function fitRect(srcW,srcH,box){
+    const sc=Math.min(box.w/srcW, box.h/srcH);
+    const w=srcW*sc,h=srcH*sc; return {x:box.x+(box.w-w)/2,y:box.y+(box.h-h)/2,w,h,scale:sc};
+  }
   function makeSvg(r) {
-    const W=1189,H=841;
-    const draw={x:125,y:105,w:900,h:500};
-    const path=transformedPath(r);
-    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-    for(const p of path){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);}
-    const pw=Math.max(1,maxX-minX),ph=Math.max(1,maxY-minY);
-    const scale=Math.min(draw.w/pw,draw.h/ph)*.84;
-    const ox=draw.x+(draw.w-pw*scale)/2,oy=draw.y+(draw.h-ph*scale)/2;
-    const screen=path.map(p=>({x:ox+(p.x-minX)*scale,y:oy+(p.y-minY)*scale}));
-    const pts=screen.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-    const width=parseFloat(r.width)||r.baseWidth,height=parseFloat(r.height)||r.baseHeight,length=parseFloat(r.length)||pathLength(path);
-    const r1=parseFloat(r.r1),r2=parseFloat(r.r2),wirePx=clamp((parseFloat(r.diameter)||6)*scale,5,30);
-    const x1=Math.min(...screen.map(p=>p.x))-wirePx/2,x2=Math.max(...screen.map(p=>p.x))+wirePx/2;
-    const y1=Math.min(...screen.map(p=>p.y))-wirePx/2,y2=Math.max(...screen.map(p=>p.y))+wirePx/2;
+    const W=1189,H=841, draw={x:95,y:90,w:760,h:610}, title={x:875,y:88,w:230,h:665};
+    const variant = r.captureType==='product' ? 'photo' : currentRenderMode();
+    const mmPath=transformedPath(r);
     const date=new Date().toLocaleDateString('sv-SE');
-    const source=String(r.scaleSource||'PHOTO');
-    const note=source.includes('AR')?'AR AUTO SCALE':source.includes('격자')?'10 mm GRID':source.includes('사용자')?'USER APPROX. DIM':'PHOTO SCALE';
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">
-      <defs>
-        <marker id="arr" markerWidth="9" markerHeight="9" refX="4.5" refY="4.5" orient="auto-start-reverse"><path d="M9,1 L1,4.5 L9,8" fill="none" stroke="#111" stroke-width="1.2"/></marker>
-      </defs>
-      <rect width="${W}" height="${H}" fill="#fff"/>
-      <g stroke="#111" fill="none">
-        <rect x="28" y="28" width="1133" height="785" stroke-width="1.6"/>
-        <rect x="38" y="38" width="1113" height="765" stroke-width=".7"/>
-      </g>
-      <g fill="none" stroke="#111" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="${pts}" stroke-width="${wirePx.toFixed(1)}"/>
-        <polyline points="${pts}" stroke="#555" stroke-width="1" stroke-dasharray="10 5 2 5"/>
-      </g>
-      <g stroke="#111" fill="none" stroke-width="1.1">
-        <line x1="${x1}" y1="${y1-38}" x2="${x2}" y2="${y1-38}" marker-start="url(#arr)" marker-end="url(#arr)"/>
-        <line x1="${x1}" y1="${y1-5}" x2="${x1}" y2="${y1-49}"/>
-        <line x1="${x2}" y1="${y1-5}" x2="${x2}" y2="${y1-49}"/>
-        <line x1="${x1-42}" y1="${y1}" x2="${x1-42}" y2="${y2}" marker-start="url(#arr)" marker-end="url(#arr)"/>
-        <line x1="${x1-8}" y1="${y1}" x2="${x1-52}" y2="${y1}"/>
-        <line x1="${x1-8}" y1="${y2}" x2="${x1-52}" y2="${y2}"/>
-      </g>
-      <g font-family="Arial,'Noto Sans KR',sans-serif" fill="#111">
-        <text x="594.5" y="62" font-size="19" font-weight="700" text-anchor="middle">HOOK JIG DRAWING</text>
-        <text x="${(x1+x2)/2}" y="${y1-47}" font-size="15" text-anchor="middle">${n1(width)} mm</text>
-        <text x="${x1-53}" y="${(y1+y2)/2}" font-size="15" transform="rotate(-90 ${x1-53} ${(y1+y2)/2})" text-anchor="middle">${n1(height)} mm</text>
-        <text x="${Math.min(1000,x2+22)}" y="${Math.max(145,y1+90)}" font-size="14">${Number.isFinite(r1)?`R1 ≈ ${n1(r1)}`:'R1 -'}</text>
-        <text x="${Math.min(1000,x2+22)}" y="${Math.min(570,y2-35)}" font-size="14">${Number.isFinite(r2)?`R2 ≈ ${n1(r2)}`:'R2 -'}</text>
-        <text x="63" y="624" font-size="11">※ PHOTO/AR BASED APPROXIMATE DRAWING. VERIFY CRITICAL DIMENSIONS BEFORE FABRICATION.</text>
-      </g>
-      <g stroke="#111" fill="none" stroke-width="1">
-        <rect x="640" y="642" width="511" height="161"/>
-        <line x1="640" y1="682" x2="1151" y2="682"/><line x1="640" y1="722" x2="1151" y2="722"/><line x1="640" y1="762" x2="1151" y2="762"/>
-        <line x1="788" y1="642" x2="788" y2="803"/><line x1="930" y1="642" x2="930" y2="803"/><line x1="1045" y1="642" x2="1045" y2="803"/>
-      </g>
-      <g font-family="Arial,'Noto Sans KR',sans-serif" fill="#111">
-        <text x="650" y="656" font-size="9">JIG NO.</text><text x="650" y="676" font-size="17" font-weight="700">${esc(r.name)}</text>
-        <text x="798" y="656" font-size="9">MATERIAL</text><text x="798" y="676" font-size="14" font-weight="700">${esc(r.material)}</text>
-        <text x="940" y="656" font-size="9">WIRE DIA.</text><text x="940" y="676" font-size="14" font-weight="700">Ø ${n1(r.diameter)}</text>
-        <text x="1055" y="656" font-size="9">UNIT</text><text x="1055" y="676" font-size="14">mm</text>
-
-        <text x="650" y="696" font-size="9">DEVELOPED LENGTH</text><text x="650" y="716" font-size="14" font-weight="700">${n1(length)} mm</text>
-        <text x="798" y="696" font-size="9">MEASUREMENT</text><text x="798" y="716" font-size="12">${esc(note)}</text>
-        <text x="940" y="696" font-size="9">SCALE</text><text x="940" y="716" font-size="12">NTS</text>
-        <text x="1055" y="696" font-size="9">REV.</text><text x="1055" y="716" font-size="12">0</text>
-
-        <text x="650" y="736" font-size="9">OVERALL SIZE</text><text x="650" y="756" font-size="12">W ${n1(width)} × H ${n1(height)}</text>
-        <text x="798" y="736" font-size="9">DATE</text><text x="798" y="756" font-size="12">${date}</text>
-        <text x="940" y="736" font-size="9">DRAWN BY</text><text x="940" y="756" font-size="12">AUTO</text>
-        <text x="1055" y="736" font-size="9">TYPE</text><text x="1055" y="756" font-size="12">HOOK</text>
-
-        <text x="650" y="776" font-size="9">NOTES</text><text x="650" y="797" font-size="11">APPROX. PHOTO REVERSE DRAWING / FINAL CHECK REQUIRED</text>
-      </g>
-    </svg>`;
+    const width=parseFloat(r.width)||r.baseWidth, height=parseFloat(r.height)||r.baseHeight, length=parseFloat(r.length)||pathLength(mmPath);
+    let svg='', screen=[];
+    if(variant==='photo'){
+      const fit=fitRect(r.imageW||1000, r.imageH||1000, draw);
+      const raw=r.rawPath&&r.rawPath.length?r.rawPath:mmPath;
+      screen=raw.map(p=>({x:fit.x+(p.x||0)*fit.scale,y:fit.y+(p.y||0)*fit.scale}));
+      const pts=screen.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">
+        <rect width="${W}" height="${H}" fill="#fff"/><rect x="28" y="28" width="1133" height="785" fill="none" stroke="#111" stroke-width="1.4"/>
+        <text x="85" y="58" font-size="13" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">3. 도면 (치수표기)</text>
+        <text x="85" y="82" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">※ 치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${n1(r.diameter)}</text>
+        <rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}" fill="none" stroke="#bbb"/>
+        ${r.photoDataUrl?`<image href="${r.photoDataUrl}" x="${fit.x}" y="${fit.y}" width="${fit.w}" height="${fit.h}" preserveAspectRatio="xMidYMid meet"/>`:''}
+        <polyline points="${pts}" fill="none" stroke="rgba(0,0,0,.18)" stroke-width="2"/>
+        <rect x="${title.x}" y="${title.y}" width="${title.w}" height="${title.h}" fill="none" stroke="#111"/>
+        <text x="${title.x+14}" y="${title.y+24}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${r.captureType==='product'?'제품 사진 치수도':'치구 사진 치수도'}</text>
+        <text x="${title.x+14}" y="${title.y+54}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">NO : ${esc(r.name)}</text>
+        <text x="${title.x+14}" y="${title.y+78}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">재질 : ${esc(r.material)}</text>
+        <text x="${title.x+14}" y="${title.y+102}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">Ø : ${n1(r.diameter)}</text>
+        <text x="${title.x+14}" y="${title.y+126}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">전체 폭 : ${n1(width)}</text>
+        <text x="${title.x+14}" y="${title.y+150}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">전체 높이 : ${n1(height)}</text>
+        <text x="${title.x+14}" y="${title.y+174}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">전개길이 : ${n1(length)}</text>
+        <text x="${title.x+14}" y="${title.y+198}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">작성일 : ${date}</text>
+      </svg>`;
+    } else {
+      let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+      for(const p of mmPath){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);}
+      const pw=Math.max(1,maxX-minX),ph=Math.max(1,maxY-minY),sc=Math.min(draw.w/pw,draw.h/ph)*.82;
+      const ox=draw.x+(draw.w-pw*sc)/2,oy=draw.y+(draw.h-ph*sc)/2;
+      screen=mmPath.map(p=>({x:ox+(p.x-minX)*sc,y:oy+(p.y-minY)*sc}));
+      const pts=screen.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      const wirePx=clamp((parseFloat(r.diameter)||6)*sc,4,24);
+      const photoInset = r.photoDataUrl ? `<rect x="75" y="575" width="145" height="205" fill="none" stroke="#888"/><image href="${r.photoDataUrl}" x="78" y="578" width="139" height="199" preserveAspectRatio="xMidYMid meet"/>` : '';
+      svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">
+        <rect width="${W}" height="${H}" fill="#fff"/><rect x="28" y="28" width="1133" height="785" fill="none" stroke="#111" stroke-width="1.4"/>
+        <text x="85" y="58" font-size="13" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">3. 도면 (치수표기)</text>
+        <text x="85" y="82" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">※ 치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${n1(r.diameter)}</text>
+        <polyline points="${pts}" fill="none" stroke="#111" stroke-width="${wirePx.toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="${pts}" fill="none" stroke="#777" stroke-width="1" stroke-dasharray="8 5"/>
+        ${photoInset}
+        <rect x="${title.x}" y="${title.y}" width="${title.w}" height="${title.h}" fill="none" stroke="#111"/>
+        <text x="${title.x+14}" y="${title.y+24}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">치구 자동도면</text>
+        <text x="${title.x+14}" y="${title.y+54}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">치구번호 : ${esc(r.name)}</text>
+        <text x="${title.x+14}" y="${title.y+78}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">재질 : ${esc(r.material)}</text>
+        <text x="${title.x+14}" y="${title.y+102}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">Ø : ${n1(r.diameter)}</text>
+        <text x="${title.x+14}" y="${title.y+126}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">전체 높이 : ${n1(height)}</text>
+        <text x="${title.x+14}" y="${title.y+150}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">전체 폭 : ${n1(width)}</text>
+        <text x="${title.x+14}" y="${title.y+174}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">전개길이 : ${n1(length)}</text>
+        <text x="${title.x+14}" y="${title.y+198}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">작성일 : ${date}</text>
+        <text x="${title.x+14}" y="${title.y+230}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">실제 사진은 좌하단 참고</text>
+      </svg>`;
+    }
+    const specs=buildDimensionSpecs(r, screen, W, H);
+    const inputs = specs.map(s=>`<input class="dim-input-overlay" data-id="${esc(r.id)}" data-dimkey="${esc(s.key)}" type="number" step="0.1" value="${esc(n1(readDimValue(r,s.key,s.value)))}" style="left:${(s.x/W*100).toFixed(2)}%;top:${(s.y/H*100).toFixed(2)}%;" title="${esc(s.key)}">`).join('');
+    return `<div class="figure-frame ${variant==='photo'?'photo-variant':''}">${svg}${inputs}</div>`;
   }
 
   function renderResults() {
     const host=$('resultList');
     if(!state.results.length){host.innerHTML='<div class="empty-state">생성된 도면이 없습니다.</div>';return;}
     host.innerHTML=state.results.map((r,i)=>{
-      if(!r.ok)return `<div class="result-item failed" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge quality bad">생성 실패</span></div><div class="result-msg">${esc(r.error)}<br>촬영 목록에 사진이 남아 있습니다. 대략 폭/높이를 입력하거나 다시 촬영한 뒤 일괄 생성을 다시 실행하세요.</div></div>`;
+      if(!r.ok)return `<div class="result-item failed" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge quality bad">생성 실패</span></div><div class="result-msg">${esc(r.error)}</div></div>`;
       const quality=r.quality>.76?'양호':r.quality>.53?'보통':'확인필요';
+      const modeText=(r.captureType==='product')?'제품 실제사진':'치구 '+(currentRenderMode()==='photo'?'실제사진':'도면');
       return `<div class="result-item" data-id="${r.id}">
-        <div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${r.arDetected?'ar ':''}${r.quality<.53?'quality bad':''}">${esc(r.scaleSource)} · ${quality}</span></div>
-        <div class="drawing-wrap">${makeSvg(r)}</div>
+        <div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${r.arDetected?'ar ':''}${r.quality<.53?'quality bad':''}">${esc(modeText)} · ${quality}</span></div>
+        ${makeSvg(r)}
         <div class="edit-grid">
           <label>전체 폭 mm<input data-rfield="width" type="number" step="0.1" value="${n1(r.width)}"></label>
           <label>전체 높이 mm<input data-rfield="height" type="number" step="0.1" value="${n1(r.height)}"></label>
@@ -737,19 +813,22 @@
           <label>Ø mm<input data-rfield="diameter" type="number" step="0.1" value="${n1(r.diameter)}"></label>
         </div>
         <div class="result-actions"><button class="btn apply-dims" data-id="${r.id}">폭/높이 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 도면 PDF</button></div>
-        <div class="result-msg">형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${r.arDetected&&r.arDistanceMm?` (AR 거리 약 ${Math.round(r.arDistanceMm)} mm)`:''}${r.shapeEstimated?` · 형상 인식 신뢰도가 낮아도 도면은 생성했습니다. 사진과 형상을 반드시 확인하세요.`:''}${r.dimensionEstimated?` · 치수 인식이 부족해 추정/임시치수로 먼저 생성했습니다. 필요 시 값을 직접 수정하세요.`:''}${r.warning?` · ${esc(r.warning)}`:''} · 사진 원본은 분석 완료 후 앱 메모리에서 폐기됨.</div>
+        <div class="result-msg">형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)} · 꺾임부와 전체 치수선은 모두 직접 수정 가능합니다.${r.warning?` · ${esc(r.warning)}`:''}</div>
       </div>`;
     }).join('');
   }
 
   $('resultList').addEventListener('input',e=>{
-    const f=e.target.dataset?.rfield;if(!f)return;const row=e.target.closest('.result-item'),r=state.results.find(x=>x.id===row?.dataset.id);if(!r?.ok)return;const v=parseFloat(e.target.value);if(Number.isFinite(v))r[f]=v;
-    const wrap=row.querySelector('.drawing-wrap');if(wrap)wrap.innerHTML=makeSvg(r);
+    const row=e.target.closest('.result-item'),r=state.results.find(x=>x.id===row?.dataset.id);if(!r?.ok)return;
+    const f=e.target.dataset?.rfield,dk=e.target.dataset?.dimkey;const v=parseFloat(e.target.value);
+    if(f && Number.isFinite(v)) r[f]=v;
+    if(dk && Number.isFinite(v)) writeDimValue(r,dk,v);
+    const fig=row.querySelector('.figure-frame');if(fig) fig.outerHTML=makeSvg(r);
   });
 
   $('resultList').addEventListener('click',async e=>{
     const apply=e.target.closest('.apply-dims'),one=e.target.closest('.export-one');
-    if(apply){const r=state.results.find(x=>x.id===apply.dataset.id);if(!r?.ok)return;recalcFromDimensions(r);renderResults();toast('폭/높이를 중심선 형상에 반영했습니다.');}
+    if(apply){const r=state.results.find(x=>x.id===apply.dataset.id);if(!r?.ok)return;recalcFromDimensions(r);renderResults();toast('폭/높이를 형상에 반영했습니다.');}
     if(one){const r=state.results.find(x=>x.id===one.dataset.id);if(r?.ok)await exportPdf([r],`${safeName(r.name)}_drawing.pdf`);}
   });
 
@@ -828,6 +907,16 @@
   $('startCameraBtn').addEventListener('click',startCamera);
   $('stopCameraBtn').addEventListener('click',()=>{stopCamera();setStatus('카메라 꺼짐');});
   $('captureBtn').addEventListener('click',captureShot);
+  $('uploadPhotoBtn').addEventListener('click',()=>$('filePicker').click());
+  $('filePicker').addEventListener('change',async e=>{
+    const files=[...(e.target.files||[])].filter(f=>String(f.type||'').startsWith('image/'));
+    for(const f of files){ if(state.captures.length >= (parseInt($('maxShots').value,10)||30)) break; await addCaptureBlob(f,'upload',f.name); }
+    if(files.length) toast(`${files.length}장 첨부 완료`);
+    e.target.value='';
+  });
+  $('tabJigBtn').addEventListener('click',()=>setAppMode('jig'));
+  $('tabProductBtn').addEventListener('click',()=>setAppMode('product'));
+  $('renderModeSelect').addEventListener('change',()=>renderResults());
   $('clearShotsBtn').addEventListener('click',()=>{if(confirm('촬영한 사진을 모두 삭제할까요?'))clearCaptures();});
   $('batchAnalyzeBtn').addEventListener('click',batchAnalyze);
   $('exportPdfBtn').addEventListener('click',()=>exportPdf(state.results.filter(r=>r.ok),'HOOK_batch_drawings.pdf'));
@@ -847,20 +936,20 @@
   window.addEventListener('pagehide',()=>{stopCamera();state.captures.forEach(revokeCapture);});
 
   if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-    navigator.serviceWorker.register('./sw.js?v=0.5.0').then(reg=>reg.update()).catch(()=>{});
+    navigator.serviceWorker.register('./sw.js?v=0.6.0').then(reg=>reg.update()).catch(()=>{});
   }
 
-  const APP_VERSION='0.5.0';
+  const APP_VERSION='0.6.0';
   if(/^https?:$/.test(location.protocol)){setTimeout(async()=>{try{const res=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store'});if(!res.ok)return;const latest=(await res.json()).version;if(!latest||latest===APP_VERSION)return;if('caches' in window){for(const key of await caches.keys())await caches.delete(key);}if('serviceWorker' in navigator){for(const reg of await navigator.serviceWorker.getRegistrations())await reg.unregister();}location.replace(`./?v=${encodeURIComponent(latest)}&refresh=${Date.now()}`);}catch(_){}},1800);}
 
   // Test hooks are available only when ?test=1 is present. They are not shown in normal use.
   if(new URLSearchParams(location.search).get('test')==='1'){
     window.__HOOK_TEST={
-      async addFile(file,opts={}){const url=URL.createObjectURL(file),item={id:`test_${Date.now()}_${Math.random()}`,seq:state.seq++,blob:file,url,name:opts.name||makeJigNumber(currentLineCode(),state.seq),diameter:opts.diameter||6,material:opts.material||'SUS304',approxWidth:opts.approxWidth||'',approxHeight:opts.approxHeight||'',measureMode:opts.measureMode||'manual',arMmPerPx:opts.arMmPerPx||null,arDistanceMm:opts.arDistanceMm||null};state.captures.push(item);renderCaptureList();updateShotUI();return item.id;},
+      async addFile(file,opts={}){const url=URL.createObjectURL(file),item={id:`test_${Date.now()}_${Math.random()}`,seq:state.seq++,blob:file,url,name:opts.name||makeJigNumber(currentCaptureCode(),state.seq),diameter:opts.diameter||6,material:opts.material||'SUS304',approxWidth:opts.approxWidth||'',approxHeight:opts.approxHeight||'',measureMode:opts.measureMode||'manual',arMmPerPx:opts.arMmPerPx||null,arDistanceMm:opts.arDistanceMm||null};state.captures.push(item);renderCaptureList();updateShotUI();return item.id;},
       analyze:batchAnalyze,
       state
     };
   }
 
-  loadLineSettings();renderCaptureList();updateShotUI();renderResults();updateNumberPreview();setStatus('준비');
+  loadLineSettings(); setAppMode('jig'); renderCaptureList();updateShotUI();renderResults();updateNumberPreview();setStatus('준비');
 })();

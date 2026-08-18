@@ -77,3 +77,19 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   .summary-main b{font-size:13px}
   .summary-main small{max-width:56vw}
 }
+
+
+/* v0.6.0 */
+.slim-card{padding:10px 12px;margin-bottom:10px}
+.mode-tabs{display:flex;gap:8px;position:sticky;top:0;z-index:10;background:rgba(7,11,19,.92);backdrop-filter:blur(6px)}
+.tab-btn{flex:1;border:1px solid #334155;background:#0b1220;color:#cbd5e1;border-radius:12px;padding:12px 10px;font-weight:900;cursor:pointer}
+.tab-btn.active{background:linear-gradient(180deg,#2563eb,#1d4ed8);border-color:#60a5fa;color:#fff}
+.camera-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.inline-status{margin-top:0}
+.wide{grid-column:1/-1}
+.figure-frame{position:relative;background:#fff;margin:10px;border-radius:10px;overflow:hidden;aspect-ratio:1189/841}
+.figure-frame svg{width:100%;height:100%;display:block;background:#fff}
+.dim-input-overlay{position:absolute;transform:translate(-50%,-50%);min-width:54px;max-width:72px;padding:2px 4px;height:24px;border:1px solid #111;border-radius:4px;background:rgba(255,255,255,.96);color:#111;font-size:10px;font-weight:700;text-align:center;z-index:2}
+.photo-variant .dim-input-overlay{background:rgba(255,255,255,.88)}
+.capture-type-badge{font-size:9px;color:#e0f2fe;background:#155e75;border:1px solid #0891b2;padding:4px 6px;border-radius:999px;margin-left:6px}
+@media(max-width:560px){.dim-input-overlay{min-width:46px;max-width:60px;height:22px;font-size:9px}.mode-tabs{top:0}}
