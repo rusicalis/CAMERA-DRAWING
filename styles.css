@@ -103,3 +103,26 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 #straightenLevelSelect{font-weight:700}
 
 .dim-edit-note{font-size:11px;color:#93c5fd;margin:6px 10px 0}.dim-edit-btn.active{background:#1d4ed8;border-color:#60a5fa;color:#fff}.figure-frame svg .dim-text{font-size:10px;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round;fill:#111}.figure-frame svg .dim-box{display:none}
+
+
+/* v0.8.0 shape correction */
+.shape-editor{margin:10px;border:1px solid #2563eb;border-radius:12px;background:#07111f;overflow:hidden}
+.shape-editor-head{display:flex;align-items:center;gap:8px;padding:10px 11px;background:#0b1a2d;border-bottom:1px solid #1d4ed8;flex-wrap:wrap}
+.shape-editor-head b{font-size:12px;color:#dbeafe;flex:1}.shape-editor-head span{font-size:9px;color:#93c5fd}
+.shape-editor-stage{position:relative;background:#111;touch-action:none;user-select:none}
+.shape-editor-stage svg{display:block;width:100%;height:auto;max-height:66vh;touch-action:none}
+.shape-editor-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;padding:9px}
+.shape-editor-actions .btn{min-height:38px;font-size:10px}
+.shape-editor-actions .primary-action{background:#0369a1;border-color:#38bdf8;color:#fff}
+.shape-editor-help{font-size:9px;line-height:1.45;color:#bae6fd;padding:0 10px 10px}
+.shape-edit-btn{background:#1e3a5f;border-color:#3b82f6;color:#dbeafe}.shape-edit-btn.active{background:#1d4ed8;border-color:#7dd3fc;color:#fff}
+.shape-node-label{font:700 11px Arial,sans-serif;fill:#fff;paint-order:stroke;stroke:#111;stroke-width:3px}
+.shape-auto-line{fill:none;stroke:#ff3b30;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.shape-correct-line{fill:none;stroke:#00e5ff;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.shape-node{fill:#fff;stroke:#007aff;stroke-width:4;cursor:grab}
+.shape-node.active{fill:#ffcc00;stroke:#ff3b30}
+@media(max-width:560px){.shape-editor-actions{grid-template-columns:1fr 1fr}.shape-editor-stage svg{max-height:55vh}}
+
+.shape-confirm-warning{margin:10px;border-color:#f59e0b;background:#2a1604;color:#fde68a;font-size:11px;line-height:1.45}
+.shape-approve{background:#14532d!important;border-color:#22c55e!important;color:#dcfce7!important}
+.shape-editor-help b{color:#fff}

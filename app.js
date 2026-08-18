@@ -268,6 +268,7 @@
     state.captures.push(item);
     renderCaptureList();
     updateShotUI();
+    if($('queueCard')) $('queueCard').open=true;
     setStatus(`${state.captures.length}장 촬영`, 'ok');
     updateNumberPreview();
     return true;
@@ -604,8 +605,59 @@
       return{...candidate,path,pb,pathScore:score,curve,spanX,spanY,span,minor,wirePx: wf.wirePx,refinedPitch:wf.refinedPitch,wireFit:wf.fit};
     }catch(_){return null;}
   }
-  function collectComponentCandidates(imageData,gray,w,h,pitchPx){const arr=[],pg=periodicGridWireComponent(gray,w,h,pitchPx),gw=gridWireComponent(gray,w,h,pitchPx);if(pg?.comp)arr.push(pg);if(gw?.comp)arr.push(gw);const bg=backgroundDifferenceMask(imageData,w,h,pitchPx),bgComp=largestComponent(bg.mask,w,h);if(bgComp)arr.push({comp:bgComp,mask:bg.mask,threshold:null,invert:false,method:'배경색/명암 분리'});const t=otsu(gray);for(const [thr,invert] of [[clamp(Math.round(t*.78),25,215),false],[clamp(Math.round(t*.90),30,220),false],[clamp(Math.round(t*1.08),30,230),true]]){const rr=processedComponent(gray,w,h,thr,invert,pitchPx);if(rr.comp)arr.push({...rr,threshold:thr,invert,method:'명암 보조'});}return arr;}
-  function chooseComponent(imageData,gray,w,h,pitchPx,diameter) {const candidates=collectComponentCandidates(imageData,gray,w,h,pitchPx).map(c=>candidateCenterPath(c,w,h,pitchPx,diameter)).filter(Boolean);if(!candidates.length)return null;candidates.sort((a,b)=>b.pathScore-a.pathScore);return candidates[0];}
+  function consensusComponentCandidate(base,w,h,pitchPx){
+    const valid=base.filter(c=>c?.comp&&!c.comp.border&&c.comp.spanRatio>=.14&&c.comp.spanRatio<=.82&&c.comp.fill>=.012&&c.comp.fill<=.52);
+    if(valid.length<2)return null;
+    const votes=new Uint8Array(w*h);
+    for(const c of valid){for(const px of c.comp.pix){if(votes[px]<255)votes[px]++;}}
+    const need=valid.length>=4?2:2,mask=new Uint8Array(w*h);
+    for(let i=0;i<mask.length;i++)if(votes[i]>=need)mask[i]=1;
+    let m=morphClose(mask,w,h,clamp(Math.round((pitchPx||30)*.09),1,3));
+    m=morphOpen(m,w,h,1);
+    const comp=bestWireComponent(m,w,h)||largestComponent(m,w,h,true);
+    return comp?{comp,mask:m,threshold:null,invert:false,method:'다중 인식 합의 + 전체 선재 추출'}:null;
+  }
+  function samplePathForAgreement(path,count=32){
+    if(!path?.length)return[];if(path.length<=count)return path;
+    const cum=[0];for(let i=1;i<path.length;i++)cum.push(cum[i-1]+dist(path[i-1],path[i]));
+    const total=cum[cum.length-1]||1,out=[];let j=1;
+    for(let k=0;k<count;k++){
+      const t=total*k/(count-1);while(j<cum.length&&cum[j]<t)j++;
+      if(j>=cum.length){out.push(path[path.length-1]);continue;}
+      const a=path[j-1],b=path[j],u=(t-cum[j-1])/Math.max(1e-9,cum[j]-cum[j-1]);out.push({x:a.x+(b.x-a.x)*u,y:a.y+(b.y-a.y)*u});
+    }
+    return out;
+  }
+  function pathAgreement(a,b,pitchPx){
+    const pa=samplePathForAgreement(a.path),pb=samplePathForAgreement(b.path);if(!pa.length||!pb.length)return 0;
+    const nearest=(p,arr)=>{let d=Infinity;for(const q of arr)d=Math.min(d,dist(p,q));return d;};
+    const ds=[];for(const p of pa)ds.push(nearest(p,pb));for(const p of pb)ds.push(nearest(p,pa));ds.sort((x,y)=>x-y);
+    const med=ds[(ds.length/2)|0],scale=Math.max(5,(pitchPx||30)*.65);return Math.exp(-med/scale);
+  }
+  function collectComponentCandidates(imageData,gray,w,h,pitchPx){
+    const arr=[],pg=periodicGridWireComponent(gray,w,h,pitchPx),gw=gridWireComponent(gray,w,h,pitchPx);
+    if(pg?.comp)arr.push(pg);if(gw?.comp)arr.push(gw);
+    const bg=backgroundDifferenceMask(imageData,w,h,pitchPx),bgComp=largestComponent(bg.mask,w,h);if(bgComp)arr.push({comp:bgComp,mask:bg.mask,threshold:null,invert:false,method:'배경색/명암 분리'});
+    const t=otsu(gray);
+    for(const [thr,invert] of [[clamp(Math.round(t*.72),25,215),false],[clamp(Math.round(t*.82),25,220),false],[clamp(Math.round(t*.92),30,225),false],[clamp(Math.round(t*1.04),30,230),true]]){
+      const rr=processedComponent(gray,w,h,thr,invert,pitchPx);if(rr.comp)arr.push({...rr,threshold:thr,invert,method:'명암 보조'});
+    }
+    const cc=consensusComponentCandidate(arr,w,h,pitchPx);if(cc)arr.unshift(cc);
+    return arr;
+  }
+  function chooseComponent(imageData,gray,w,h,pitchPx,diameter) {
+    const candidates=collectComponentCandidates(imageData,gray,w,h,pitchPx).map(c=>candidateCenterPath(c,w,h,pitchPx,diameter)).filter(Boolean);
+    if(!candidates.length)return null;
+    for(let i=0;i<candidates.length;i++){
+      let sum=0,ws=0,bestAgree=0;
+      for(let j=0;j<candidates.length;j++)if(i!==j){const ag=pathAgreement(candidates[i],candidates[j],pitchPx);const wt=candidates[j].method.includes('다중 인식 합의')?1.3:1;sum+=ag*wt;ws+=wt;bestAgree=Math.max(bestAgree,ag);}
+      const consensus=ws?sum/ws:0;
+      candidates[i].consensus=consensus;
+      candidates[i].finalScore=candidates[i].pathScore+consensus*4.2+bestAgree*1.1+(candidates[i].method.includes('다중 인식 합의')?.65:0);
+    }
+    candidates.sort((a,b)=>b.finalScore-a.finalScore);
+    return candidates[0];
+  }
 
   function cropComponent(comp,w,h,pad=4){const x0=Math.max(0,comp.minX-pad),y0=Math.max(0,comp.minY-pad),x1=Math.min(w-1,comp.maxX+pad),y1=Math.min(h-1,comp.maxY+pad),cw=x1-x0+1,ch=y1-y0+1,m=new Uint8Array(cw*ch);for(const p of comp.pix){const y=(p/w)|0,x=p-y*w;m[(y-y0)*cw+(x-x0)]=1;}return{mask:m,w:cw,h:ch,x0,y0};}
 
@@ -666,7 +718,7 @@
       width,height,length,r1:NaN,r2:NaN,pathBase:p,path:p.map(q=>({...q})), rawPath:p.map(q=>({...q})), rawBBox:{minX:0,minY:0,maxX:width,maxY:height,w:width,h:height}, imageW:iw,imageH:ih,
       scaleSource:'자동 인식 실패 · 임시도면',scaleConfidence:.05,quality:.05,threshold:null,invert:false,
       segmentMethod:'임시 HOOK 형상',gridDetected:false,arDetected:false,gridReason:'',shapeFill:0,arDistanceMm:item.arDistanceMm||null,
-      dimensionEstimated:true,shapeEstimated:true,warning:reason, photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}
+      dimensionEstimated:true,shapeEstimated:true,warning:reason, photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx:1, mmPerPxX:1, mmPerPxY:1, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:false
     };
   }
 
@@ -737,10 +789,10 @@
       id:item.id,name:item.name.trim()||makeJigNumber(currentLineCode(),item.seq),material:item.material.trim()||'SUS304',diameter,
       baseWidth:width,baseHeight:height,baseLength:length,baseR1:r.r1,baseR2:r.r2,
       width,height,length,r1:r.r1,r2:r.r2,pathBase:pathMm,path:pathMm.map(p=>({...p})), rawPath:path.map(p=>({...p})), rawBBox:pb, imageW:ds.w, imageH:ds.h,
-      scaleSource,scaleConfidence,quality,threshold:seg.threshold,invert:seg.invert,segmentMethod:`${seg.method} · 전체경로 선택`,
+      scaleSource,scaleConfidence,quality,threshold:seg.threshold,invert:seg.invert,segmentMethod:`${seg.method} · 다중후보 자동선택`,consensus:Number.isFinite(seg.consensus)?seg.consensus:0,
       gridDetected:!!grid.pitch,arDetected:scaleSource==='AR 자동 측정',gridReason:grid.reason||'',shapeFill:comp.fill,arDistanceMm:item.arDistanceMm||null,
       dimensionEstimated:scaleSource.includes('추정')||scaleSource.includes('임시'), wirePxEstimate:wirePxEst,
-      shapeEstimated:suspiciousShape, warning:suspiciousShape?'배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':'', photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}
+      shapeEstimated:suspiciousShape, warning:suspiciousShape?'배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':'', photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx, mmPerPxX:mmPerPx, mmPerPxY:mmPerPx, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:false
     };
   }
 
@@ -757,7 +809,7 @@
       await new Promise(r=>setTimeout(r,25));
       try{
         item.photoDataUrl = item.photoDataUrl || await blobToDataURL(item.blob).catch(()=> '');
-        const result=await analyzeCapture(item);state.results.push({...result,ok:true});
+        const result=await analyzeCapture(item);if(result.captureType==='product'){result.shapeConfirmed=true;result.shapeEditMode=false;}else{const emergency=(result.segmentMethod||'').includes('임시 HOOK');result.shapeConfirmed=!emergency;result.shapeEditMode=false;result.autoShapeAccepted=!emergency;}state.results.push({...result,ok:true});
         revokeCapture(item);
       }catch(err){
         try{item.photoDataUrl = item.photoDataUrl || await blobToDataURL(item.blob).catch(()=> ''); const fallback=await makeEmergencyResult(item,err?.message||String(err));state.results.push({...fallback,ok:true});revokeCapture(item);}catch(_){state.results.push({id:item.id,name:item.name,material:item.material,diameter:parseFloat(item.diameter)||6,ok:false,error:err?.message||String(err)});}
@@ -856,6 +908,24 @@
     const pb=pathBounds(path);
     const sm=smoothPath(path, Math.max(1, Math.round(Math.min(pb.w,pb.h)*0.004)));
     return decimatePath(sm, Math.max(1.2, Math.min(pb.w,pb.h)*0.006));
+  }
+  function engineeringPath(path,diameter=6){
+    const raw=fidelityPath(path);if(raw.length<9)return raw;
+    const out=raw.map(p=>({...p})),n=raw.length,step=Math.max(2,Math.floor(n/55)),straight=new Uint8Array(n);
+    for(let i=step;i<n-step;i++){
+      const a=raw[i-step],b=raw[i],c=raw[i+step],v1x=b.x-a.x,v1y=b.y-a.y,v2x=c.x-b.x,v2y=c.y-b.y,m1=Math.hypot(v1x,v1y),m2=Math.hypot(v2x,v2y);
+      if(m1<1e-6||m2<1e-6)continue;const turn=Math.acos(clamp((v1x*v2x+v1y*v2y)/(m1*m2),-1,1))*180/Math.PI;if(turn<7.5)straight[i]=1;
+    }
+    const minLen=Math.max((Number(diameter)||6)*3.0,pathLength(raw)*.055),maxMove=Math.max((Number(diameter)||6)*.34,pathBounds(raw).w*.004);
+    let s=0;
+    while(s<n){while(s<n&&!straight[s])s++;if(s>=n)break;let e=s;while(e+1<n&&straight[e+1])e++;const a=Math.max(0,s-step),b=Math.min(n-1,e+step);let segLen=0;for(let i=a+1;i<=b;i++)segLen+=dist(raw[i-1],raw[i]);
+      if(segLen>=minLen&&b-a>=4){
+        let mx=0,my=0,cnt=0;for(let i=a;i<=b;i++){mx+=raw[i].x;my+=raw[i].y;cnt++;}mx/=cnt;my/=cnt;let xx=0,yy=0,xy=0;for(let i=a;i<=b;i++){const dx=raw[i].x-mx,dy=raw[i].y-my;xx+=dx*dx;yy+=dy*dy;xy+=dx*dy;}const ang=.5*Math.atan2(2*xy,xx-yy),ux=Math.cos(ang),uy=Math.sin(ang);
+        for(let i=a;i<=b;i++){const dx=raw[i].x-mx,dy=raw[i].y-my,t=dx*ux+dy*uy,px=mx+t*ux,py=my+t*uy,move=Math.hypot(px-raw[i].x,py-raw[i].y);if(move<=maxMove){const edge=Math.min((i-a)/Math.max(1,step),(b-i)/Math.max(1,step),1),blend=.78*clamp(edge,0,1);out[i].x=raw[i].x+(px-raw[i].x)*blend;out[i].y=raw[i].y+(py-raw[i].y)*blend;}}
+      }
+      s=e+1;
+    }
+    const rb=pathBounds(raw),ob=pathBounds(out),rl=pathLength(raw),ol=pathLength(out);if(ob.w<rb.w*.94||ob.h<rb.h*.94||ol<rl*.91||ol>rl*1.06)return raw;return out;
   }
   function simplifyAnchors(path){
     if(path.length<3) return path.slice();
@@ -1041,7 +1111,7 @@
     const W=1189,H=841, draw={x:95,y:90,w:760,h:610}, title={x:875,y:88,w:230,h:665};
     const variant = r.captureType==='product' ? 'photo' : currentRenderMode();
     const mmRaw=transformedPath(r);
-    const mmForDrawing=straightenPath(mmRaw);
+    const mmForDrawing=r.userShapeCorrected?fidelityPath(mmRaw):engineeringPath(mmRaw,r.diameter);
     const mmForDims=mmForDrawing;
     const date=new Date().toLocaleDateString('sv-SE');
     const width=parseFloat(r.width)||r.baseWidth, height=parseFloat(r.height)||r.baseHeight, length=parseFloat(r.length)||pathLength(mmRaw);
@@ -1052,7 +1122,7 @@
       const rawBounds=pathBounds(raw);
       const fit2=fitRect(rawBounds.w||1, rawBounds.h||1, {x:fit.x,y:fit.y,w:fit.w,h:fit.h});
       const rawScreen=raw.map(p=>({x:fit2.x+(p.x-rawBounds.minX)*fit2.scale,y:fit2.y+(p.y-rawBounds.minY)*fit2.scale}));
-      screen=straightenPath(rawScreen);
+      screen=rawScreen;
       shapeMarkup=`<rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}" fill="none" stroke="#bbb"/>${r.photoDataUrl?`<image href="${r.photoDataUrl}" x="${fit.x}" y="${fit.y}" width="${fit.w}" height="${fit.h}" preserveAspectRatio="xMidYMid meet"/>`:''}<polyline points="${rawScreen.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}" fill="none" stroke="rgba(0,0,0,.12)" stroke-width="2"/><polyline points="${screen.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}" fill="none" stroke="rgba(17,17,17,.45)" stroke-width="3"/>`;
     } else {
       const pb=pathBounds(mmForDrawing), sc=Math.min(draw.w/pb.w, draw.h/pb.h)*0.82, ox=draw.x+(draw.w-pb.w*sc)/2, oy=draw.y+(draw.h-pb.h*sc)/2;
@@ -1071,7 +1141,7 @@
     const svg=buildSvgOnly(r);
     const variant = r.captureType==='product' ? 'photo' : currentRenderMode();
     const W=1189,H=841, draw={x:95,y:90,w:760,h:610};
-    const mmPath = variant==='drawing' ? straightenPath(transformedPath(r)) : (r.rawPath&&r.rawPath.length?r.rawPath:transformedPath(r));
+    const mmPath = variant==='drawing' ? (r.userShapeCorrected?fidelityPath(transformedPath(r)):engineeringPath(transformedPath(r),r.diameter)) : (r.rawPath&&r.rawPath.length?r.rawPath:transformedPath(r));
     let screen=[];
     if(variant==='photo'){
       const fit=fitRect(r.imageW||1000, r.imageH||1000, draw); const pb=pathBounds(mmPath); const fit2=fitRect(pb.w||1,pb.h||1,{x:fit.x,y:fit.y,w:fit.w,h:fit.h});
@@ -1085,6 +1155,54 @@
     return `<div class="figure-frame ${variant==='photo'?'photo-variant':''}">${svg}${inputs}</div>${r.dimEditMode?'<div class="dim-edit-note">치수 편집 중 · 숫자 입력 후 「편집 종료」를 누르면 도면에 반영됩니다.</div>':''}`;
   }
 
+  function samplePathEvenly(path,count=14){
+    if(!path?.length)return[];if(path.length<=count)return path.map(p=>({...p}));
+    const cum=[0];for(let i=1;i<path.length;i++)cum.push(cum[i-1]+dist(path[i-1],path[i]));
+    const total=cum[cum.length-1]||1,out=[];
+    for(let k=0;k<count;k++){
+      const target=total*k/(count-1);let i=1;while(i<cum.length&&cum[i]<target)i++;
+      if(i>=cum.length){out.push({...path[path.length-1]});continue;}
+      const a=path[i-1],b=path[i],d0=cum[i-1],d1=cum[i],t=(target-d0)/Math.max(1e-9,d1-d0);
+      out.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
+    }
+    return out;
+  }
+  function initShapeNodes(r,force=false){
+    if(!force&&Array.isArray(r.shapeNodes)&&r.shapeNodes.length>=2)return;
+    const raw=(r.rawPath&&r.rawPath.length?r.rawPath:[]);
+    r.shapeNodes=samplePathEvenly(raw,Math.min(28,Math.max(14,Math.round(pathLength(raw)/45))));
+  }
+  function densifyPolyline(nodes,maxStep=4){
+    if(!nodes?.length)return[];const out=[{...nodes[0]}];
+    for(let i=1;i<nodes.length;i++){
+      const a=nodes[i-1],b=nodes[i],len=dist(a,b),n=Math.max(1,Math.ceil(len/maxStep));
+      for(let k=1;k<=n;k++){const t=k/n;out.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});}
+    }
+    return out;
+  }
+  function applyShapeCorrection(r){
+    if(!Array.isArray(r.shapeNodes)||r.shapeNodes.length<4){toast('중심선 기준점을 4개 이상 지정하세요.');return false;}
+    let raw=densifyPolyline(r.shapeNodes,3.5);raw=smoothPath(raw,1);const pb=pathBBox(raw);
+    const dia=Math.max(.1,parseFloat(r.diameter)||6);
+    let sx=Number(r.mmPerPxX),sy=Number(r.mmPerPxY);
+    if(!(sx>0)){const old=r.rawBBox||pathBBox(r.rawPath||raw);sx=(Math.max(dia+.1,r.baseWidth)-dia)/Math.max(1,old.w);}
+    if(!(sy>0)){const old=r.rawBBox||pathBBox(r.rawPath||raw);sy=(Math.max(dia+.1,r.baseHeight)-dia)/Math.max(1,old.h);}
+    const mm=raw.map(p=>({x:(p.x-pb.minX)*sx,y:(p.y-pb.minY)*sy}));
+    const mb=pathBBox(mm),width=mb.w+dia,height=mb.h+dia,length=pathLength(mm),rr=estimateRadii(mm,1,mb,dia);
+    r.rawPath=raw;r.rawBBox=pb;r.pathBase=mm;r.path=mm.map(p=>({...p}));
+    r.baseWidth=width;r.baseHeight=height;r.baseLength=length;r.baseR1=rr.r1;r.baseR2=rr.r2;
+    r.width=width;r.height=height;r.length=length;r.r1=rr.r1;r.r2=rr.r2;
+    r.userShapeCorrected=true;r.shapeConfirmed=true;r.shapeEditMode=false;r.quality=.99;r.shapeEstimated=false;
+    r.segmentMethod=(r.segmentMethod||'자동')+' · 사용자 중심선 보정';r.warning='사진 위 중심선을 사용자가 직접 보정한 결과입니다.';
+    return true;
+  }
+  function shapeEditorHtml(r){
+    if(!r.shapeEditMode)return'';initShapeNodes(r);
+    const iw=Math.max(1,r.imageW||1000),ih=Math.max(1,r.imageH||1000),nodes=r.shapeNodes||[],auto=r.rawPath||[];
+    const autoPts=auto.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' '),nodePts=nodes.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const circles=nodes.map((p,i)=>`<g><circle class="shape-node" data-node-index="${i}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${Math.max(7,Math.min(iw,ih)*.012).toFixed(1)}"/><text class="shape-node-label" x="${(p.x+10).toFixed(1)}" y="${(p.y-10).toFixed(1)}">${i+1}</text></g>`).join('');
+    return `<div class="shape-editor" data-shape-id="${escAttr(r.id)}"><div class="shape-editor-head"><b>보정선 · 최후 수단</b><span>자동 인식 형상이 실제와 다를 때만 사용하세요.</span></div><div class="shape-editor-stage"><svg class="shape-editor-svg" data-id="${escAttr(r.id)}" viewBox="0 0 ${iw} ${ih}" preserveAspectRatio="xMidYMid meet"><image href="${r.photoDataUrl||''}" x="0" y="0" width="${iw}" height="${ih}" preserveAspectRatio="xMidYMid meet"/><polyline class="shape-auto-line" points="${autoPts}"/><polyline class="shape-correct-line" points="${nodePts}"/>${circles}</svg></div><div class="shape-editor-actions"><button class="btn shape-reset" data-id="${r.id}">자동선 다시 맞춤</button><button class="btn shape-clear" data-id="${r.id}">직접 다시 찍기</button><button class="btn shape-undo" data-id="${r.id}">마지막 점 삭제</button><button class="btn shape-approve" data-id="${r.id}">자동선 그대로 승인</button><button class="btn primary-action shape-apply" data-id="${r.id}">이 중심선으로 도면 확정</button></div><div class="shape-editor-help"><b>자동 인식 보조 기능</b> · 기본적으로 자동 중심선을 그대로 사용합니다. 자동 결과가 실물과 명확히 다를 때만 청록 점을 이동하거나 직접 중심점을 찍어 보정하세요.</div></div>`;
+  }
   function renderResults() {
     const host=$('resultList');
     if(!state.results.length){host.innerHTML='<div class="empty-state">생성된 도면이 없습니다.</div>';return;}
@@ -1092,7 +1210,8 @@
       if(!r.ok)return `<div class="result-item failed" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge quality bad">생성 실패</span></div><div class="result-msg">${esc(r.error)}</div></div>`;
       const quality=r.quality>.76?'양호':r.quality>.53?'보통':'확인필요';
       const modeText=(r.captureType==='product')?'제품 실제사진':'치구 '+(currentRenderMode()==='photo'?'실제사진':'도면');
-      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${r.arDetected?'ar ':''}${r.quality<.53?'quality bad':''}">${esc(modeText)} · ${quality}</span></div>${makeFigureHtml(r)}<div class="edit-grid"><label>전체 폭 mm<input data-rfield="width" type="number" step="0.1" value="${n1(r.width)}"></label><label>전체 높이 mm<input data-rfield="height" type="number" step="0.1" value="${n1(r.height)}"></label><label>전개길이 mm<input data-rfield="length" type="number" step="0.1" value="${n1(r.length)}"></label><label>상부 R mm<input data-rfield="r1" type="number" step="0.1" value="${n1(r.r1)}"></label><label>하부 R mm<input data-rfield="r2" type="number" step="0.1" value="${n1(r.r2)}"></label><label>Ø mm<input data-rfield="diameter" type="number" step="0.1" value="${n1(r.diameter)}"></label></div><div class="result-actions"><button class="btn dim-edit-btn ${r.dimEditMode?'active':''}" data-id="${r.id}">${r.dimEditMode?'편집 종료':'치수 편집'}</button><button class="btn apply-dims" data-id="${r.id}">폭/높이 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 도면 PDF</button></div><div class="result-msg">형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)} · 형상 보존을 우선 적용하며, 치수 표시=${currentDimensionDetail()==='full'?'상세':'기본'}입니다. 격자값은 Ø와 선재 굵기로 교차검증합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
+      const autoOk=r.shapeConfirmed&&!r.userShapeCorrected,autoLabel=autoOk?(r.quality>.76?'자동 인식 · 양호':r.quality>.53?'자동 인식 · 보통':'자동 인식 · 확인권장'):'보정 필요';
+      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}<div class="edit-grid"><label>전체 폭 mm<input data-rfield="width" type="number" step="0.1" value="${n1(r.width)}"></label><label>전체 높이 mm<input data-rfield="height" type="number" step="0.1" value="${n1(r.height)}"></label><label>전개길이 mm<input data-rfield="length" type="number" step="0.1" value="${n1(r.length)}"></label><label>상부 R mm<input data-rfield="r1" type="number" step="0.1" value="${n1(r.r1)}"></label><label>하부 R mm<input data-rfield="r2" type="number" step="0.1" value="${n1(r.r2)}"></label><label>Ø mm<input data-rfield="diameter" type="number" step="0.1" value="${n1(r.diameter)}"></label></div><div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-edit-btn ${r.dimEditMode?'active':''}" data-id="${r.id}">${r.dimEditMode?'편집 종료':'치수 편집'}</button><button class="btn apply-dims" data-id="${r.id}">폭/높이 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 도면 PDF</button></div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. 자동 형상 보존을 우선하며, 실제 직선으로 판단된 구간만 제한적으로 직선화합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
     }).join('');
   }
 
@@ -1104,10 +1223,39 @@
   });
 
   $('resultList').addEventListener('click',async e=>{
-    const edit=e.target.closest('.dim-edit-btn'),apply=e.target.closest('.apply-dims'),one=e.target.closest('.export-one');
+    const shape=e.target.closest('.shape-edit-btn'),reset=e.target.closest('.shape-reset'),clear=e.target.closest('.shape-clear'),undo=e.target.closest('.shape-undo'),approve=e.target.closest('.shape-approve'),shapeApply=e.target.closest('.shape-apply'),edit=e.target.closest('.dim-edit-btn'),apply=e.target.closest('.apply-dims'),one=e.target.closest('.export-one');
+    if(shape){const r=state.results.find(x=>x.id===shape.dataset.id);if(!r?.ok)return;r.shapeEditMode=!r.shapeEditMode;if(r.shapeEditMode)initShapeNodes(r);renderResults();return;}
+    if(reset){const r=state.results.find(x=>x.id===reset.dataset.id);if(!r?.ok)return;initShapeNodes(r,true);renderResults();return;}
+    if(clear){const r=state.results.find(x=>x.id===clear.dataset.id);if(!r?.ok)return;r.shapeNodes=[];renderResults();toast('사진의 한쪽 끝부터 중심점을 순서대로 터치하세요.');return;}
+    if(undo){const r=state.results.find(x=>x.id===undo.dataset.id);if(!r?.ok)return;r.shapeNodes?.pop();renderResults();return;}
+    if(approve){const r=state.results.find(x=>x.id===approve.dataset.id);if(!r?.ok)return;initShapeNodes(r,true);if(applyShapeCorrection(r)){r.segmentMethod=(r.segmentMethod||'자동')+' · 자동 중심선 승인';renderResults();toast('자동 중심선을 제작 형상으로 확정했습니다.');}return;}
+    if(shapeApply){const r=state.results.find(x=>x.id===shapeApply.dataset.id);if(!r?.ok)return;if(applyShapeCorrection(r)){renderResults();toast('보정한 중심선으로 도면을 다시 생성했습니다.');}return;}
     if(edit){const r=state.results.find(x=>x.id===edit.dataset.id);if(!r?.ok)return;r.dimEditMode=!r.dimEditMode;renderResults();return;}
     if(apply){const r=state.results.find(x=>x.id===apply.dataset.id);if(!r?.ok)return;recalcFromDimensions(r);renderResults();toast('폭/높이를 형상에 반영했습니다.');}
     if(one){const r=state.results.find(x=>x.id===one.dataset.id);if(r?.ok)await exportPdf([r],`${safeName(r.name)}_drawing.pdf`);}
+  });
+
+  let shapeDrag=null,shapeMoved=false;
+  function svgPointFromEvent(svg,e){
+    const r=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
+    return{x:vb.x+(e.clientX-r.left)*vb.width/Math.max(1,r.width),y:vb.y+(e.clientY-r.top)*vb.height/Math.max(1,r.height)};
+  }
+  $('resultList').addEventListener('pointerdown',e=>{
+    const node=e.target.closest('.shape-node');if(!node)return;const svg=node.closest('.shape-editor-svg'),r=state.results.find(x=>x.id===svg?.dataset.id);if(!r)return;
+    shapeDrag={r,svg,index:parseInt(node.dataset.nodeIndex,10),pointerId:e.pointerId};shapeMoved=false;node.setPointerCapture?.(e.pointerId);e.preventDefault();
+  });
+  $('resultList').addEventListener('pointermove',e=>{
+    if(!shapeDrag||shapeDrag.pointerId!==e.pointerId)return;const p=svgPointFromEvent(shapeDrag.svg,e),r=shapeDrag.r,i=shapeDrag.index;if(!r.shapeNodes?.[i])return;
+    r.shapeNodes[i]={x:clamp(p.x,0,r.imageW||1000),y:clamp(p.y,0,r.imageH||1000)};shapeMoved=true;
+    const svg=shapeDrag.svg,poly=svg.querySelector('.shape-correct-line'),node=svg.querySelector(`.shape-node[data-node-index="${i}"]`),label=node?.parentElement?.querySelector('text');
+    if(poly)poly.setAttribute('points',r.shapeNodes.map(q=>`${q.x.toFixed(1)},${q.y.toFixed(1)}`).join(' '));
+    if(node){node.setAttribute('cx',p.x);node.setAttribute('cy',p.y);}if(label){label.setAttribute('x',p.x+10);label.setAttribute('y',p.y-10);}e.preventDefault();
+  });
+  $('resultList').addEventListener('pointerup',e=>{if(shapeDrag?.pointerId===e.pointerId){shapeDrag=null;setTimeout(()=>shapeMoved=false,30);e.preventDefault();}});
+  $('resultList').addEventListener('pointercancel',()=>{shapeDrag=null;shapeMoved=false;});
+  $('resultList').addEventListener('click',e=>{
+    const svg=e.target.closest('.shape-editor-svg');if(!svg||e.target.closest('.shape-node')||shapeMoved)return;const r=state.results.find(x=>x.id===svg.dataset.id);if(!r?.shapeEditMode)return;
+    if(!Array.isArray(r.shapeNodes))r.shapeNodes=[];const p=svgPointFromEvent(svg,e);r.shapeNodes.push({x:p.x,y:p.y});renderResults();
   });
 
   // ---------------- Export ----------------
@@ -1130,7 +1278,7 @@
     ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.save();ctx.scale(sx,sy);
     const draw={x:95,y:90,w:760,h:610},title={x:875,y:88,w:230,h:665};
     const variant=r.captureType==='product'?'photo':currentRenderMode();
-    const mmRaw=transformedPath(r), mmDraw=straightenPath(mmRaw), date=new Date().toLocaleDateString('sv-SE');
+    const mmRaw=transformedPath(r), mmDraw=r.userShapeCorrected?fidelityPath(mmRaw):engineeringPath(mmRaw,r.diameter), date=new Date().toLocaleDateString('sv-SE');
     const width=parseFloat(r.width)||r.baseWidth,height=parseFloat(r.height)||r.baseHeight,length=parseFloat(r.length)||pathLength(mmRaw);
     ctx.strokeStyle='#111';ctx.lineWidth=1.4;ctx.strokeRect(28,28,1133,785);
     ctx.fillStyle='#111';ctx.font='700 13px sans-serif';ctx.fillText('3. 도면 (치수표기)',85,58);
@@ -1211,11 +1359,16 @@
   }
 
   async function exportPdf(results,name='HOOK_batch_drawings.pdf') {
-    if(!results.length)return;setStatus('PDF 생성중','busy');try{const pdf=await makePdf(results);await shareOrDownload(pdf,name);setStatus('PDF 생성 완료','ok');}catch(err){setStatus('PDF 실패','warn');alert(`PDF 생성 실패: ${err?.message||err}`);}
+    if(!results.length)return;
+    const unconfirmed=results.filter(r=>r.captureType!=='product'&&!r.shapeConfirmed);
+    if(unconfirmed.length){setStatus('형상 확인 필요','warn');alert(`자동 인식 실패 건은 보정선 적용 후 PDF를 생성하세요. 미처리 ${unconfirmed.length}건`);return;}
+    setStatus('PDF 생성중','busy');try{const pdf=await makePdf(results);await shareOrDownload(pdf,name);setStatus('PDF 생성 완료','ok');}catch(err){setStatus('PDF 실패','warn');alert(`PDF 생성 실패: ${err?.message||err}`);}
   }
 
   async function exportDxf() {
-    const ok=state.results.filter(r=>r.ok);if(!ok.length)return;const text=makeBatchDxf(ok),blob=new Blob([text],{type:'application/dxf;charset=utf-8'});await shareOrDownload(blob,'HOOK_batch_drawings.dxf');
+    const ok=state.results.filter(r=>r.ok);if(!ok.length)return;
+    const unconfirmed=ok.filter(r=>r.captureType!=='product'&&!r.shapeConfirmed);if(unconfirmed.length){alert(`자동 인식 실패 건은 보정선 적용 후 DXF를 생성하세요. 미처리 ${unconfirmed.length}건`);return;}
+    const text=makeBatchDxf(ok),blob=new Blob([text],{type:'application/dxf;charset=utf-8'});await shareOrDownload(blob,'HOOK_batch_drawings.dxf');
   }
 
   function newJob() {
@@ -1263,10 +1416,10 @@
   window.addEventListener('pagehide',()=>{stopCamera();state.captures.forEach(revokeCapture);});
 
   if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-    navigator.serviceWorker.register('./sw.js?v=0.7.0').then(reg=>reg.update()).catch(()=>{});
+    navigator.serviceWorker.register('./sw.js?v=0.8.2').then(reg=>reg.update()).catch(()=>{});
   }
 
-  const APP_VERSION='0.7.0';
+  const APP_VERSION='0.8.2';
   if(/^https?:$/.test(location.protocol)){setTimeout(async()=>{try{const res=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store'});if(!res.ok)return;const latest=(await res.json()).version;if(!latest||latest===APP_VERSION)return;if('caches' in window){for(const key of await caches.keys())await caches.delete(key);}if('serviceWorker' in navigator){for(const reg of await navigator.serviceWorker.getRegistrations())await reg.unregister();}location.replace(`./?v=${encodeURIComponent(latest)}&refresh=${Date.now()}`);}catch(_){}},1800);}
 
   // Test hooks are available only when ?test=1 is present. They are not shown in normal use.
