@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; img-src 'self' blob: data:; media-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; worker-src 'self' blob:;" />
-  <title>HOOK 모바일 자동도면 v0.6.3</title>
+  <title>HOOK 모바일 자동도면 v0.6.4</title>
   <link rel="manifest" href="manifest.json?v=0.6.3" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="stylesheet" href="styles.css?v=0.6.3" />
@@ -20,14 +20,14 @@
   <header class="topbar">
     <div>
       <div class="eyebrow">COTEC JIG DRAWING</div>
-      <h1>HOOK 모바일 자동도면 <small>v0.6.3</small></h1>
+      <h1>HOOK 모바일 자동도면 <small>v0.6.4</small></h1>
       <p>치구 · 제품 공용 / 촬영 원본은 사진첩에 저장하지 않음 / 저장된 사진 첨부 가능</p>
     </div>
     <span id="statusPill" class="pill">준비</span>
   </header>
 
   <div class="mode-tabs card slim-card">
-    <button id="tabJigBtn" class="tab-btn active">제품 치구</button>
+    <button id="tabJigBtn" class="tab-btn active">치구 촬영</button>
     <button id="tabProductBtn" class="tab-btn">제품 촬영</button>
   </div>
 
@@ -190,17 +190,6 @@
           <button id="newJobBtn" class="btn danger big">새 촬영 시작</button>
         </div>
         <p class="warn">치구 모드는 실제 사진 또는 설계도면 형식 중 선택할 수 있습니다. 제품 촬영 모드는 실제 사진 위 치수 표기만 적용됩니다.</p>
-      </div>
-    </details>
-
-    <details class="card menu-card privacy-panel">
-      <summary class="menu-summary">
-        <div class="summary-main"><span class="privacy-mini">✓</span><div><b>사진 저장 · 개인정보 안내</b><small>촬영 원본 저장 정책 확인</small></div></div>
-        <span class="summary-arrow">⌄</span>
-      </summary>
-      <div class="menu-content privacy-content">
-        <b>촬영 사진은 사진첩에 저장하지 않습니다.</b>
-        <p>카메라 프레임은 분석을 위해 메모리에서만 임시 사용합니다. 저장된 사진을 첨부한 경우에도 서버 업로드 없이 브라우저 내부에서만 분석합니다.</p>
       </div>
     </details>
 

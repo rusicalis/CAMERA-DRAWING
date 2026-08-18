@@ -47,8 +47,8 @@
   function safeName(s) { return String(s || 'HOOK').replace(/[\\/:*?"<>|\s]+/g, '_'); }
 
   // ---------------- Jig numbering / settings ----------------
-  const LINE_CODES_KEY = 'hookDrawing.lineCodes.v060';
-  const LAST_NUMBERS_KEY = 'hookDrawing.lastNumbers.v060';
+  const LINE_CODES_KEY = 'hookDrawing.lineCodes.v064';
+  const LAST_NUMBERS_KEY = 'hookDrawing.lastNumbers.v064';
   const DEFAULT_LINE_CODES = ['NNI','AG'];
 
   function padJigNo(n) { return String(clamp(Math.round(Number(n) || 1), 1, 999)).padStart(3,'0'); }
@@ -727,44 +727,72 @@
     }
     return [first,last];
   }
-  function snapAngleDeg(deg){
+  function snapAngleDeg(deg,tol=7){
     const targets=[0,15,30,45,60,75,90,105,120,135,150,165,180,-15,-30,-45,-60,-75,-90,-105,-120,-135,-150,-165,-180];
     let best=deg,bd=999;
     for(const t of targets){const d=Math.abs((((deg-t)+180)%360)-180);if(d<bd){bd=d;best=t;}}
-    return bd<=7?best:deg;
+    return bd<=tol?best:deg;
+  }
+  function extremaIndices(path){
+    if(!path.length) return [];
+    let minX=0,maxX=0,minY=0,maxY=0;
+    for(let i=1;i<path.length;i++){
+      if(path[i].x<path[minX].x) minX=i;
+      if(path[i].x>path[maxX].x) maxX=i;
+      if(path[i].y<path[minY].y) minY=i;
+      if(path[i].y>path[maxY].y) maxY=i;
+    }
+    return [minX,maxX,minY,maxY];
+  }
+  function fidelityPath(path){
+    if(path.length<3) return path.slice();
+    const pb=pathBounds(path);
+    const sm=smoothPath(path, Math.max(1, Math.round(Math.min(pb.w,pb.h)*0.004)));
+    return decimatePath(sm, Math.max(1.2, Math.min(pb.w,pb.h)*0.006));
   }
   function simplifyAnchors(path){
     if(path.length<3) return path.slice();
-    const pb=pathBounds(path), eps=Math.max(0.8,Math.min(pb.w,pb.h)*0.012);
-    let pts=rdpSimplify(path,eps);
-    if(pts.length>10) pts=rdpSimplify(pts,eps*1.6);
-    const out=[pts[0]];
-    for(let i=1;i<pts.length-1;i++){
-      const a=out[out.length-1],b=pts[i],c=pts[i+1];
-      const ab=dist(a,b),bc=dist(b,c); if(ab<2.5||bc<2.5) continue;
-      const v1x=b.x-a.x,v1y=b.y-a.y,v2x=c.x-b.x,v2y=c.y-b.y;
-      const ang=Math.acos(clamp((v1x*v2x+v1y*v2y)/(Math.max(1e-9,ab*bc)),-1,1))*180/Math.PI;
-      if(ang<8) continue;
-      out.push(b);
+    const lvl=currentStraightenLevel();
+    const base=buildAnchorIndices(path);
+    const ext=extremaIndices(path);
+    const stride=lvl==='medium'?Math.max(10,Math.floor(path.length/7)):lvl==='max'?Math.max(6,Math.floor(path.length/12)):Math.max(8,Math.floor(path.length/9));
+    const ptsIdx=[0,path.length-1,...base,...ext];
+    for(let i=stride;i<path.length-1;i+=stride) ptsIdx.push(i);
+    const uniq=[...new Set(ptsIdx)].sort((a,b)=>a-b);
+    const minGap=lvl==='max'?2:lvl==='medium'?8:5;
+    const keep=[];
+    for(const i of uniq){
+      if(!keep.length || i-keep[keep.length-1]>=minGap || i===path.length-1) keep.push(i);
+      else {
+        const prev=keep[keep.length-1];
+        const pi=path[i], pp=path[prev];
+        if(Math.hypot(pi.x-pp.x,pi.y-pp.y)>minGap*1.5) keep.push(i);
+      }
     }
-    out.push(pts[pts.length-1]);
-    return out;
+    return keep.map(i=>({...path[i]}));
   }
   function straightenPath(path){
-    const pts=simplifyAnchors(path);
-    if(pts.length<2) return path.slice();
+    const raw=fidelityPath(path);
+    const pts=simplifyAnchors(raw);
+    if(pts.length<2) return raw;
+    const lvl=currentStraightenLevel();
+    const tol=lvl==='medium'?3:lvl==='max'?10:7;
     const out=[{...pts[0]}];
     for(let i=1;i<pts.length;i++){
       const prev=out[out.length-1],src=pts[i];
       const dx=src.x-prev.x,dy=src.y-prev.y,len=Math.hypot(dx,dy);
-      if(len<1){continue;}
-      let deg=Math.atan2(dy,dx)*180/Math.PI;
-      const snapped=snapAngleDeg(deg);
-      const rad=snapped*Math.PI/180;
+      if(len<1) continue;
+      const deg=Math.atan2(dy,dx)*180/Math.PI;
+      const snapped=snapAngleDeg(deg,tol);
+      const useSnap=Math.abs(snapped-deg)>1e-6;
+      const rad=(useSnap?snapped:deg)*Math.PI/180;
       let nx=prev.x+Math.cos(rad)*len, ny=prev.y+Math.sin(rad)*len;
-      if(i===pts.length-1 && Math.hypot(nx-src.x,ny-src.y)>len*.12){nx=src.x;ny=src.y;}
+      if(i===pts.length-1 && Math.hypot(nx-src.x,ny-src.y)>len*.15){nx=src.x;ny=src.y;}
       out.push({x:nx,y:ny});
     }
+    const rb=pathBounds(raw), ob=pathBounds(out), rawLen=pathLength(raw), outLen=pathLength(out);
+    if(out.length<5 && raw.length>=5) return raw;
+    if(outLen<rawLen*0.60 || outLen>rawLen*1.28 || ob.w<rb.w*0.68 || ob.h<rb.h*0.68) return raw;
     return out;
   }
   function cornerArcData(path){
@@ -899,10 +927,10 @@
     } else {
       const pb=pathBounds(mmForDrawing), sc=Math.min(draw.w/pb.w, draw.h/pb.h)*0.82, ox=draw.x+(draw.w-pb.w*sc)/2, oy=draw.y+(draw.h-pb.h*sc)/2;
       screen=mmForDrawing.map(p=>({x:ox+(p.x-pb.minX)*sc,y:oy+(p.y-pb.minY)*sc}));
-      const cad=buildCadPath(screen,1);
+      const centerPts=screen.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
       const wirePx=clamp((parseFloat(r.diameter)||6)*sc,4,24);
       photoInset = r.photoDataUrl ? `<rect x="75" y="575" width="145" height="205" fill="none" stroke="#888"/><image href="${r.photoDataUrl}" x="78" y="578" width="139" height="199" preserveAspectRatio="xMidYMid meet"/>` : '';
-      shapeMarkup=`<path d="${cad.d}" fill="none" stroke="#111" stroke-width="${wirePx.toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${cad.d}" class="light-guide"/>${photoInset}`;
+      shapeMarkup=`<polyline points="${centerPts}" fill="none" stroke="#111" stroke-width="${wirePx.toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${centerPts}" class="light-guide" fill="none"/>${photoInset}`;
     }
     const specs=buildDimensionSpecs(mmForDims,screen,W,H);
     const dimSvg=makeDimSvg(specs,r,true);
@@ -917,12 +945,12 @@
     let screen=[];
     if(variant==='photo'){
       const fit=fitRect(r.imageW||1000, r.imageH||1000, draw); const pb=pathBounds(mmPath); const fit2=fitRect(pb.w||1,pb.h||1,{x:fit.x,y:fit.y,w:fit.w,h:fit.h});
-      screen=straightenPath(mmPath.map(p=>({x:fit2.x+(p.x-pb.minX)*fit2.scale,y:fit2.y+(p.y-pb.minY)*fit2.scale})));
+      screen=mmPath.map(p=>({x:fit2.x+(p.x-pb.minX)*fit2.scale,y:fit2.y+(p.y-pb.minY)*fit2.scale}));
     } else {
       const pb=pathBounds(mmPath), sc=Math.min(draw.w/pb.w, draw.h/pb.h)*0.82, ox=draw.x+(draw.w-pb.w*sc)/2, oy=draw.y+(draw.h-pb.h*sc)/2;
       screen=mmPath.map(p=>({x:ox+(p.x-pb.minX)*sc,y:oy+(p.y-pb.minY)*sc}));
     }
-    const specs=buildDimensionSpecs(variant==='drawing'?straightenPath(transformedPath(r)):transformedPath(r),screen,W,H);
+    const specs=buildDimensionSpecs(variant==='drawing'?mmPath:transformedPath(r),screen,W,H);
     const inputs = specs.map(s=>`<input class="dim-input-overlay" data-id="${escAttr(r.id)}" data-dimkey="${escAttr(s.key)}" type="number" step="0.1" value="${escAttr(n1(readDimValue(r,s.key,s.value)))}" style="left:${(s.textX/W*100).toFixed(2)}%;top:${(s.textY/H*100).toFixed(2)}%;" title="${escAttr(s.key)}">`).join('');
     return `<div class="figure-frame ${variant==='photo'?'photo-variant':''}">${svg}${inputs}</div>`;
   }
@@ -1056,10 +1084,10 @@
   window.addEventListener('pagehide',()=>{stopCamera();state.captures.forEach(revokeCapture);});
 
   if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-    navigator.serviceWorker.register('./sw.js?v=0.6.3').then(reg=>reg.update()).catch(()=>{});
+    navigator.serviceWorker.register('./sw.js?v=0.6.4').then(reg=>reg.update()).catch(()=>{});
   }
 
-  const APP_VERSION='0.6.3';
+  const APP_VERSION='0.6.4';
   if(/^https?:$/.test(location.protocol)){setTimeout(async()=>{try{const res=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store'});if(!res.ok)return;const latest=(await res.json()).version;if(!latest||latest===APP_VERSION)return;if('caches' in window){for(const key of await caches.keys())await caches.delete(key);}if('serviceWorker' in navigator){for(const reg of await navigator.serviceWorker.getRegistrations())await reg.unregister();}location.replace(`./?v=${encodeURIComponent(latest)}&refresh=${Date.now()}`);}catch(_){}},1800);}
 
   // Test hooks are available only when ?test=1 is present. They are not shown in normal use.
