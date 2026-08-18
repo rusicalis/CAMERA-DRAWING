@@ -519,6 +519,44 @@
     }
     return best;
   }
+
+  function detectPaperRect(imageData,w,h,pitchPx){
+    const data=imageData.data,mask=new Uint8Array(w*h);
+    for(let i=0,j=0;i<data.length;i+=4,j++){
+      const r=data[i],g=data[i+1],b=data[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+      const lum=r*.299+g*.587+b*.114,sat=mx-mn;
+      if((lum>=158&&sat<=62)||(lum>=175&&sat<=88))mask[j]=1;
+    }
+    let m=mask;
+    const rr=clamp(Math.round((pitchPx||24)*.16),1,5);
+    m=morphClose(m,w,h,Math.max(2,rr+1));
+    m=morphOpen(m,w,h,1);
+    const comp=largestComponent(m,w,h,false);
+    if(!comp)return null;
+    const bw=comp.maxX-comp.minX+1,bh=comp.maxY-comp.minY+1,fill=comp.area/Math.max(1,bw*bh),areaRatio=comp.area/Math.max(1,w*h),aspect=bw/Math.max(1,bh);
+    const spanX=bw/Math.max(1,w),spanY=bh/Math.max(1,h);
+    if(areaRatio<.10||fill<.42||spanX<.28||spanY<.28||spanX>.96||spanY>.96)return null;
+    if(aspect<.45||aspect>1.35)return null;
+    const margin=Math.max(6,Math.round((pitchPx||24)*.9));
+    const inner={x0:clamp(comp.minX+margin,0,w-1),y0:clamp(comp.minY+margin,0,h-1),x1:clamp(comp.maxX-margin,0,w-1),y1:clamp(comp.maxY-margin,0,h-1)};
+    inner.w=Math.max(1,inner.x1-inner.x0+1);inner.h=Math.max(1,inner.y1-inner.y0+1);
+    return {outer:{x0:comp.minX,y0:comp.minY,x1:comp.maxX,y1:comp.maxY,w:bw,h:bh},inner,fill,areaRatio,aspect,method:'촬영판(격자지) 내부 제한'};
+  }
+  function restrictCandidateToRect(candidate,w,h,rect){
+    if(!candidate?.mask||!rect)return candidate;
+    const x0=Math.max(0,rect.x0|0),y0=Math.max(0,rect.y0|0),x1=Math.min(w-1,rect.x1|0),y1=Math.min(h-1,rect.y1|0);
+    if(x1<=x0||y1<=y0)return null;
+    const m=new Uint8Array(w*h);
+    for(let y=y0;y<=y1;y++){
+      const off=y*w;
+      for(let x=x0;x<=x1;x++){
+        const i=off+x;
+        if(candidate.mask[i])m[i]=1;
+      }
+    }
+    const comp=bestWireComponent(m,w,h)||largestComponent(m,w,h,true);
+    return comp?{comp,mask:m,threshold:candidate.threshold,invert:candidate.invert,method:`${candidate.method} · 촬영판 내부 제한`}:null;
+  }
   function periodicGridWireComponent(gray,w,h,pitchPx){
     if(!pitchPx)return null;
     const phase=estimatePeriodicGridPhase(gray,w,h,pitchPx);if(!phase)return null;
@@ -634,26 +672,35 @@
     const ds=[];for(const p of pa)ds.push(nearest(p,pb));for(const p of pb)ds.push(nearest(p,pa));ds.sort((x,y)=>x-y);
     const med=ds[(ds.length/2)|0],scale=Math.max(5,(pitchPx||30)*.65);return Math.exp(-med/scale);
   }
-  function collectComponentCandidates(imageData,gray,w,h,pitchPx){
+  function collectComponentCandidates(imageData,gray,w,h,pitchPx,paperRect){
     const arr=[],pg=periodicGridWireComponent(gray,w,h,pitchPx),gw=gridWireComponent(gray,w,h,pitchPx);
-    if(pg?.comp)arr.push(pg);if(gw?.comp)arr.push(gw);
-    const bg=backgroundDifferenceMask(imageData,w,h,pitchPx),bgComp=largestComponent(bg.mask,w,h);if(bgComp)arr.push({comp:bgComp,mask:bg.mask,threshold:null,invert:false,method:'배경색/명암 분리'});
+    const add=(c)=>{
+      if(!c?.comp)return;
+      if(paperRect?.inner){
+        const rc=restrictCandidateToRect(c,w,h,paperRect.inner);
+        if(rc?.comp)arr.push(rc);
+      }
+      arr.push(c);
+    };
+    add(pg);add(gw);
+    const bg=backgroundDifferenceMask(imageData,w,h,pitchPx),bgComp=largestComponent(bg.mask,w,h);
+    if(bgComp)add({comp:bgComp,mask:bg.mask,threshold:null,invert:false,method:'배경색/명암 분리'});
     const t=otsu(gray);
     for(const [thr,invert] of [[clamp(Math.round(t*.72),25,215),false],[clamp(Math.round(t*.82),25,220),false],[clamp(Math.round(t*.92),30,225),false],[clamp(Math.round(t*1.04),30,230),true]]){
-      const rr=processedComponent(gray,w,h,thr,invert,pitchPx);if(rr.comp)arr.push({...rr,threshold:thr,invert,method:'명암 보조'});
+      const rr=processedComponent(gray,w,h,thr,invert,pitchPx);if(rr.comp)add({...rr,threshold:thr,invert,method:'명암 보조'});
     }
     const cc=consensusComponentCandidate(arr,w,h,pitchPx);if(cc)arr.unshift(cc);
     return arr;
   }
-  function chooseComponent(imageData,gray,w,h,pitchPx,diameter) {
-    const candidates=collectComponentCandidates(imageData,gray,w,h,pitchPx).map(c=>candidateCenterPath(c,w,h,pitchPx,diameter)).filter(Boolean);
+  function chooseComponent(imageData,gray,w,h,pitchPx,diameter,paperRect) {
+    const candidates=collectComponentCandidates(imageData,gray,w,h,pitchPx,paperRect).map(c=>candidateCenterPath(c,w,h,pitchPx,diameter)).filter(Boolean);
     if(!candidates.length)return null;
     for(let i=0;i<candidates.length;i++){
       let sum=0,ws=0,bestAgree=0;
       for(let j=0;j<candidates.length;j++)if(i!==j){const ag=pathAgreement(candidates[i],candidates[j],pitchPx);const wt=candidates[j].method.includes('다중 인식 합의')?1.3:1;sum+=ag*wt;ws+=wt;bestAgree=Math.max(bestAgree,ag);}
       const consensus=ws?sum/ws:0;
       candidates[i].consensus=consensus;
-      candidates[i].finalScore=candidates[i].pathScore+consensus*4.2+bestAgree*1.1+(candidates[i].method.includes('다중 인식 합의')?.65:0);
+      let roiBonus=0; if(candidates[i].method.includes('촬영판 내부 제한')) roiBonus+=1.45; if(paperRect?.inner){ const pb=candidates[i].pb||{}; const cx=(pb.minX+pb.maxX)/2,cy=(pb.minY+pb.maxY)/2; if(cx<paperRect.inner.x0||cx>paperRect.inner.x1||cy<paperRect.inner.y0||cy>paperRect.inner.y1) roiBonus-=2.2; } candidates[i].finalScore=candidates[i].pathScore+consensus*4.2+bestAgree*1.1+(candidates[i].method.includes('다중 인식 합의')?.65:0)+roiBonus;
     }
     candidates.sort((a,b)=>b.finalScore-a.finalScore);
     return candidates[0];
@@ -727,7 +774,8 @@
     const ds=await blobToCanvas(item.blob),gray=grayArray(ds.imageData),grid=detectGrid(gray,ds.w,ds.h);
     const diameter=Math.max(.1,parseFloat(item.diameter)||6);
     const pitch=grid.pitch||Math.max(18,Math.min(ds.w,ds.h)/20);
-    const seg=chooseComponent(ds.imageData,gray,ds.w,ds.h,grid.pitch||null,diameter);
+    const paperRect=detectPaperRect(ds.imageData,ds.w,ds.h,pitch);
+    const seg=chooseComponent(ds.imageData,gray,ds.w,ds.h,grid.pitch||null,diameter,paperRect);
     if(!seg?.comp||seg.comp.area<Math.max(70,ds.w*ds.h*.00035)) return await makeEmergencyResult(item,'치구 형상을 충분히 찾지 못해 임시 형상으로 생성했습니다.');
     const comp=seg.comp;
     const suspiciousShape=!!(comp.border||comp.fill>.62||comp.spanRatio<.14||seg.span<.20||seg.curve<1.12);
@@ -792,7 +840,7 @@
       scaleSource,scaleConfidence,quality,threshold:seg.threshold,invert:seg.invert,segmentMethod:`${seg.method} · 다중후보 자동선택`,consensus:Number.isFinite(seg.consensus)?seg.consensus:0,
       gridDetected:!!grid.pitch,arDetected:scaleSource==='AR 자동 측정',gridReason:grid.reason||'',shapeFill:comp.fill,arDistanceMm:item.arDistanceMm||null,
       dimensionEstimated:scaleSource.includes('추정')||scaleSource.includes('임시'), wirePxEstimate:wirePxEst,
-      shapeEstimated:suspiciousShape, warning:suspiciousShape?'배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':'', photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx, mmPerPxX:mmPerPx, mmPerPxY:mmPerPx, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:false
+      shapeEstimated:suspiciousShape, warning:suspiciousShape?'배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':'', photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx, mmPerPxX:mmPerPx, mmPerPxY:mmPerPx, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:false, paperRect
     };
   }
 
@@ -1416,10 +1464,10 @@
   window.addEventListener('pagehide',()=>{stopCamera();state.captures.forEach(revokeCapture);});
 
   if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-    navigator.serviceWorker.register('./sw.js?v=0.8.2').then(reg=>reg.update()).catch(()=>{});
+    navigator.serviceWorker.register('./sw.js?v=0.8.3').then(reg=>reg.update()).catch(()=>{});
   }
 
-  const APP_VERSION='0.8.2';
+  const APP_VERSION='0.8.3';
   if(/^https?:$/.test(location.protocol)){setTimeout(async()=>{try{const res=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store'});if(!res.ok)return;const latest=(await res.json()).version;if(!latest||latest===APP_VERSION)return;if('caches' in window){for(const key of await caches.keys())await caches.delete(key);}if('serviceWorker' in navigator){for(const reg of await navigator.serviceWorker.getRegistrations())await reg.unregister();}location.replace(`./?v=${encodeURIComponent(latest)}&refresh=${Date.now()}`);}catch(_){}},1800);}
 
   // Test hooks are available only when ?test=1 is present. They are not shown in normal use.
