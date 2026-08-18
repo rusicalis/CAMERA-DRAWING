@@ -18,7 +18,7 @@
     lastNumbers: {}
   };
 
-  const MAX_ANALYSIS_SIDE = 820;
+  const MAX_ANALYSIS_SIDE = 1000;
   const MAX_CAPTURE_SIDE = 1600;
 
   function setStatus(text, kind='normal') {
@@ -358,57 +358,20 @@
     return g;
   }
 
-  function projectionSignals(gray,w,h) {
-    const sx = new Float64Array(w), sy = new Float64Array(h);
-    const y0=Math.floor(h*.05), y1=Math.floor(h*.95), x0=Math.floor(w*.05), x1=Math.floor(w*.95);
-    for(let y=y0;y<y1;y++){
-      const row=y*w;
-      for(let x=x0+1;x<x1;x++) sx[x] += Math.abs(gray[row+x]-gray[row+x-1]);
-    }
-    for(let x=x0;x<x1;x++) for(let y=y0+1;y<y1;y++) sy[y] += Math.abs(gray[y*w+x]-gray[(y-1)*w+x]);
-    return {sx,sy};
+  function scanlinePeriod(values, minLag=6, maxLag=96) {
+    const n=values.length;if(n<40)return{lag:0,score:0};
+    const grad=new Float64Array(n);let mean=0;
+    for(let i=1;i<n;i++){grad[i]=Math.abs(values[i]-values[i-1]);mean+=grad[i];}
+    mean/=Math.max(1,n-1);let variance=0;
+    for(let i=0;i<n;i++){grad[i]-=mean;variance+=grad[i]*grad[i];}
+    if(variance<1e-6)return{lag:0,score:0};
+    maxLag=Math.min(maxLag,Math.floor(n/3));const scores=new Float64Array(maxLag+1);let bestLag=0,best=-1;
+    for(let lag=minLag;lag<=maxLag;lag++){let num=0,a2=0,b2=0;for(let i=0;i<n-lag;i+=2){const a=grad[i],b=grad[i+lag];num+=a*b;a2+=a*a;b2+=b*b;}const sc=num/(Math.sqrt(a2*b2)+1e-9);scores[lag]=sc;if(sc>best){best=sc;bestLag=lag;}}
+    for(const div of [2,3,4]){const cand=Math.round(bestLag/div);if(cand<minLag)continue;const sc=scores[cand]||0;if(sc>.14&&sc>best*.48){bestLag=cand;best=sc;}}
+    return{lag:bestLag,score:clamp(best,0,1)};
   }
-
-  function findPeriod(signal) {
-    const n=signal.length;
-    let mean=0; for(const v of signal) mean+=v; mean/=n;
-    const z=new Float64Array(n); let variance=0;
-    for(let i=0;i<n;i++){z[i]=signal[i]-mean;variance+=z[i]*z[i];}
-    if(variance<1e-6) return {lag:0,score:0};
-    const minLag=Math.max(5,Math.floor(n/140));
-    const maxLag=Math.min(Math.floor(n/3),190);
-    const scores=[]; let bestLag=0,best=-Infinity;
-    for(let lag=minLag;lag<=maxLag;lag++){
-      let num=0,a2=0,b2=0;
-      for(let i=0;i<n-lag;i++){const a=z[i],b=z[i+lag];num+=a*b;a2+=a*a;b2+=b*b;}
-      const s=num/(Math.sqrt(a2*b2)+1e-9);scores.push([lag,s]);
-      if(s>best){best=s;bestLag=lag;}
-    }
-    const rawAt=lag=>{let hit=-1,delta=Infinity;for(const v of scores){const d=Math.abs(v[0]-lag);if(d<delta){delta=d;hit=v[1];}}return delta<=1?hit:-1;};
-    const bestRaw=rawAt(bestLag);
-    for(const div of [4,3,2]){
-      const cand=Math.round(bestLag/div); if(cand<minLag) continue;
-      const c=rawAt(cand),h2=rawAt(cand*2),h3=rawAt(cand*3);
-      if(c>Math.max(.10,bestRaw*.40) && (h2>bestRaw*.42 || h3>bestRaw*.42)) bestLag=cand;
-    }
-    return {lag:bestLag,score:clamp(rawAt(bestLag),0,1)};
-  }
-
-  function detectGrid(gray,w,h) {
-    // v0.3: 격자는 반드시 가로/세로 양쪽에서 주기가 동시에 확인될 때만 인정한다.
-    // 이전 버전처럼 책상 무늬/반사광 한 방향을 1cm 격자로 오인하지 않는다.
-    const {sx,sy}=projectionSignals(gray,w,h), px=findPeriod(sx),py=findPeriod(sy);
-    const maxPitch=Math.min(190,Math.floor(Math.min(w,h)/4));
-    if(px.lag<6||py.lag<6||px.lag>maxPitch||py.lag>maxPitch) return {pitch:null,confidence:0,reason:'양방향 격자 미검출'};
-    if(px.score<.28||py.score<.28) return {pitch:null,confidence:0,reason:'격자 신뢰도 부족'};
-    const ratio=Math.max(px.lag,py.lag)/Math.max(1,Math.min(px.lag,py.lag));
-    if(ratio>1.30) return {pitch:null,confidence:0,reason:'가로/세로 격자 간격 불일치'};
-    const pitch=(px.lag*px.score+py.lag*py.score)/(px.score+py.score);
-    const balance=1-Math.min(.45,Math.abs(px.lag-py.lag)/Math.max(px.lag,py.lag));
-    const confidence=clamp(((px.score+py.score)/2)*balance*1.18,0,.98);
-    if(confidence<.34) return {pitch:null,confidence:0,reason:'격자 신뢰도 부족'};
-    return {pitch,confidence,reason:'양방향 주기 확인'};
-  }
+  function clusteredPeriod(samples){const good=samples.filter(v=>v.lag>=6&&v.score>=.18);if(good.length<3)return{lag:0,score:0,support:0};let best=null;for(const c of good){const tol=Math.max(2,c.lag*.12),near=good.filter(v=>Math.abs(v.lag-c.lag)<=tol),weight=near.reduce((a,v)=>a+v.score,0);if(!best||weight>best.weight)best={near,weight};}if(!best||best.near.length<3)return{lag:0,score:0,support:0};const lags=best.near.map(v=>v.lag).sort((a,b)=>a-b),m=lags.length>>1,lag=lags.length%2?lags[m]:(lags[m-1]+lags[m])/2,score=best.near.reduce((a,v)=>a+v.score,0)/best.near.length;return{lag,score,support:best.near.length};}
+  function detectGrid(gray,w,h){const rowSamples=[],colSamples=[],lineCount=14,minLag=Math.max(5,Math.floor(Math.min(w,h)/180)),maxLag=Math.min(110,Math.floor(Math.min(w,h)/5));for(let k=0;k<lineCount;k++){const y=clamp(Math.round(h*(.10+.80*k/(lineCount-1))),1,h-2),row=new Uint8Array(w);for(let x=0;x<w;x++)row[x]=gray[y*w+x];rowSamples.push(scanlinePeriod(row,minLag,maxLag));const x=clamp(Math.round(w*(.10+.80*k/(lineCount-1))),1,w-2),col=new Uint8Array(h);for(let yy=0;yy<h;yy++)col[yy]=gray[yy*w+x];colSamples.push(scanlinePeriod(col,minLag,maxLag));}const px=clusteredPeriod(rowSamples),py=clusteredPeriod(colSamples);if(!px.lag||!py.lag||px.support<5||py.support<5)return{pitch:null,confidence:0,reason:'양방향 격자 미검출'};const ratio=Math.max(px.lag,py.lag)/Math.max(1,Math.min(px.lag,py.lag));if(ratio>1.28)return{pitch:null,confidence:0,reason:'가로/세로 격자 간격 불일치'};const pitch=(px.lag*px.score+py.lag*py.score)/(px.score+py.score),support=Math.min(1,(px.support+py.support)/(lineCount*1.25)),balance=1-Math.min(.45,Math.abs(px.lag-py.lag)/Math.max(px.lag,py.lag)),confidence=clamp(((px.score+py.score)/2)*support*balance*1.32,0,.99);return confidence>=.32?{pitch,confidence,reason:`스캔라인 격자 ${px.support}/${py.support}`}:{pitch:null,confidence:0,reason:'격자 신뢰도 부족'};}
 
   function medianFromHist(hist,total){let acc=0,target=Math.max(1,Math.floor(total/2));for(let i=0;i<hist.length;i++){acc+=hist[i];if(acc>=target)return i;}return 0;}
 
@@ -460,7 +423,17 @@
   function dilate(mask,w,h){const out=new Uint8Array(mask.length);for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){let v=0;for(let dy=-1;dy<=1&&!v;dy++)for(let dx=-1;dx<=1;dx++)if(mask[(y+dy)*w+x+dx]){v=1;break;}out[y*w+x]=v;}return out;}
   function erode(mask,w,h){const out=new Uint8Array(mask.length);for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){let v=1;for(let dy=-1;dy<=1&&v;dy++)for(let dx=-1;dx<=1;dx++)if(!mask[(y+dy)*w+x+dx]){v=0;break;}out[y*w+x]=v;}return out;}
 
-  function largestComponent(mask,w,h) {
+  function integralGray(gray,w,h){const iw=w+1,out=new Uint32Array((w+1)*(h+1));for(let y=1;y<=h;y++){let row=0;for(let x=1;x<=w;x++){row+=gray[(y-1)*w+x-1];out[y*iw+x]=out[(y-1)*iw+x]+row;}}return out;}
+  function adaptiveDarkMask(gray,w,h,pitchPx){const ii=integralGray(gray,w,h),out=new Uint8Array(gray.length),r=clamp(Math.round((pitchPx||30)*.34),8,18),bias=7,iw=w+1;for(let y=0;y<h;y++)for(let x=0;x<w;x++){const x0=Math.max(0,x-r),x1=Math.min(w-1,x+r),y0=Math.max(0,y-r),y1=Math.min(h-1,y+r),sum=ii[(y1+1)*iw+x1+1]-ii[y0*iw+x1+1]-ii[(y1+1)*iw+x0]+ii[y0*iw+x0],mean=sum/((x1-x0+1)*(y1-y0+1));if(gray[y*w+x]<mean-bias)out[y*w+x]=1;}return out;}
+  function crossDilate(mask,w,h){const out=new Uint8Array(mask.length);for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;out[i]=(mask[i]||mask[i-1]||mask[i+1]||mask[i-w]||mask[i+w])?1:0;}return out;}
+  function crossErode(mask,w,h){const out=new Uint8Array(mask.length);for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;out[i]=(mask[i]&&mask[i-1]&&mask[i+1]&&mask[i-w]&&mask[i+w])?1:0;}return out;}
+  function morphDilate(mask,w,h,r){let out=new Uint8Array(mask);for(let k=0;k<r;k++)out=crossDilate(out,w,h);return out;}
+  function morphErode(mask,w,h,r){let out=new Uint8Array(mask);for(let k=0;k<r;k++)out=crossErode(out,w,h);return out;}
+  function morphOpen(mask,w,h,r){return morphDilate(morphErode(mask,w,h,r),w,h,r);}
+  function morphClose(mask,w,h,r){return morphErode(morphDilate(mask,w,h,r),w,h,r);}
+  function gridWireComponent(gray,w,h,pitchPx){if(!pitchPx)return null;let m=adaptiveDarkMask(gray,w,h,pitchPx);const openR=clamp(Math.round(pitchPx*.06),1,2),closeR=clamp(Math.round(pitchPx*.10),2,4);m=morphOpen(m,w,h,openR);m=morphClose(m,w,h,closeR);const comp=largestComponent(m,w,h,true);if(!comp)return null;return{comp,mask:m,threshold:null,invert:false,method:'10mm 격자선 제거 + 선재 추출'};}
+
+  function largestComponent(mask,w,h,rejectFrame=false) {
     const seen=new Uint8Array(mask.length),q=new Int32Array(mask.length);let best=null;
     const dirs=[-1,1,-w,w,-w-1,-w+1,w-1,w+1];
     for(let i=0;i<mask.length;i++){
@@ -470,6 +443,7 @@
       }
       const bw=maxX-minX+1,bh=maxY-minY+1,span=Math.max(bw,bh),small=Math.max(1,Math.min(bw,bh)),fill=area/(bw*bh),border=(minX<2||minY<2||maxX>w-3||maxY>h-3),elong=span/small;
       const spanRatio=Math.max(bw/w,bh/h),areaRatio=area/(w*h);
+      if(rejectFrame && spanRatio>.76 && fill<.11)continue;
       let shapeFactor=1;
       if(fill<.012||fill>.68)shapeFactor*=.18;else if(fill<.025||fill>.48)shapeFactor*=.48;
       if(elong>14)shapeFactor*=.22;else if(elong>9)shapeFactor*=.55;
@@ -491,18 +465,11 @@
   }
 
   function chooseComponent(imageData,gray,w,h,pitchPx) {
-    const candidates=[];
-    const bg=backgroundDifferenceMask(imageData,w,h,pitchPx),bgComp=largestComponent(bg.mask,w,h);
-    if(bgComp) candidates.push({comp:bgComp,mask:bg.mask,threshold:null,invert:false,method:'배경색/명암 분리'});
-    const t=otsu(gray);
-    for(const [thr,invert] of [[clamp(Math.round(t*.88),30,220),false],[clamp(Math.round(t*1.10),30,225),true]]){
-      const r=processedComponent(gray,w,h,thr,invert,pitchPx);
-      if(r.comp) candidates.push({...r,threshold:thr,invert,method:'명암 보조'});
-    }
-    if(!candidates.length)return null;
-    // 배경색 분리가 충분히 좋은 경우 우선한다. 금속 치구 + 단색/격자 배경에서 가장 안정적이다.
-    candidates.sort((a,b)=>b.comp.score-a.comp.score);
-    return candidates[0];
+    const candidates=[],gw=gridWireComponent(gray,w,h,pitchPx);
+    if(gw?.comp && gw.comp.spanRatio>.14 && gw.comp.fill>.018 && gw.comp.fill<.42)return gw;
+    if(gw?.comp)candidates.push(gw);
+    const bg=backgroundDifferenceMask(imageData,w,h,pitchPx),bgComp=largestComponent(bg.mask,w,h);if(bgComp)candidates.push({comp:bgComp,mask:bg.mask,threshold:null,invert:false,method:'배경색/명암 분리'});
+    const t=otsu(gray);for(const [thr,invert] of [[clamp(Math.round(t*.88),30,220),false],[clamp(Math.round(t*1.10),30,225),true]]){const r=processedComponent(gray,w,h,thr,invert,pitchPx);if(r.comp)candidates.push({...r,threshold:thr,invert,method:'명암 보조'});}if(!candidates.length)return null;candidates.sort((a,b)=>b.comp.score-a.comp.score);return candidates[0];
   }
 
   function cropComponent(comp,w,h,pad=4){const x0=Math.max(0,comp.minX-pad),y0=Math.max(0,comp.minY-pad),x1=Math.min(w-1,comp.maxX+pad),y1=Math.min(h-1,comp.maxY+pad),cw=x1-x0+1,ch=y1-y0+1,m=new Uint8Array(cw*ch);for(const p of comp.pix){const y=(p/w)|0,x=p-y*w;m[(y-y0)*cw+(x-x0)]=1;}return{mask:m,w:cw,h:ch,x0,y0};}
@@ -535,16 +502,49 @@
     return clamp(raw, 2, Math.max(6, bboxSpan*.35));
   }
 
+  function emergencyHookPath(widthPx=600,heightPx=1000) {
+    const w=Math.max(120,widthPx), h=Math.max(180,heightPx);
+    return [
+      {x:w*.30,y:h*.22},{x:w*.28,y:h*.14},{x:w*.36,y:h*.08},{x:w*.48,y:h*.08},
+      {x:w*.56,y:h*.14},{x:w*.57,y:h*.31},{x:w*.55,y:h*.56},{x:w*.60,y:h*.77},
+      {x:w*.68,y:h*.88},{x:w*.77,y:h*.90},{x:w*.84,y:h*.84},{x:w*.86,y:h*.72}
+    ];
+  }
+
+  async function makeEmergencyResult(item, reason='자동 인식 실패') {
+    let iw=600, ih=1000;
+    try {
+      if(item.blob){ const ds=await blobToCanvas(item.blob); iw=ds.w; ih=ds.h; }
+    } catch(_) {}
+    const diameter=Math.max(.1,parseFloat(item.diameter)||6);
+    const approxW=parseFloat(item.approxWidth), approxH=parseFloat(item.approxHeight);
+    let width=Number.isFinite(approxW)&&approxW>0?approxW:Math.max(diameter*18,90);
+    let height=Number.isFinite(approxH)&&approxH>0?approxH:Math.max(diameter*40,220);
+    if(iw>ih && !Number.isFinite(approxW) && !Number.isFinite(approxH)){ const t=width;width=height;height=t; }
+    let p=emergencyHookPath(iw,ih), pb=pathBBox(p);
+    const sx=(width-diameter)/Math.max(1,pb.w), sy=(height-diameter)/Math.max(1,pb.h);
+    p=p.map(q=>({x:(q.x-pb.minX)*sx,y:(q.y-pb.minY)*sy}));
+    const length=pathLength(p);
+    return {
+      id:item.id,name:item.name.trim()||makeJigNumber(currentLineCode(),item.seq),material:item.material.trim()||'SUS304',diameter,
+      baseWidth:width,baseHeight:height,baseLength:length,baseR1:NaN,baseR2:NaN,
+      width,height,length,r1:NaN,r2:NaN,pathBase:p,path:p.map(q=>({...q})),
+      scaleSource:'자동 인식 실패 · 임시도면',scaleConfidence:.05,quality:.05,threshold:null,invert:false,
+      segmentMethod:'임시 HOOK 형상',gridDetected:false,arDetected:false,gridReason:'',shapeFill:0,arDistanceMm:item.arDistanceMm||null,
+      dimensionEstimated:true,shapeEstimated:true,warning:reason
+    };
+  }
+
   async function analyzeCapture(item) {
     if (!item.blob) throw new Error('촬영 원본이 없습니다. 새로 촬영하세요.');
     const ds=await blobToCanvas(item.blob),gray=grayArray(ds.imageData),grid=detectGrid(gray,ds.w,ds.h);
     const pitch=grid.pitch||Math.max(18,Math.min(ds.w,ds.h)/20);
     const seg=chooseComponent(ds.imageData,gray,ds.w,ds.h,grid.pitch||null);
-    if(!seg?.comp||seg.comp.area<Math.max(70,ds.w*ds.h*.00035)) throw new Error('치구 형상을 찾지 못했습니다. 치구가 화면 중앙에 크게 보이도록 다시 촬영하세요.');
+    if(!seg?.comp||seg.comp.area<Math.max(70,ds.w*ds.h*.00035)) return await makeEmergencyResult(item,'치구 형상을 충분히 찾지 못해 임시 형상으로 생성했습니다.');
     const comp=seg.comp;
-    if(comp.border||comp.fill>.62||comp.spanRatio<.14) throw new Error('배경/그림자를 치구로 잘못 인식할 가능성이 높습니다. 치구와 배경의 대비를 높여 다시 촬영하세요.');
+    const suspiciousShape=!!(comp.border||comp.fill>.62||comp.spanRatio<.14);
     const crop=cropComponent(comp,ds.w,ds.h,5),sk=skeletonize(crop.mask,crop.w,crop.h);
-    let path=skeletonPath(sk,crop.w,crop.h);if(path.length<8)throw new Error('중심선 추출 실패. 치구 전체가 보이도록 다시 촬영하세요.');
+    let path=skeletonPath(sk,crop.w,crop.h);if(path.length<8)return await makeEmergencyResult(item,'중심선 추출이 불안정하여 임시 형상으로 생성했습니다.');
     path=path.map(p=>({x:p.x+crop.x0,y:p.y+crop.y0}));
     path=smoothPath(path,Math.max(1,Math.round(pitch*.012)));path=decimatePath(path,Math.max(1.2,pitch*.022));
 
@@ -591,7 +591,7 @@
     const r=estimateRadii(path,mmPerPx,pb,diameter);
     const pathMm=path.map(p=>({x:(p.x-pb.minX)*mmPerPx,y:(p.y-pb.minY)*mmPerPx}));
     const aspect=Math.max(width,height)/Math.max(1,Math.min(width,height)),curveRatio=length/Math.max(1,Math.hypot(width,height));
-    let quality=scaleConfidence*.38+(comp.fill>=.025&&comp.fill<=.35?.22:.08)+(comp.border?0:.16)+(path.length>24?.14:.08)+(curveRatio>1.20?.10:.04);
+    let quality=scaleConfidence*.38+(comp.fill>=.025&&comp.fill<=.35?.22:.08)+(comp.border?0:.16)+(path.length>24?.14:.08)+(curveRatio>1.20?.10:.04)+(seg.method.includes('격자선 제거')?.08:0);
     quality=clamp(quality,.08,.99);
     return {
       id:item.id,name:item.name.trim()||makeJigNumber(currentLineCode(),item.seq),material:item.material.trim()||'SUS304',diameter,
@@ -599,7 +599,8 @@
       width,height,length,r1:r.r1,r2:r.r2,pathBase:pathMm,path:pathMm.map(p=>({...p})),
       scaleSource,scaleConfidence,quality,threshold:seg.threshold,invert:seg.invert,segmentMethod:seg.method,
       gridDetected:!!grid.pitch,arDetected:scaleSource==='AR 자동 측정',gridReason:grid.reason||'',shapeFill:comp.fill,arDistanceMm:item.arDistanceMm||null,
-      dimensionEstimated:scaleSource.includes('추정')||scaleSource.includes('임시'), wirePxEstimate:wirePxEst
+      dimensionEstimated:scaleSource.includes('추정')||scaleSource.includes('임시'), wirePxEstimate:wirePxEst,
+      shapeEstimated:suspiciousShape, warning:suspiciousShape?'배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':''
     };
   }
 
@@ -618,7 +619,9 @@
         const result=await analyzeCapture(item);state.results.push({...result,ok:true});
         // Privacy: once analysis succeeds, original capture is discarded from memory.
         revokeCapture(item);
-      }catch(err){state.results.push({id:item.id,name:item.name,material:item.material,diameter:parseFloat(item.diameter)||6,ok:false,error:err?.message||String(err)});}
+      }catch(err){
+        try{const fallback=await makeEmergencyResult(item,err?.message||String(err));state.results.push({...fallback,ok:true});revokeCapture(item);}catch(_){state.results.push({id:item.id,name:item.name,material:item.material,diameter:parseFloat(item.diameter)||6,ok:false,error:err?.message||String(err)});}
+      }
     }
     $('progressBar').style.width='100%';$('progressText').textContent=`${total}장 처리 완료`;
     // Remove successfully analyzed photographs from the capture queue/DOM as well.
@@ -734,7 +737,7 @@
           <label>Ø mm<input data-rfield="diameter" type="number" step="0.1" value="${n1(r.diameter)}"></label>
         </div>
         <div class="result-actions"><button class="btn apply-dims" data-id="${r.id}">폭/높이 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 도면 PDF</button></div>
-        <div class="result-msg">형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${r.arDetected&&r.arDistanceMm?` (AR 거리 약 ${Math.round(r.arDistanceMm)} mm)`:''}${r.dimensionEstimated?` · 치수 인식이 부족해 Ø 기준 추정/임시치수로 먼저 도면을 생성했습니다. 필요 시 값을 직접 수정하세요.`:''} · 사진 원본은 분석 완료 후 앱 메모리에서 폐기됨 · 치수는 직접 수정 가능합니다.</div>
+        <div class="result-msg">형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${r.arDetected&&r.arDistanceMm?` (AR 거리 약 ${Math.round(r.arDistanceMm)} mm)`:''}${r.shapeEstimated?` · 형상 인식 신뢰도가 낮아도 도면은 생성했습니다. 사진과 형상을 반드시 확인하세요.`:''}${r.dimensionEstimated?` · 치수 인식이 부족해 추정/임시치수로 먼저 생성했습니다. 필요 시 값을 직접 수정하세요.`:''}${r.warning?` · ${esc(r.warning)}`:''} · 사진 원본은 분석 완료 후 앱 메모리에서 폐기됨.</div>
       </div>`;
     }).join('');
   }
@@ -844,8 +847,11 @@
   window.addEventListener('pagehide',()=>{stopCamera();state.captures.forEach(revokeCapture);});
 
   if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-    navigator.serviceWorker.register('./sw.js?v=0.4.1').then(reg=>reg.update()).catch(()=>{});
+    navigator.serviceWorker.register('./sw.js?v=0.5.0').then(reg=>reg.update()).catch(()=>{});
   }
+
+  const APP_VERSION='0.5.0';
+  if(/^https?:$/.test(location.protocol)){setTimeout(async()=>{try{const res=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store'});if(!res.ok)return;const latest=(await res.json()).version;if(!latest||latest===APP_VERSION)return;if('caches' in window){for(const key of await caches.keys())await caches.delete(key);}if('serviceWorker' in navigator){for(const reg of await navigator.serviceWorker.getRegistrations())await reg.unregister();}location.replace(`./?v=${encodeURIComponent(latest)}&refresh=${Date.now()}`);}catch(_){}},1800);}
 
   // Test hooks are available only when ?test=1 is present. They are not shown in normal use.
   if(new URLSearchParams(location.search).get('test')==='1'){

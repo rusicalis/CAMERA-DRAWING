@@ -1,4 +1,4 @@
-GitHub Pages 기존 버전 삭제 후 v0.4.0 교체 방법
+GitHub Pages 기존 버전 삭제 후 v0.5.0 교체 방법
 ================================================
 1. GitHub에서 기존 hook-drawing 저장소를 엽니다.
 2. 저장소의 기존 index.html, app.js, styles.css, manifest.json, sw.js 및 icons 폴더 파일을 삭제하거나 새 파일로 덮어씁니다.
