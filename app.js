@@ -56,7 +56,8 @@
   function currentLineCode() { return cleanLineCode($('lineCodeSelect').value) || 'NNI'; }
   function currentCaptureCode() { return state.appMode==='product' ? 'PRD' : currentLineCode(); }
   function currentRenderMode() { return state.appMode==='product' ? 'photo' : (($('renderModeSelect')?.value)||($('quickRenderModeSelect')?.value)||'drawing'); }
-  function currentStraightenLevel() { return ($('straightenLevelSelect')?.value) || 'high'; }
+  function currentStraightenLevel() { return ($('straightenLevelSelect')?.value) || 'medium'; }
+  function currentDimensionDetail() { return ($('dimensionDetailSelect')?.value) || 'basic'; }
   function straightenLevelLabel(v){ return v==='medium' ? '보통' : v==='max' ? '최대' : '강'; }
   function setRenderModeValue(mode){
     const safe = mode==='photo' ? 'photo' : 'drawing';
@@ -567,10 +568,44 @@
     return {comp:largestComponent(m,w,h),mask:m};
   }
 
-  function candidateCenterPath(candidate,w,h,pitchPx){
-    if(!candidate?.comp)return null;try{const crop=cropComponent(candidate.comp,w,h,5),sk=skeletonize(crop.mask,crop.w,crop.h);let path=skeletonPath(sk,crop.w,crop.h);if(path.length<8)return null;path=path.map(p=>({x:p.x+crop.x0,y:p.y+crop.y0}));path=smoothPath(path,Math.max(1,Math.round((pitchPx||30)*.012)));path=decimatePath(path,Math.max(1.1,(pitchPx||30)*.020));const pb=pathBBox(path),spanX=pb.w/w,spanY=pb.h/h,span=Math.max(spanX,spanY),minor=Math.min(spanX,spanY),plen=pathLength(path),diag=Math.hypot(pb.w,pb.h),curve=plen/Math.max(1,diag),comp=candidate.comp,fill=comp.fill||0;let score=span*3.2+Math.min(2.8,curve)*1.25+Math.sqrt(Math.max(1,plen))/35+Math.min(.35,minor)*1.6;if(span<.22)score-=2.2;if(minor<.045)score-=1.1;if(curve<1.16)score-=1.0;if(comp.border)score-=2.5;if(fill>.55)score-=1.8;return{...candidate,path,pb,pathScore:score,curve,spanX,spanY,span,minor};}catch(_){return null;}}
+  function refineGridPitch(pitchPx,wirePx,diameter){
+    if(!(Number.isFinite(pitchPx)&&pitchPx>0&&Number.isFinite(wirePx)&&wirePx>0&&Number.isFinite(diameter)&&diameter>0)) return pitchPx||0;
+    let best=pitchPx,bestErr=Infinity;
+    for(const mul of [1,2,3,4]){
+      const p=pitchPx*mul,expected=p*diameter/10;
+      if(expected<=0) continue;
+      const err=Math.abs(Math.log(Math.max(.05,wirePx/expected)));
+      if(err<bestErr){bestErr=err;best=p;}
+    }
+    return best;
+  }
+  function wireThicknessFit(comp,path,pitchPx,diameter){
+    if(!comp||!path?.length) return {wirePx:NaN,fit:0,refinedPitch:pitchPx||0};
+    const wirePx=Math.max(.1,(comp.area||1)/Math.max(1,pathLength(path)));
+    const rp=refineGridPitch(pitchPx,wirePx,diameter);
+    if(!(rp>0&&diameter>0)) return {wirePx,fit:.5,refinedPitch:rp};
+    const expected=rp*diameter/10,ratio=wirePx/Math.max(.1,expected);
+    const fit=Math.exp(-Math.abs(Math.log(Math.max(.05,ratio)))*1.5);
+    return {wirePx,fit,refinedPitch:rp};
+  }
+  function candidateCenterPath(candidate,w,h,pitchPx,diameter){
+    if(!candidate?.comp)return null;
+    try{
+      const crop=cropComponent(candidate.comp,w,h,5),sk=skeletonize(crop.mask,crop.w,crop.h);
+      let path=skeletonPath(sk,crop.w,crop.h);if(path.length<8)return null;
+      path=path.map(p=>({x:p.x+crop.x0,y:p.y+crop.y0}));
+      path=smoothPath(path,Math.max(1,Math.round((pitchPx||30)*.010)));
+      path=decimatePath(path,Math.max(1.0,(pitchPx||30)*.016));
+      const pb=pathBBox(path),spanX=pb.w/w,spanY=pb.h/h,span=Math.max(spanX,spanY),minor=Math.min(spanX,spanY),plen=pathLength(path),diag=Math.hypot(pb.w,pb.h),curve=plen/Math.max(1,diag),comp=candidate.comp,fill=comp.fill||0;
+      const wf=wireThicknessFit(comp,path,pitchPx,diameter);
+      const endSep=dist(path[0],path[path.length-1])/Math.max(1,diag);
+      let score=span*3.0+Math.min(2.6,curve)*1.25+Math.sqrt(Math.max(1,plen))/38+Math.min(.35,minor)*1.8+wf.fit*3.2+Math.min(.8,endSep)*.8;
+      if(span<.20)score-=2.5;if(minor<.045)score-=1.2;if(curve<1.14)score-=1.0;if(comp.border)score-=3.0;if(fill>.52)score-=2.0;if(wf.fit<.22)score-=2.8;
+      return{...candidate,path,pb,pathScore:score,curve,spanX,spanY,span,minor,wirePx: wf.wirePx,refinedPitch:wf.refinedPitch,wireFit:wf.fit};
+    }catch(_){return null;}
+  }
   function collectComponentCandidates(imageData,gray,w,h,pitchPx){const arr=[],pg=periodicGridWireComponent(gray,w,h,pitchPx),gw=gridWireComponent(gray,w,h,pitchPx);if(pg?.comp)arr.push(pg);if(gw?.comp)arr.push(gw);const bg=backgroundDifferenceMask(imageData,w,h,pitchPx),bgComp=largestComponent(bg.mask,w,h);if(bgComp)arr.push({comp:bgComp,mask:bg.mask,threshold:null,invert:false,method:'배경색/명암 분리'});const t=otsu(gray);for(const [thr,invert] of [[clamp(Math.round(t*.78),25,215),false],[clamp(Math.round(t*.90),30,220),false],[clamp(Math.round(t*1.08),30,230),true]]){const rr=processedComponent(gray,w,h,thr,invert,pitchPx);if(rr.comp)arr.push({...rr,threshold:thr,invert,method:'명암 보조'});}return arr;}
-  function chooseComponent(imageData,gray,w,h,pitchPx) {const candidates=collectComponentCandidates(imageData,gray,w,h,pitchPx).map(c=>candidateCenterPath(c,w,h,pitchPx)).filter(Boolean);if(!candidates.length)return null;candidates.sort((a,b)=>b.pathScore-a.pathScore);return candidates[0];}
+  function chooseComponent(imageData,gray,w,h,pitchPx,diameter) {const candidates=collectComponentCandidates(imageData,gray,w,h,pitchPx).map(c=>candidateCenterPath(c,w,h,pitchPx,diameter)).filter(Boolean);if(!candidates.length)return null;candidates.sort((a,b)=>b.pathScore-a.pathScore);return candidates[0];}
 
   function cropComponent(comp,w,h,pad=4){const x0=Math.max(0,comp.minX-pad),y0=Math.max(0,comp.minY-pad),x1=Math.min(w-1,comp.maxX+pad),y1=Math.min(h-1,comp.maxY+pad),cw=x1-x0+1,ch=y1-y0+1,m=new Uint8Array(cw*ch);for(const p of comp.pix){const y=(p/w)|0,x=p-y*w;m[(y-y0)*cw+(x-x0)]=1;}return{mask:m,w:cw,h:ch,x0,y0};}
 
@@ -638,22 +673,25 @@
   async function analyzeCapture(item) {
     if (!item.blob) throw new Error('촬영 원본이 없습니다. 새로 촬영하세요.');
     const ds=await blobToCanvas(item.blob),gray=grayArray(ds.imageData),grid=detectGrid(gray,ds.w,ds.h);
+    const diameter=Math.max(.1,parseFloat(item.diameter)||6);
     const pitch=grid.pitch||Math.max(18,Math.min(ds.w,ds.h)/20);
-    const seg=chooseComponent(ds.imageData,gray,ds.w,ds.h,grid.pitch||null);
+    const seg=chooseComponent(ds.imageData,gray,ds.w,ds.h,grid.pitch||null,diameter);
     if(!seg?.comp||seg.comp.area<Math.max(70,ds.w*ds.h*.00035)) return await makeEmergencyResult(item,'치구 형상을 충분히 찾지 못해 임시 형상으로 생성했습니다.');
     const comp=seg.comp;
     const suspiciousShape=!!(comp.border||comp.fill>.62||comp.spanRatio<.14||seg.span<.20||seg.curve<1.12);
     let path=(seg.path||[]).map(p=>({...p}));if(path.length<8)return await makeEmergencyResult(item,'중심선 추출이 불안정하여 임시 형상으로 생성했습니다.');
 
-    const pb=pathBBox(path),approxW=parseFloat(item.approxWidth),approxH=parseFloat(item.approxHeight),diameter=Math.max(.1,parseFloat(item.diameter)||6);
+    const pb=pathBBox(path),approxW=parseFloat(item.approxWidth),approxH=parseFloat(item.approxHeight);
     const userScales=[];
     // 입력 폭/높이는 선재 외곽 전체치수로 간주하고, 중심선 span에서 Ø를 뺀 값으로 스케일을 구한다.
     if(Number.isFinite(approxW)&&approxW>diameter)userScales.push((approxW-diameter)/pb.w);
     if(Number.isFinite(approxH)&&approxH>diameter)userScales.push((approxH-diameter)/pb.h);
     let mmPerPx,scaleSource,scaleConfidence;
     const mode=item.measureMode||'auto', arScale=parseFloat(item.arMmPerPx);
-    const wirePxEst=estimateWirePx(comp,path);
+    const wirePxEst=Number.isFinite(seg.wirePx)?seg.wirePx:estimateWirePx(comp,path);
+    const refinedGridPitch=(grid.pitch&&wirePxEst)?refineGridPitch(grid.pitch,wirePxEst,diameter):grid.pitch;
     const wireDerivedScale=Number.isFinite(wirePxEst)&&wirePxEst>0 ? diameter/wirePxEst : NaN;
+    const gridDerivedScale=Number.isFinite(refinedGridPitch)&&refinedGridPitch>0 ? 10/refinedGridPitch : NaN;
     if(userScales.length){
       mmPerPx=userScales.reduce((a,b)=>a+b,0)/userScales.length;scaleSource='사용자 대략치수';scaleConfidence=.92;
     } else if(mode==='manual') {
@@ -665,7 +703,7 @@
     } else if(mode==='ar' && Number.isFinite(arScale) && arScale>0) {
       mmPerPx=arScale;scaleSource='AR 자동 측정';scaleConfidence=.68;
     } else if(mode==='grid' && grid.pitch) {
-      mmPerPx=10/grid.pitch;scaleSource='1cm 격자 자동';scaleConfidence=grid.confidence;
+      mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
     } else if(mode==='grid') {
       if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0){
         mmPerPx=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.36;
@@ -673,17 +711,22 @@
         mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.12;
       }
     } else if(mode==='auto' && grid.pitch) {
-      mmPerPx=10/grid.pitch;scaleSource='1cm 격자 자동';scaleConfidence=grid.confidence;
+      mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
     } else if(Number.isFinite(arScale) && arScale>0) {
       mmPerPx=arScale;scaleSource='AR 자동 측정';scaleConfidence=.64;
     } else if(grid.pitch) {
-      mmPerPx=10/grid.pitch;scaleSource='1cm 격자 자동';scaleConfidence=grid.confidence;
+      mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
     } else if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0) {
       mmPerPx=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.34;
     } else {
       mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.10;
     }
 
+    if(Number.isFinite(gridDerivedScale)&&Number.isFinite(wireDerivedScale)){
+      const ratio=gridDerivedScale/wireDerivedScale;
+      if(ratio<.55||ratio>1.80){mmPerPx=wireDerivedScale;scaleSource='격자 검증 불일치 · Ø 보정';scaleConfidence=Math.min(scaleConfidence,.55);}
+      else if(scaleSource.startsWith('1cm 격자')){mmPerPx=gridDerivedScale*.75+wireDerivedScale*.25;}
+    }
     const width=pb.w*mmPerPx+diameter,height=pb.h*mmPerPx+diameter,length=pathLength(path)*mmPerPx;
     const r=estimateRadii(path,mmPerPx,pb,diameter);
     const pathMm=path.map(p=>({x:(p.x-pb.minX)*mmPerPx,y:(p.y-pb.minY)*mmPerPx}));
@@ -928,61 +971,54 @@
   function buildDimensionSpecs(pathMm, pathScreen, W, H){
     const specs=[];
     if(pathScreen.length<2 || pathMm.length<2) return specs;
-    const count=Math.min(pathMm.length,pathScreen.length);
-    const mm=pathMm.slice(0,count), scn=pathScreen.slice(0,count);
-    const b=pathBounds(scn), mb=pathBounds(mm);
-    const left=scn.reduce((a,p)=>p.x<a.x?p:a,scn[0]);
-    const right=scn.reduce((a,p)=>p.x>a.x?p:a,scn[0]);
-    const top=scn.reduce((a,p)=>p.y<a.y?p:a,scn[0]);
-    const bottom=scn.reduce((a,p)=>p.y>a.y?p:a,scn[0]);
+    const b=pathBounds(pathScreen), mb=pathBounds(pathMm);
+    const left=pathScreen.reduce((a,p)=>p.x<a.x?p:a,pathScreen[0]);
+    const right=pathScreen.reduce((a,p)=>p.x>a.x?p:a,pathScreen[0]);
+    const top=pathScreen.reduce((a,p)=>p.y<a.y?p:a,pathScreen[0]);
+    const bottom=pathScreen.reduce((a,p)=>p.y>a.y?p:a,pathScreen[0]);
+    const widthVal=mb.w, heightVal=mb.h;
     const widthY=Math.max(42,b.minY-42), heightX=Math.max(42,b.minX-52);
-    specs.push({key:'width', value:mb.w, kind:'overallH', textX:(left.x+right.x)/2, textY:widthY-13, x1:left.x, y1:widthY, x2:right.x, y2:widthY, ext:[[left.x,left.y,left.x,widthY],[right.x,right.y,right.x,widthY]]});
-    specs.push({key:'height', value:mb.h, kind:'overallV', textX:heightX-12, textY:(top.y+bottom.y)/2, x1:heightX, y1:top.y, x2:heightX, y2:bottom.y, ext:[[top.x,top.y,heightX,top.y],[bottom.x,bottom.y,heightX,bottom.y]]});
+    specs.push({key:'width', value:widthVal, kind:'overallH', textX:(left.x+right.x)/2, textY:widthY-13, x1:left.x, y1:widthY, x2:right.x, y2:widthY, ext:[[left.x,left.y,left.x,widthY],[right.x,right.y,right.x,widthY]]});
+    specs.push({key:'height', value:heightVal, kind:'overallV', textX:heightX-12, textY:(top.y+bottom.y)/2, x1:heightX, y1:top.y, x2:heightX, y2:bottom.y, ext:[[top.x,top.y,heightX,top.y],[bottom.x,bottom.y,heightX,bottom.y]]});
 
-    const diag=Math.max(mb.w,mb.h);
-    const minSeg=Math.max(5.0, diag*0.035);
+    const count=Math.min(pathMm.length,pathScreen.length);
+    const minSeg=Math.max(9,Math.max(mb.w,mb.h)*0.055);
     const segCandidates=[];
     for(let i=0;i<count-1;i++){
-      const p1=mm[i],p2=mm[i+1],s1=scn[i],s2=scn[i+1];
+      const p1=pathMm[i],p2=pathMm[i+1],s1=pathScreen[i],s2=pathScreen[i+1];
       const len=dist(p1,p2); if(len<minSeg) continue;
       segCandidates.push({i,len,p1,p2,s1,s2});
     }
-    const selectedSeg=segCandidates.slice().sort((a,b)=>b.len-a.len).slice(0,12).sort((a,b)=>a.i-b.i);
+    const segLimit=currentDimensionDetail()==='full'?8:4;
+    const selectedSeg=new Set(segCandidates.slice().sort((a,b)=>b.len-a.len).slice(0,segLimit).map(x=>x.i));
     let segNo=1;
-    for(const g of selectedSeg){
-      const {len,s1,s2}=g;
+    for(const g of segCandidates){
+      if(!selectedSeg.has(g.i)) continue;
+      const {i,len,s1,s2}=g;
       const dx=s2.x-s1.x,dy=s2.y-s1.y,mag=Math.max(1,Math.hypot(dx,dy));
       let nx=-dy/mag,ny=dx/mag;
       const center={x:(s1.x+s2.x)/2,y:(s1.y+s2.y)/2};
       const shapeCenter={x:(b.minX+b.maxX)/2,y:(b.minY+b.maxY)/2};
       if((center.x-shapeCenter.x)*nx+(center.y-shapeCenter.y)*ny<0){nx=-nx;ny=-ny;}
-      const off=30+(segNo%3)*10;
+      const off=34+(segNo%2)*12;
       const d1={x:s1.x+nx*off,y:s1.y+ny*off},d2={x:s2.x+nx*off,y:s2.y+ny*off};
-      specs.push({key:`seg${segNo}`,value:len,kind:'segment',textX:clamp((d1.x+d2.x)/2+nx*10,58,W-58),textY:clamp((d1.y+d2.y)/2+ny*10,42,H-42),x1:d1.x,y1:d1.y,x2:d2.x,y2:d2.y,ext:[[s1.x,s1.y,d1.x,d1.y],[s2.x,s2.y,d2.x,d2.y]]});
-      segNo++;
+      specs.push({key:`seg${segNo++}`,value:len,kind:'segment',textX:clamp((d1.x+d2.x)/2+nx*11,58,W-58),textY:clamp((d1.y+d2.y)/2+ny*11,42,H-42),x1:d1.x,y1:d1.y,x2:d2.x,y2:d2.y,ext:[[s1.x,s1.y,d1.x,d1.y],[s2.x,s2.y,d2.x,d2.y]]});
     }
 
     let bendNo=1;
     for(let i=1;i<count-1;i++){
-      const aM=mm[i-1],pM=mm[i],cM=mm[i+1];
-      const a=scn[i-1],p=scn[i],c=scn[i+1];
+      const a=pathScreen[i-1],p=pathScreen[i],c=pathScreen[i+1];
       const v1x=p.x-a.x,v1y=p.y-a.y,v2x=c.x-p.x,v2y=c.y-p.y;
-      const m1=Math.hypot(v1x,v1y),m2=Math.hypot(v2x,v2y); if(m1<6||m2<6) continue;
-      const dot=clamp((v1x*v2x+v1y*v2y)/(m1*m2),-1,1);
-      const interior=Math.acos(dot)*180/Math.PI;
-      const bendAngle=180-interior;
-      if(interior<12 || bendAngle<8) continue;
-      let nx=-(v1y/m1+v2y/m2),ny=(v1x/m1+v2x/m2);
-      const nm=Math.hypot(nx,ny)||1; nx/=nm;ny/=nm;
-      const rmm=localRadius(mm,i);
-      const tx=clamp(p.x+nx*(52+(bendNo%2)*16),62,W-62),ty=clamp(p.y+ny*(52+(bendNo%2)*16),40,H-40);
-      if(Number.isFinite(rmm)&&rmm>0.5){
-        specs.push({key:`bendR${bendNo}`,value:rmm,kind:'leader',prefix:'R',textX:tx,textY:ty,x1:p.x,y1:p.y,x2:tx-8,y2:ty});
-      }
-      const angleTextX=clamp(p.x+nx*(26+(bendNo%2)*10),54,W-54), angleTextY=clamp(p.y+ny*(26+(bendNo%2)*10),36,H-36);
-      specs.push({key:`bendA${bendNo}`,value:bendAngle,kind:'angle',prefix:'A',suffix:'°',textX:angleTextX,textY:angleTextY,x1:p.x,y1:p.y,x2:angleTextX-8,y2:angleTextY});
+      const m1=Math.hypot(v1x,v1y),m2=Math.hypot(v2x,v2y); if(m1<4||m2<4) continue;
+      const turn=Math.acos(clamp((v1x*v2x+v1y*v2y)/(m1*m2),-1,1))*180/Math.PI;
+      if(turn<18) continue;
+      const rmm=localRadius(pathMm,i); if(!(Number.isFinite(rmm)&&rmm>0.5)) continue;
+      let nx=-(v1y/m1+v2y/m2),ny=(v1x/m1+v2x/m2); const nm=Math.hypot(nx,ny)||1; nx/=nm;ny/=nm;
+      const tx=clamp(p.x+nx*(58+(bendNo%2)*16),60,W-60),ty=clamp(p.y+ny*(58+(bendNo%2)*16),44,H-44);
+      specs.push({key:`bendR${bendNo}`,value:rmm,kind:'leader',prefix:'R',textX:tx,textY:ty,x1:p.x,y1:p.y,x2:tx-10,y2:ty});
+      if(currentDimensionDetail()==='full'){const a1=Math.atan2(p.y-a.y,p.x-a.x),a2=Math.atan2(c.y-p.y,c.x-p.x);let deg=Math.abs((a2-a1)*180/Math.PI);if(deg>180)deg=360-deg;specs.push({key:`bendA${bendNo}`,value:deg,kind:'leader',prefix:'A',suffix:'°',textX:clamp(tx+22,60,W-60),textY:clamp(ty+20,44,H-44),x1:p.x,y1:p.y,x2:tx+10,y2:ty+14});}
       bendNo++;
-      if(bendNo>10) break;
+      if(bendNo>(currentDimensionDetail()==='full'?7:3)) break;
     }
     return layoutDimensionLabels(specs,W,H);
   }
@@ -1056,7 +1092,7 @@
       if(!r.ok)return `<div class="result-item failed" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge quality bad">생성 실패</span></div><div class="result-msg">${esc(r.error)}</div></div>`;
       const quality=r.quality>.76?'양호':r.quality>.53?'보통':'확인필요';
       const modeText=(r.captureType==='product')?'제품 실제사진':'치구 '+(currentRenderMode()==='photo'?'실제사진':'도면');
-      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${r.arDetected?'ar ':''}${r.quality<.53?'quality bad':''}">${esc(modeText)} · ${quality}</span></div>${makeFigureHtml(r)}<div class="edit-grid"><label>전체 폭 mm<input data-rfield="width" type="number" step="0.1" value="${n1(r.width)}"></label><label>전체 높이 mm<input data-rfield="height" type="number" step="0.1" value="${n1(r.height)}"></label><label>전개길이 mm<input data-rfield="length" type="number" step="0.1" value="${n1(r.length)}"></label><label>상부 R mm<input data-rfield="r1" type="number" step="0.1" value="${n1(r.r1)}"></label><label>하부 R mm<input data-rfield="r2" type="number" step="0.1" value="${n1(r.r2)}"></label><label>Ø mm<input data-rfield="diameter" type="number" step="0.1" value="${n1(r.diameter)}"></label></div><div class="result-actions"><button class="btn dim-edit-btn ${r.dimEditMode?'active':''}" data-id="${r.id}">${r.dimEditMode?'편집 종료':'치수 편집'}</button><button class="btn apply-dims" data-id="${r.id}">폭/높이 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 도면 PDF</button></div><div class="result-msg">형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)} · 직선부 길이·굽힘 R·각도 치수를 함께 표기하며, 도면은 ${esc(straightenLevelLabel(currentStraightenLevel()))} 직선화 보정이 적용됩니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
+      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${r.arDetected?'ar ':''}${r.quality<.53?'quality bad':''}">${esc(modeText)} · ${quality}</span></div>${makeFigureHtml(r)}<div class="edit-grid"><label>전체 폭 mm<input data-rfield="width" type="number" step="0.1" value="${n1(r.width)}"></label><label>전체 높이 mm<input data-rfield="height" type="number" step="0.1" value="${n1(r.height)}"></label><label>전개길이 mm<input data-rfield="length" type="number" step="0.1" value="${n1(r.length)}"></label><label>상부 R mm<input data-rfield="r1" type="number" step="0.1" value="${n1(r.r1)}"></label><label>하부 R mm<input data-rfield="r2" type="number" step="0.1" value="${n1(r.r2)}"></label><label>Ø mm<input data-rfield="diameter" type="number" step="0.1" value="${n1(r.diameter)}"></label></div><div class="result-actions"><button class="btn dim-edit-btn ${r.dimEditMode?'active':''}" data-id="${r.id}">${r.dimEditMode?'편집 종료':'치수 편집'}</button><button class="btn apply-dims" data-id="${r.id}">폭/높이 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 도면 PDF</button></div><div class="result-msg">형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)} · 형상 보존을 우선 적용하며, 치수 표시=${currentDimensionDetail()==='full'?'상세':'기본'}입니다. 격자값은 Ø와 선재 굵기로 교차검증합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
     }).join('');
   }
 
@@ -1207,6 +1243,7 @@
   $('renderModeSelect').addEventListener('change',e=>{setRenderModeValue(e.target.value);renderResults();});
   $('quickRenderModeSelect').addEventListener('change',e=>{setRenderModeValue(e.target.value);renderResults();});
   $('straightenLevelSelect').addEventListener('change',()=>renderResults());
+  $('dimensionDetailSelect').addEventListener('change',()=>renderResults());
   $('clearShotsBtn').addEventListener('click',()=>{if(confirm('촬영한 사진을 모두 삭제할까요?'))clearCaptures();});
   $('batchAnalyzeBtn').addEventListener('click',batchAnalyze);
   $('exportPdfBtn').addEventListener('click',()=>exportPdf(state.results.filter(r=>r.ok),'HOOK_batch_drawings.pdf'));
@@ -1226,10 +1263,10 @@
   window.addEventListener('pagehide',()=>{stopCamera();state.captures.forEach(revokeCapture);});
 
   if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-    navigator.serviceWorker.register('./sw.js?v=0.6.9').then(reg=>reg.update()).catch(()=>{});
+    navigator.serviceWorker.register('./sw.js?v=0.7.0').then(reg=>reg.update()).catch(()=>{});
   }
 
-  const APP_VERSION='0.6.9';
+  const APP_VERSION='0.7.0';
   if(/^https?:$/.test(location.protocol)){setTimeout(async()=>{try{const res=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store'});if(!res.ok)return;const latest=(await res.json()).version;if(!latest||latest===APP_VERSION)return;if('caches' in window){for(const key of await caches.keys())await caches.delete(key);}if('serviceWorker' in navigator){for(const reg of await navigator.serviceWorker.getRegistrations())await reg.unregister();}location.replace(`./?v=${encodeURIComponent(latest)}&refresh=${Date.now()}`);}catch(_){}},1800);}
 
   // Test hooks are available only when ?test=1 is present. They are not shown in normal use.

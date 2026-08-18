@@ -1,5 +1,5 @@
-const CACHE='hook-mobile-v0.6.9';
-const ASSETS=['./version.json','./','./index.html','./styles.css?v=0.6.9','./app.js?v=0.6.9','./manifest.json?v=0.6.9','./icons/icon-192.png','./icons/icon-512.png'];
+const CACHE='hook-mobile-v0.7.0';
+const ASSETS=['./version.json','./','./index.html','./styles.css?v=0.7.0','./app.js?v=0.7.0','./manifest.json?v=0.7.0','./icons/icon-192.png','./icons/icon-512.png'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{

@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; img-src 'self' blob: data:; media-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; worker-src 'self' blob:;" />
-  <title>HOOK 모바일 자동도면 v0.6.9</title>
+  <title>HOOK 모바일 자동도면 v0.7.0</title>
   <link rel="manifest" href="manifest.json?v=0.6.6" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="stylesheet" href="styles.css?v=0.6.6" />
@@ -20,7 +20,7 @@
   <header class="topbar">
     <div>
       <div class="eyebrow">COTEC JIG DRAWING</div>
-      <h1>HOOK 모바일 자동도면 <small>v0.6.9</small></h1>
+      <h1>HOOK 모바일 자동도면 <small>v0.7.0</small></h1>
       <p>치구 · 제품 공용 / 촬영 원본은 사진첩에 저장하지 않음 / 저장된 사진 첨부 가능</p>
     </div>
     <span id="statusPill" class="pill">준비</span>
@@ -102,9 +102,15 @@
           </label>
           <label>도면 보정 강도
             <select id="straightenLevelSelect">
-              <option value="medium">보통</option>
-              <option value="high" selected>강</option>
+              <option value="medium" selected>보통</option>
+              <option value="high">강</option>
               <option value="max">최대</option>
+            </select>
+          </label>
+          <label>치수 표시
+            <select id="dimensionDetailSelect">
+              <option value="basic" selected>기본 - 전체/주요길이/R</option>
+              <option value="full">상세 - 길이/R/각도</option>
             </select>
           </label>
           <label class="wide">결과 표시 방식
