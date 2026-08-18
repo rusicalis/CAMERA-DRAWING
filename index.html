@@ -1,0 +1,7 @@
+'use strict';
+(function(){
+  const show=function(msg){const el=document.getElementById('bootStatus');if(el){el.className='error';el.textContent=msg;}};
+  window.addEventListener('error',function(e){show('프로그램 오류: '+(e.message||'스크립트 실행 실패'));});
+  window.addEventListener('unhandledrejection',function(e){const r=e.reason;show('프로그램 오류: '+((r&&r.message)||String(r||'실행 실패')));});
+  setTimeout(function(){const el=document.getElementById('bootStatus');if(el&&!el.classList.contains('ok')&&!el.classList.contains('error'))show('프로그램 로딩 지연: 새로고침해 주세요.');},8000);
+})();
