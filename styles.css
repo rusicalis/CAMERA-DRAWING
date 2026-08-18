@@ -45,3 +45,35 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 .source-badge.ar{background:#3b0764;border-color:#7e22ce;color:#e9d5ff}
 .drawing-wrap{aspect-ratio:1.414/1}
 @media(max-width:560px){.line-manager{grid-template-columns:1fr 1fr}.line-manager input{grid-column:1/-1}.ar-control{grid-template-columns:auto 1fr}.ar-control .btn{grid-column:1/-1}.number-preview .small-btn{width:100%}}
+
+/* v0.4.1 mobile workflow: camera first + collapsed menus */
+.camera-primary{border-color:rgba(56,189,248,.32);box-shadow:0 18px 45px rgba(0,0,0,.28),0 0 0 1px rgba(56,189,248,.05) inset}
+.menu-card{padding:0;overflow:hidden}
+.menu-card>summary{list-style:none}
+.menu-card>summary::-webkit-details-marker{display:none}
+.menu-summary{min-height:64px;padding:13px 15px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;background:linear-gradient(180deg,rgba(23,32,51,.98),rgba(15,23,42,.98))}
+.menu-summary:active{background:#172033}
+.summary-main{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.summary-main>div{min-width:0;display:flex;flex-direction:column;gap:2px}
+.summary-main b{font-size:14px;color:#eef2ff}
+.summary-main small{font-size:10px;color:#8797ad;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65vw}
+.summary-no{width:28px;height:28px;border-radius:9px;background:#0c4a6e;color:#bae6fd;display:grid;place-items:center;font-weight:900;flex:0 0 auto}
+.summary-arrow{font-size:22px;color:#7dd3fc;line-height:1;transition:transform .18s ease;flex:0 0 auto}
+.menu-card[open]>.menu-summary .summary-arrow{transform:rotate(180deg)}
+.menu-card[open]>.menu-summary{border-bottom:1px solid rgba(148,163,184,.12)}
+.menu-content{padding:14px 15px 15px}
+.summary-count{font-size:10px;font-weight:900;color:#bae6fd;background:#0c4a6e;border:1px solid #075985;border-radius:999px;padding:5px 8px;white-space:nowrap}
+.privacy-mini,.install-mini{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:900;flex:0 0 auto}
+.privacy-mini{background:#166534;color:#dcfce7}.install-mini{background:#1e3a5f;color:#bae6fd}
+.privacy-panel{border-color:rgba(34,197,94,.22)}
+.privacy-content b{font-size:13px;color:#dcfce7}.privacy-content p{font-size:10px;color:#bbf7d0;line-height:1.5;margin:6px 0 0}
+.install-card h2{margin:0}
+@media(max-width:560px){
+  main{padding-top:9px}
+  .camera-primary{margin-bottom:9px}
+  .menu-card{margin-bottom:9px;border-radius:15px}
+  .menu-summary{min-height:58px;padding:11px 12px}
+  .menu-content{padding:12px}
+  .summary-main b{font-size:13px}
+  .summary-main small{max-width:56vw}
+}

@@ -281,6 +281,7 @@
     const count = state.captures.length;
     $('shotCount').textContent = `${count}장`;
     $('clearShotsBtn').disabled = count === 0 || state.working;
+    if($('queueSummaryCount')) $('queueSummaryCount').textContent = `${count}장`;
     $('batchAnalyzeBtn').disabled = count === 0 || state.working;
     if (state.stream) $('captureBtn').disabled = count >= (parseInt($('maxShots').value,10)||10) || state.working;
   }
@@ -526,6 +527,13 @@
   function estimateRadii(path,mmPerPx,bbox,diameter){if(path.length<15)return{r1:NaN,r2:NaN};const sep=Math.max(3,Math.floor(path.length/45)),cy=(bbox.minY+bbox.maxY)/2,upper=[],lower=[];for(let i=sep;i<path.length-sep;i+=Math.max(1,Math.floor(sep/2))){const r=circleRadius(path[i-sep],path[i],path[i+sep])*mmPerPx;if(!Number.isFinite(r)||r<diameter*.55||r>Math.max((bbox.maxX-bbox.minX),(bbox.maxY-bbox.minY))*mmPerPx*1.8)continue;(path[i].y<cy?upper:lower).push(r);}return{r1:median(upper),r2:median(lower)};}
 
   function pathBBox(path){let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;for(const p of path){if(p.x<minX)minX=p.x;if(p.x>maxX)maxX=p.x;if(p.y<minY)minY=p.y;if(p.y>maxY)maxY=p.y;}return{minX,minY,maxX,maxY,w:Math.max(1,maxX-minX),h:Math.max(1,maxY-minY)};}
+  function estimateWirePx(comp,path){
+    const lenPx=Math.max(1,pathLength(path));
+    const areaPx=Math.max(1,comp?.area||0);
+    const bboxSpan=Math.max(1,Math.min(comp?.maxX-comp?.minX||1, comp?.maxY-comp?.minY||1));
+    const raw=areaPx/lenPx;
+    return clamp(raw, 2, Math.max(6, bboxSpan*.35));
+  }
 
   async function analyzeCapture(item) {
     if (!item.blob) throw new Error('촬영 원본이 없습니다. 새로 촬영하세요.');
@@ -547,24 +555,36 @@
     if(Number.isFinite(approxH)&&approxH>diameter)userScales.push((approxH-diameter)/pb.h);
     let mmPerPx,scaleSource,scaleConfidence;
     const mode=item.measureMode||'auto', arScale=parseFloat(item.arMmPerPx);
+    const wirePxEst=estimateWirePx(comp,path);
+    const wireDerivedScale=Number.isFinite(wirePxEst)&&wirePxEst>0 ? diameter/wirePxEst : NaN;
     if(userScales.length){
       mmPerPx=userScales.reduce((a,b)=>a+b,0)/userScales.length;scaleSource='사용자 대략치수';scaleConfidence=.92;
     } else if(mode==='manual') {
-      throw new Error('대략치수 모드입니다. 전체 폭 또는 높이를 1개 이상 입력하세요.');
+      if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0){
+        mmPerPx=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.38;
+      } else {
+        mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.12;
+      }
     } else if(mode==='ar' && Number.isFinite(arScale) && arScale>0) {
       mmPerPx=arScale;scaleSource='AR 자동 측정';scaleConfidence=.68;
     } else if(mode==='grid' && grid.pitch) {
       mmPerPx=10/grid.pitch;scaleSource='1cm 격자 자동';scaleConfidence=grid.confidence;
     } else if(mode==='grid') {
-      throw new Error('1cm 격자가 확인되지 않았습니다. AR 자동 측정 또는 대략치수 모드를 사용하세요.');
+      if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0){
+        mmPerPx=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.36;
+      } else {
+        mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.12;
+      }
     } else if(mode==='auto' && grid.pitch) {
       mmPerPx=10/grid.pitch;scaleSource='1cm 격자 자동';scaleConfidence=grid.confidence;
     } else if(Number.isFinite(arScale) && arScale>0) {
       mmPerPx=arScale;scaleSource='AR 자동 측정';scaleConfidence=.64;
     } else if(grid.pitch) {
       mmPerPx=10/grid.pitch;scaleSource='1cm 격자 자동';scaleConfidence=grid.confidence;
+    } else if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0) {
+      mmPerPx=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.34;
     } else {
-      throw new Error('격자/AR 스케일이 없습니다. AR 자동 측정을 실행하거나 대략 폭 또는 높이를 1개 이상 입력하세요.');
+      mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.10;
     }
 
     const width=pb.w*mmPerPx+diameter,height=pb.h*mmPerPx+diameter,length=pathLength(path)*mmPerPx;
@@ -578,14 +598,15 @@
       baseWidth:width,baseHeight:height,baseLength:length,baseR1:r.r1,baseR2:r.r2,
       width,height,length,r1:r.r1,r2:r.r2,pathBase:pathMm,path:pathMm.map(p=>({...p})),
       scaleSource,scaleConfidence,quality,threshold:seg.threshold,invert:seg.invert,segmentMethod:seg.method,
-      gridDetected:!!grid.pitch,arDetected:scaleSource==='AR 자동 측정',gridReason:grid.reason||'',shapeFill:comp.fill,arDistanceMm:item.arDistanceMm||null
+      gridDetected:!!grid.pitch,arDetected:scaleSource==='AR 자동 측정',gridReason:grid.reason||'',shapeFill:comp.fill,arDistanceMm:item.arDistanceMm||null,
+      dimensionEstimated:scaleSource.includes('추정')||scaleSource.includes('임시'), wirePxEstimate:wirePxEst
     };
   }
 
   async function batchAnalyze() {
     if(!state.captures.length||state.working)return;
     state.working=true;updateShotUI();stopCamera();
-    $('progressCard').classList.remove('hidden');$('resultsSection').classList.add('hidden');
+    $('progressCard').classList.remove('hidden');$('progressCard').open=true;$('resultsSection').classList.add('hidden');$('resultsSection').open=false;
     state.results=[];setStatus('일괄 분석중','busy');
     const total=state.captures.length;
     for(let i=0;i<total;i++){
@@ -603,7 +624,7 @@
     // Remove successfully analyzed photographs from the capture queue/DOM as well.
     state.captures = state.captures.filter(c => c.blob);
     renderCaptureList();
-    persistUsedNumbers();state.working=false;updateShotUI();renderResults();$('resultsSection').classList.remove('hidden');
+    persistUsedNumbers();state.working=false;updateShotUI();renderResults();$('resultsSection').classList.remove('hidden');$('resultsSection').open=true;
     $('resultsSection').scrollIntoView({behavior:'smooth',block:'start'});
     const ok=state.results.filter(r=>r.ok).length;
     setStatus(`${ok}/${total} 도면 생성`,ok===total?'ok':'warn');
@@ -713,7 +734,7 @@
           <label>Ø mm<input data-rfield="diameter" type="number" step="0.1" value="${n1(r.diameter)}"></label>
         </div>
         <div class="result-actions"><button class="btn apply-dims" data-id="${r.id}">폭/높이 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 도면 PDF</button></div>
-        <div class="result-msg">형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${r.arDetected&&r.arDistanceMm?` (AR 거리 약 ${Math.round(r.arDistanceMm)} mm)`:''} · 사진 원본은 분석 완료 후 앱 메모리에서 폐기됨 · 치수는 직접 수정 가능합니다.</div>
+        <div class="result-msg">형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${r.arDetected&&r.arDistanceMm?` (AR 거리 약 ${Math.round(r.arDistanceMm)} mm)`:''}${r.dimensionEstimated?` · 치수 인식이 부족해 Ø 기준 추정/임시치수로 먼저 도면을 생성했습니다. 필요 시 값을 직접 수정하세요.`:''} · 사진 원본은 분석 완료 후 앱 메모리에서 폐기됨 · 치수는 직접 수정 가능합니다.</div>
       </div>`;
     }).join('');
   }
@@ -793,7 +814,7 @@
 
   function newJob() {
     if(!confirm('현재 도면과 촬영 정보를 모두 지우고 새 촬영을 시작할까요?'))return;
-    persistUsedNumbers();clearCaptures();state.results=[];$('resultsSection').classList.add('hidden');$('progressCard').classList.add('hidden');$('progressBar').style.width='0';state.seq=1;suggestNextStart();renderResults();setStatus('새 작업');window.scrollTo({top:0,behavior:'smooth'});
+    persistUsedNumbers();clearCaptures();state.results=[];$('resultsSection').classList.add('hidden');$('resultsSection').open=false;$('progressCard').classList.add('hidden');$('progressCard').open=false;$('progressBar').style.width='0';state.seq=1;suggestNextStart();renderResults();setStatus('새 작업');window.scrollTo({top:0,behavior:'smooth'});
   }
 
   // ---------------- PWA install ----------------
@@ -822,7 +843,9 @@
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCamera();});
   window.addEventListener('pagehide',()=>{stopCamera();state.captures.forEach(revokeCapture);});
 
-  if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('./sw.js?v=0.4.0').catch(()=>{});
+  if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    navigator.serviceWorker.register('./sw.js?v=0.4.1').then(reg=>reg.update()).catch(()=>{});
+  }
 
   // Test hooks are available only when ?test=1 is present. They are not shown in normal use.
   if(new URLSearchParams(location.search).get('test')==='1'){
