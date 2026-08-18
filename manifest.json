@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; img-src 'self' blob: data:; media-src 'self' blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; worker-src 'self' blob:;" />
-  <title>HOOK 모바일 자동도면 v0.8.8</title>
+  <title>HOOK 모바일 자동도면 v0.8.9</title>
   <link rel="manifest" href="manifest.json?v=0.8.1" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
 
@@ -153,7 +153,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   <header class="topbar">
     <div>
       <div class="eyebrow">COTEC JIG DRAWING</div>
-      <h1>HOOK 모바일 자동도면 <small>v0.8.8</small></h1>
+      <h1>HOOK 모바일 자동도면 <small>v0.8.9</small></h1>
       <p>치구 · 제품 공용 / 촬영 원본은 사진첩에 저장하지 않음 / 저장된 사진 첨부 가능</p>
     </div>
     <span id="statusPill" class="pill">준비</span>
@@ -1395,45 +1395,6 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     out.push(src[src.length-1]);
     return out;
   }
-
-  function cornerTurnDeg(a,b,c){
-    const v1x=b.x-a.x,v1y=b.y-a.y,v2x=c.x-b.x,v2y=c.y-b.y,m1=Math.hypot(v1x,v1y),m2=Math.hypot(v2x,v2y);
-    if(m1<1e-6||m2<1e-6) return 0;
-    return Math.acos(clamp((v1x*v2x+v1y*v2y)/(m1*m2),-1,1))*180/Math.PI;
-  }
-  function mergeMinorVertices(path,minSeg=10,angleTol=18){
-    if(!Array.isArray(path)||path.length<3) return Array.isArray(path)?path.slice():[];
-    let pts=path.map(p=>({...p}));
-    for(let pass=0; pass<6 && pts.length>3; pass++){
-      const out=[pts[0]]; let changed=false;
-      for(let i=1;i<pts.length-1;i++){
-        const prev=out[out.length-1],cur=pts[i],next=pts[i+1];
-        const l1=dist(prev,cur),l2=dist(cur,next),turn=cornerTurnDeg(prev,cur,next);
-        if(l1<minSeg || l2<minSeg || turn<angleTol){changed=true; continue;}
-        out.push(cur);
-      }
-      out.push(pts[pts.length-1]);
-      pts=out;
-      if(!changed) break;
-    }
-    return pts;
-  }
-  function engineeringProfile(path,diameter=6){
-    const raw=fidelityPath(path);
-    if(raw.length<3) return raw;
-    const eng=engineeringPath(raw,diameter);
-    const pb=pathBounds(eng), span=Math.max(pb.w,pb.h), minor=Math.min(pb.w,pb.h), plen=pathLength(eng);
-    let eps=Math.max((Number(diameter)||6)*0.55, span*0.006, minor*0.014, 1.8);
-    if(currentStraightenLevel()==='max') eps*=1.16;
-    let pts=rdpSimplify(eng,eps);
-    if(pts.length<4) pts=rdpSimplify(eng,Math.max(1.0,eps*0.72));
-    pts=mergeMinorVertices(pts,Math.max((Number(diameter)||6)*5.2, plen*0.065, 9), 19);
-    pts=snapSegmentsToDominantAngles(pts,diameter);
-    pts=mergeMinorVertices(pts,Math.max((Number(diameter)||6)*4.3, plen*0.052, 8), 15);
-    const rb=pathBounds(raw),ob=pathBounds(pts),ol=pathLength(pts),rl=pathLength(raw);
-    if(pts.length<3||ob.w<rb.w*.80||ob.h<rb.h*.80||ol<rl*.72||ol>rl*1.16) return majorCenterline(raw,diameter);
-    return pts;
-  }
   function snapSegmentsToDominantAngles(path,diameter=6){
     if(!Array.isArray(path)||path.length<2) return Array.isArray(path)?path.slice():[];
     const tol=currentStraightenLevel()==='max'?8:6;
@@ -1488,26 +1449,24 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     if(out.length<5||ol<rl*.82||ol>rl*1.14||ob.w<rb.w*.85||ob.h<rb.h*.85)return pts;
     return out;
   }
-  function cornerArcData(path,diameter=6){
+  function cornerArcData(path){
     const out=[];
-    const minSeg=Math.max((Number(diameter)||6)*2.4,6);
     for(let i=1;i<path.length-1;i++){
       const a=path[i-1],b=path[i],c=path[i+1],ab=dist(a,b),bc=dist(b,c);
-      if(ab<minSeg||bc<minSeg) continue;
+      if(ab<3||bc<3) continue;
       const v1={x:(a.x-b.x)/ab,y:(a.y-b.y)/ab},v2={x:(c.x-b.x)/bc,y:(c.y-b.y)/bc};
       const theta=Math.acos(clamp(v1.x*v2.x+v1.y*v2.y,-1,1));
-      if(theta<0.26||theta>2.85) continue;
-      const trim=Math.min(Math.min(ab,bc)*0.24, Math.max((Number(diameter)||6)*1.8, 4));
-      const p1={x:b.x+v1.x*trim,y:b.y+v1.y*trim},p2={x:b.x+v2.x*trim,y:b.y+v2.y*trim};
-      const r=trim/Math.tan(theta/2);
-      if(!(Number.isFinite(r)&&r>0.5)) continue;
-      out.push({i,p1,p2,r,corner:b,theta});
+      if(theta<0.18||theta>2.95) continue;
+      const t=Math.min(ab,bc)*0.22;
+      const p1={x:b.x+v1.x*t,y:b.y+v1.y*t},p2={x:b.x+v2.x*t,y:b.y+v2.y*t};
+      const r=t/Math.tan(theta/2);
+      out.push({i,p1,p2,r,corner:b});
     }
     return out;
   }
   function buildCadPath(path, scale=1, diameter=6){
-    const pts=engineeringProfile(path,diameter); if(pts.length<2) return {points:pts,d:'',arcs:[]};
-    const arcs=cornerArcData(pts,diameter), amap=new Map(arcs.map(a=>[a.i,a]));
+    const pts=majorCenterline(path,diameter); if(pts.length<2) return {points:pts,d:'',arcs:[]};
+    const arcs=cornerArcData(pts), amap=new Map(arcs.map(a=>[a.i,a]));
     let d=`M ${pts[0].x*scale} ${pts[0].y*scale}`;
     for(let i=1;i<pts.length;i++){
       const a=amap.get(i);
@@ -1572,23 +1531,15 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     specs.push({key:'height', value:heightVal, kind:'overallV', textX:heightX-12, textY:(top.y+bottom.y)/2, x1:heightX, y1:top.y, x2:heightX, y2:bottom.y, ext:[[top.x,top.y,heightX,top.y],[bottom.x,bottom.y,heightX,bottom.y]]});
 
     const count=Math.min(pathMm.length,pathScreen.length);
-    const totalLen=pathLength(pathMm);
-    const minSeg=Math.max(16,Math.max(mb.w,mb.h)*0.12,totalLen*0.075);
+    const minSeg=Math.max(10,Math.max(mb.w,mb.h)*0.10);
     const segCandidates=[];
     for(let i=0;i<count-1;i++){
       const p1=pathMm[i],p2=pathMm[i+1],s1=pathScreen[i],s2=pathScreen[i+1];
       const len=dist(p1,p2); if(len<minSeg) continue;
       segCandidates.push({i,len,p1,p2,s1,s2});
     }
-    const segLimit=currentDimensionDetail()==='full'?7:5;
-    const selectedSeg=new Set();
-    for(const cand of segCandidates.slice().sort((a,b)=>b.len-a.len)){
-      if(selectedSeg.size>=segLimit) break;
-      let near=false;
-      for(const idx of selectedSeg){ if(Math.abs(idx-cand.i)<=1){ near=true; break; } }
-      if(near) continue;
-      selectedSeg.add(cand.i);
-    }
+    const segLimit=currentDimensionDetail()==='full'?10:6;
+    const selectedSeg=new Set(segCandidates.slice().sort((a,b)=>b.len-a.len).slice(0,segLimit).map(x=>x.i));
     let segNo=1;
     for(const g of segCandidates){
       if(!selectedSeg.has(g.i)) continue;
@@ -1598,7 +1549,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       const center={x:(s1.x+s2.x)/2,y:(s1.y+s2.y)/2};
       const shapeCenter={x:(b.minX+b.maxX)/2,y:(b.minY+b.maxY)/2};
       if((center.x-shapeCenter.x)*nx+(center.y-shapeCenter.y)*ny<0){nx=-nx;ny=-ny;}
-      const off=36+(segNo%2)*16;
+      const off=34+(segNo%2)*12;
       const d1={x:s1.x+nx*off,y:s1.y+ny*off},d2={x:s2.x+nx*off,y:s2.y+ny*off};
       specs.push({key:`seg${segNo++}`,value:len,kind:'segment',textX:clamp((d1.x+d2.x)/2+nx*10,58,W-58),textY:clamp((d1.y+d2.y)/2+ny*10,42,H-42),x1:d1.x,y1:d1.y,x2:d2.x,y2:d2.y,ext:[[s1.x,s1.y,d1.x,d1.y],[s2.x,s2.y,d2.x,d2.y]]});
     }
@@ -1606,7 +1557,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const arcsMm=Array.isArray(opt.arcsMm)?opt.arcsMm:[];
     const arcsScreen=Array.isArray(opt.arcsScreen)?opt.arcsScreen:[];
     if(arcsMm.length && arcsScreen.length){
-      const limit=currentDimensionDetail()==='full'?6:4;
+      const limit=currentDimensionDetail()==='full'?8:5;
       for(let k=0;k<Math.min(limit,arcsMm.length,arcsScreen.length);k++){
         const am=arcsMm[k],as=arcsScreen[k];
         if(!(Number.isFinite(am.r)&&am.r>0.5)) continue;
@@ -1654,18 +1605,14 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     return parts.join('');
   }
   function buildSvgOnly(r){
-    const W=1189,H=841;
-    const draw={x:78,y:96,w:758,h:640};
-    const notes={x:870,y:96,w:260,h:142};
-    const title={x:870,y:560,w:260,h:218};
+    const W=1189,H=841, draw={x:95,y:90,w:760,h:610}, title={x:875,y:88,w:230,h:665};
     const variant = r.captureType==='product' ? 'photo' : currentRenderMode();
     const mmRaw=transformedPath(r);
     const cadMm=buildCadPath(mmRaw,1,r.diameter);
-    const mmForDrawing=r.userShapeCorrected?engineeringProfile(mmRaw,r.diameter):cadMm.points;
+    const mmForDrawing=r.userShapeCorrected?fidelityPath(mmRaw):cadMm.points;
     const mmForDims=mmForDrawing;
     const date=new Date().toLocaleDateString('sv-SE');
     const width=parseFloat(r.width)||r.baseWidth, height=parseFloat(r.height)||r.baseHeight, length=parseFloat(r.length)||pathLength(mmForDrawing);
-    const topR=parseFloat(r.r1)||0, bottomR=parseFloat(r.r2)||0;
     let screen=[], shapeMarkup='', photoInset='', dimOpt={};
     if(variant==='photo'){
       const fit=fitRect(r.imageW||1000, r.imageH||1000, draw);
@@ -1674,40 +1621,21 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       const fit2=fitRect(rawBounds.w||1, rawBounds.h||1, {x:fit.x,y:fit.y,w:fit.w,h:fit.h});
       const rawScreen=raw.map(p=>({x:fit2.x+(p.x-rawBounds.minX)*fit2.scale,y:fit2.y+(p.y-rawBounds.minY)*fit2.scale}));
       screen=rawScreen;
-      shapeMarkup=`<rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}" fill="none" stroke="#111" stroke-width="1.2"/>${r.photoDataUrl?`<image href="${r.photoDataUrl}" x="${fit.x}" y="${fit.y}" width="${fit.w}" height="${fit.h}" preserveAspectRatio="xMidYMid meet"/>`:''}<polyline points="${rawScreen.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}" fill="none" stroke="#111" stroke-width="2.2"/>`;
+      shapeMarkup=`<rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}" fill="none" stroke="#bbb"/>${r.photoDataUrl?`<image href="${r.photoDataUrl}" x="${fit.x}" y="${fit.y}" width="${fit.w}" height="${fit.h}" preserveAspectRatio="xMidYMid meet"/>`:''}<polyline points="${rawScreen.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}" fill="none" stroke="rgba(17,17,17,.55)" stroke-width="3"/>`;
     } else {
       const pb=pathBounds(mmForDrawing), sc=Math.min(draw.w/pb.w, draw.h/pb.h)*0.82, ox=draw.x+(draw.w-pb.w*sc)/2, oy=draw.y+(draw.h-pb.h*sc)/2;
       screen=mmForDrawing.map(p=>({x:ox+(p.x-pb.minX)*sc,y:oy+(p.y-pb.minY)*sc}));
       const cadScreen=buildCadPath(screen,1,r.diameter);
       const wirePx=clamp((parseFloat(r.diameter)||6)*sc,4,24);
-      photoInset = r.photoDataUrl ? `<rect x="92" y="595" width="128" height="154" fill="none" stroke="#777" stroke-width="1"/><image href="${r.photoDataUrl}" x="95" y="598" width="122" height="148" preserveAspectRatio="xMidYMid meet"/>` : '';
-      shapeMarkup=`<rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}" fill="none" stroke="#111" stroke-width="1.2"/><path d="${cadScreen.d}" fill="none" stroke="#111" stroke-width="${wirePx.toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${cadScreen.d}" fill="none" stroke="#d1d5db" stroke-width="1.2" stroke-dasharray="7 5" opacity="0.95"/>${photoInset}`;
+      photoInset = r.photoDataUrl ? `<rect x="75" y="575" width="145" height="205" fill="none" stroke="#888"/><image href="${r.photoDataUrl}" x="78" y="578" width="139" height="199" preserveAspectRatio="xMidYMid meet"/>` : '';
+      shapeMarkup=`<path d="${cadScreen.d}" fill="none" stroke="#111" stroke-width="${wirePx.toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${cadScreen.d}" fill="none" stroke="#d1d5db" stroke-width="1.6" stroke-dasharray="6 4" opacity="0.95"/>${photoInset}`;
       dimOpt={arcsMm:cadMm.arcs,arcsScreen:cadScreen.arcs};
       screen=cadScreen.points;
     }
     const specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);
     const dimSvg=makeDimSvg(specs,r,true);
     const sideTitle = r.captureType==='product' ? '제품 사진 치수도' : (variant==='photo' ? '치구 사진 치수도' : '치구 자동도면');
-    const titleRows=[
-      ['품명',r.name],
-      ['재질',r.material],
-      ['환봉',`Ø ${n1(r.diameter)}`],
-      ['전체폭',n1(width)],
-      ['전체높이',n1(height)],
-      ['전개길이',n1(length)],
-      ['상부 R',n1(topR)],
-      ['하부 R',n1(bottomR)],
-      ['작성일',date]
-    ];
-    const rowH=20, headerH=26, footerH=26, keyX=title.x+10, splitX=title.x+84;
-    let rowSvg=`<rect x="${title.x}" y="${title.y}" width="${title.w}" height="${title.h}" fill="none" stroke="#111" stroke-width="1.2"/><line x1="${title.x}" y1="${title.y+headerH}" x2="${title.x+title.w}" y2="${title.y+headerH}" stroke="#111" stroke-width="1.1"/><line x1="${splitX}" y1="${title.y+headerH}" x2="${splitX}" y2="${title.y+title.h-footerH}" stroke="#111" stroke-width="1.0"/><text x="${title.x+8}" y="${title.y+18}" font-size="13" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">도면 정보 / TITLE BLOCK</text>`;
-    titleRows.forEach((row,idx)=>{
-      const y=title.y+headerH+idx*rowH;
-      rowSvg+=`<line x1="${title.x}" y1="${y+rowH}" x2="${title.x+title.w}" y2="${y+rowH}" stroke="#111" stroke-width="0.9"/><text x="${keyX}" y="${y+14}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${esc(row[0])}</text><text x="${splitX+8}" y="${y+14}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">${esc(row[1])}</text>`;
-    });
-    rowSvg+=`<line x1="${title.x+145}" y1="${title.y+title.h-footerH}" x2="${title.x+145}" y2="${title.y+title.h}" stroke="#111" stroke-width="0.9"/><text x="${title.x+8}" y="${title.y+title.h-9}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">도면명</text><text x="${title.x+50}" y="${title.y+title.h-9}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">${esc(sideTitle)}</text><text x="${title.x+154}" y="${title.y+title.h-9}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">단위 mm</text>`;
-    const noteSvg=`<rect x="${notes.x}" y="${notes.y}" width="${notes.w}" height="${notes.h}" fill="none" stroke="#111" stroke-width="1.2"/><text x="${notes.x+10}" y="${notes.y+18}" font-size="13" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">특기사항 / NOTES</text><line x1="${notes.x}" y1="${notes.y+26}" x2="${notes.x+notes.w}" y2="${notes.y+26}" stroke="#111" stroke-width="1.0"/><text x="${notes.x+12}" y="${notes.y+50}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">1. 직선부는 큰 중심선 기준으로 단일선 표기</text><text x="${notes.x+12}" y="${notes.y+72}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">2. 곡선부는 중심선 기준 R 값 표기</text><text x="${notes.x+12}" y="${notes.y+94}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">3. 전체 길이(L) = ${esc(n1(length))} mm</text><text x="${notes.x+12}" y="${notes.y+116}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">4. 원본 사진은 좌하단 참조</text>`;
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff"/><rect x="18" y="18" width="1153" height="805" fill="none" stroke="#111" stroke-width="1.4"/><text x="48" y="50" font-size="13" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">3. 도면 (치수표기)</text><text x="48" y="74" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">※ 치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${n1(r.diameter)}</text>${shapeMarkup}${dimSvg}${noteSvg}${rowSvg}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff"/><rect x="28" y="28" width="1133" height="785" fill="none" stroke="#111" stroke-width="1.4"/><text x="85" y="58" font-size="13" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">3. 도면 (치수표기)</text><text x="85" y="82" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">※ 치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${n1(r.diameter)}</text>${shapeMarkup}${dimSvg}<rect x="${title.x}" y="${title.y}" width="${title.w}" height="${title.h}" fill="none" stroke="#111"/><text x="${title.x+14}" y="${title.y+24}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${sideTitle}</text><text x="${title.x+14}" y="${title.y+54}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">NO : ${esc(r.name)}</text><text x="${title.x+14}" y="${title.y+78}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">재질 : ${esc(r.material)}</text><text x="${title.x+14}" y="${title.y+102}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">Ø : ${n1(r.diameter)}</text><text x="${title.x+14}" y="${title.y+126}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">전체 높이 : ${n1(height)}</text><text x="${title.x+14}" y="${title.y+150}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">전체 폭 : ${n1(width)}</text><text x="${title.x+14}" y="${title.y+174}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">전개길이 : ${n1(length)}</text><text x="${title.x+14}" y="${title.y+198}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">작성일 : ${date}</text><text x="${title.x+14}" y="${title.y+222}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">직선부는 단일선, 곡선부는 R 표기</text>${variant==='drawing'?`<text x="${title.x+14}" y="${title.y+240}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">실제 사진은 좌하단 참고</text>`:''}</svg>`;
   }
   function makeFigureHtml(r){
     const svg=buildSvgOnly(r);
