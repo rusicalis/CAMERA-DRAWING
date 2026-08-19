@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
-  <title>HOOK 모바일 자동도면 v0.9.5</title>
+  <title>HOOK 모바일 자동도면 v0.9.8</title>
 <style>
 :root{
   --bg:#070b13;--panel:#111827;--panel2:#172033;--line:#263247;--text:#eef2ff;--muted:#9aa8bd;
@@ -154,7 +154,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   <header class="topbar">
     <div>
       <div class="eyebrow">COTEC JIG DRAWING</div>
-      <h1>HOOK 모바일 자동도면 <small>v0.9.5</small></h1>
+      <h1>HOOK 모바일 자동도면 <small>v0.9.8</small></h1>
       <p>치구 · 제품 공용 / 촬영 원본은 사진첩에 저장하지 않음 / 저장된 사진 첨부 가능</p>
     </div>
     <span id="statusPill" class="pill">준비</span>
@@ -1788,35 +1788,270 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     for(const p of points){const rr=Math.hypot(p.x-cx,p.y-cy);errs.push(Math.abs(rr-r));const a=Math.atan2(p.y-cy,p.x-cx);if(prev!==null){let da=a-prev;while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;totalAng+=da;}prev=a;}
     return{cx,cy,r,rms:Math.sqrt(errs.reduce((a,b)=>a+b*b,0)/Math.max(1,errs.length)),p95:percentileNumber(errs,.95),max:Math.max(...errs),span:Math.abs(totalAng),signedSpan:totalAng};
   }
-  function fitEngineeringSegments(path,diameter=6){
-    const raw=fidelityPath(path);if(raw.length<3)return{path:raw,segments:[]};
-    const total=pathLength(raw),d=Math.max(.1,Number(diameter)||6),count=clamp(Math.round(total/Math.max(.8,d*.32)),64,180);
-    let p=samplePathEvenly(raw,count);p=smoothPath(p,2);
-    const cum=[0];for(let i=1;i<p.length;i++)cum.push(cum[i-1]+dist(p[i-1],p[i]));
-    const minSpan=Math.max(d*2.0,total*.035),maxSpan=Math.max(d*16,total*.38),tol=Math.max(d*.14,total*.0018,.7),segments=[];let i0=0,guard=0;
-    while(i0<p.length-2&&guard++<80){
-      let bestL=null,bestA=null;
-      for(let j=i0+4;j<p.length;j++){
-        const span=cum[j]-cum[i0];if(span<minSpan)continue;if(span>maxSpan)break;const pts=p.slice(i0,j+1),lm=lineModelStats(pts);
-        if(lm&&lm.rms<=tol&&lm.p95<=tol*1.75&&lm.ratio>=.992)bestL={j,span,m:lm};
-        const am=circleModelStats(pts);if(am&&am.rms<=tol*1.10&&am.p95<=tol*1.9&&am.span>=Math.PI/10&&am.r>=d*.55&&am.r<Math.max(d*32,total*1.15))bestA={j,span,m:am};
+  function segmentSpanLength(p,a,b){
+    let L=0;for(let i=Math.max(a+1,1);i<=Math.min(b,p.length-1);i++)L+=dist(p[i-1],p[i]);return L;
+  }
+  function meaningfulSagitta(r,chord){
+    if(!(r>0)||chord<=0)return 0;const c=Math.min(chord,2*r)*.5;return r-Math.sqrt(Math.max(0,r*r-c*c));
+  }
+  function refineMacroSegments(p,segments,tol,total,d){
+    let segs=segments.map(x=>({...x}));
+    // 1) 두 개의 짧은 직선이 실제로는 하나의 완만한 곡선이면 한 개의 ARC로 통합한다.
+    let changed=true,guard=0;
+    while(changed&&guard++<8){
+      changed=false;const out=[];
+      for(let k=0;k<segs.length;k++){
+        const a=segs[k],b=segs[k+1];
+        if(b&&a.type==='line'&&b.type==='line'){
+          const pts=p.slice(a.i0,b.i1+1),lm=lineModelStats(pts),am=circleModelStats(pts),span=segmentSpanLength(p,a.i0,b.i1),chord=dist(p[a.i0],p[b.i1]);
+          if(am&&lm&&am.span>=Math.PI/6&&am.r>=d*.70&&am.r<Math.max(d*15,total*.82)&&am.rms<=tol*1.20&&am.p95<=tol*2.0&&am.rms<lm.rms*.58&&meaningfulSagitta(am.r,chord)>=Math.max(d*.28,tol*1.35)){
+            out.push({type:'arc',i0:a.i0,i1:b.i1,m:am});k++;changed=true;continue;
+          }
+          // 실제 동일 방향의 짧은 선들은 하나의 평균 직선으로 합친다.
+          let da=Math.abs((a.m?.ang||0)-(b.m?.ang||0))*180/Math.PI;while(da>180)da-=180;
+          if(lm&&da<10&&lm.rms<=tol*1.65&&lm.p95<=tol*2.7&&lm.ratio>=.968){out.push({type:'line',i0:a.i0,i1:b.i1,m:lm});k++;changed=true;continue;}
+        }
+        out.push(a);
       }
-      let seg;
-      if(bestL&&( !bestA||bestL.span>=bestA.span*.88))seg={type:'line',i0,i1:bestL.j,m:bestL.m};
-      else if(bestA)seg={type:'arc',i0,i1:bestA.j,m:bestA.m};
-      else{let j=i0+1;while(j<p.length-1&&cum[j]-cum[i0]<minSpan*.65)j++;seg={type:'line',i0,i1:j,m:lineModelStats(p.slice(i0,j+1))};}
-      segments.push(seg);if(seg.i1<=i0)break;i0=seg.i1;
+      segs=out;
     }
-    if(segments.length&&segments[segments.length-1].i1<p.length-1)segments.push({type:'line',i0:segments[segments.length-1].i1,i1:p.length-1,m:lineModelStats(p.slice(segments[segments.length-1].i1))});
-    // Adjacent almost-collinear short lines are merged into one average manufacturing line.
-    let changed=true;while(changed){changed=false;const out=[];for(let k=0;k<segments.length;k++){const a=segments[k],b=segments[k+1];if(b&&a.type==='line'&&b.type==='line'){const comb=lineModelStats(p.slice(a.i0,b.i1+1));let da=Math.abs((a.m?.ang||0)-(b.m?.ang||0))*180/Math.PI;while(da>180)da-=180;if(comb&&da<9&&comb.rms<=tol*1.15&&comb.p95<=tol*2){out.push({type:'line',i0:a.i0,i1:b.i1,m:comb});k++;changed=true;continue;}}out.push(a);}segments.splice(0,segments.length,...out);}
-    return{path:p,segments};
+    // 2) ARC 끝에 붙은 매우 짧은 선이 실제 곡선의 연장이라면 ARC로 흡수한다.
+    changed=true;guard=0;
+    while(changed&&guard++<6){
+      changed=false;const out=[];
+      for(let k=0;k<segs.length;k++){
+        const a=segs[k],b=segs[k+1];
+        if(b&&((a.type==='arc'&&b.type==='line')||(a.type==='line'&&b.type==='arc'))){
+          const i0=a.i0,i1=b.i1,pts=p.slice(i0,i1+1),am=circleModelStats(pts),span=segmentSpanLength(p,i0,i1),short=Math.min(segmentSpanLength(p,a.i0,a.i1),segmentSpanLength(p,b.i0,b.i1));
+          if(am&&short<=Math.max(d*5.0,total*.11)&&am.span>=Math.PI/5.5&&am.rms<=tol*1.35&&am.p95<=tol*2.25&&am.r>=d*.65&&am.r<Math.max(d*18,total*.9)){
+            out.push({type:'arc',i0,i1,m:am});k++;changed=true;continue;
+          }
+        }
+        out.push(a);
+      }
+      segs=out;
+    }
+    // 3) 끝단 ARC 안에 실제로 반듯한 짧은 꼬리선이 포함됐으면 직선+ARC로 분리한다. 방향에 관계없이 양 끝에 적용.
+    const splitEnd=(atStart)=>{
+      if(!segs.length)return;
+      const idx=atStart?0:segs.length-1,seg=segs[idx];if(seg.type!=='arc'||seg.i1-seg.i0<9)return;
+      let best=null;
+      if(atStart){
+        for(let j=seg.i0+4;j<=seg.i1-4;j++){
+          const lp=p.slice(seg.i0,j+1),rp=p.slice(j,seg.i1+1),lm=lineModelStats(lp),am=circleModelStats(rp),L=segmentSpanLength(p,seg.i0,j);
+          if(lm&&am&&L>=Math.max(d*2.3,total*.040)&&lm.ratio>=.994&&lm.rms<=tol*.62&&lm.p95<=tol*1.05&&am.span>=Math.PI/6&&am.rms<=tol*1.25){best={j,lm,am};}
+        }
+        if(best)segs.splice(idx,1,{type:'line',i0:seg.i0,i1:best.j,m:best.lm},{type:'arc',i0:best.j,i1:seg.i1,m:best.am});
+      }else{
+        for(let j=seg.i0+4;j<=seg.i1-4;j++){
+          const lp=p.slice(seg.i0,j+1),rp=p.slice(j,seg.i1+1),am=circleModelStats(lp),lm=lineModelStats(rp),L=segmentSpanLength(p,j,seg.i1);
+          if(lm&&am&&L>=Math.max(d*2.3,total*.040)&&lm.ratio>=.994&&lm.rms<=tol*.62&&lm.p95<=tol*1.05&&am.span>=Math.PI/6&&am.rms<=tol*1.25){best={j,lm,am};}
+        }
+        if(best)segs.splice(idx,1,{type:'arc',i0:seg.i0,i1:best.j,m:best.am},{type:'line',i0:best.j,i1:seg.i1,m:best.lm});
+      }
+    };
+    splitEnd(true);splitEnd(false);
+    // 4) 마지막으로 길이가 너무 짧고 의미 없는 세그먼트는 이웃과 평균화한다.
+    changed=true;guard=0;
+    while(changed&&guard++<5&&segs.length>3){
+      changed=false;let shortIdx=-1,shortLen=Infinity;
+      for(let i=0;i<segs.length;i++){const L=segmentSpanLength(p,segs[i].i0,segs[i].i1);if(L<shortLen){shortLen=L;shortIdx=i;}}
+      if(shortIdx<0||shortLen>Math.max(d*2.4,total*.045))break;
+      const tries=[];
+      if(shortIdx>0)tries.push([shortIdx-1,shortIdx]);if(shortIdx<segs.length-1)tries.push([shortIdx,shortIdx+1]);
+      let best=null;
+      for(const [aidx,bidx] of tries){const a=segs[aidx],b=segs[bidx],pts=p.slice(a.i0,b.i1+1),lm=lineModelStats(pts),am=circleModelStats(pts);if(lm&&lm.rms<=tol*1.8&&lm.p95<=tol*3&&lm.ratio>=.955){const score=lm.rms/tol;if(!best||score<best.score)best={aidx,bidx,seg:{type:'line',i0:a.i0,i1:b.i1,m:lm},score};}if(am&&am.span>=Math.PI/6&&am.rms<=tol*1.45&&am.p95<=tol*2.6){const score=am.rms/tol+.15;if(!best||score<best.score)best={aidx,bidx,seg:{type:'arc',i0:a.i0,i1:b.i1,m:am},score};}}
+      if(best){segs.splice(best.aidx,2,best.seg);changed=true;}else break;
+    }
+    return segs;
+  }
+  function projectToLineModel(pt,m){
+    const dx=pt.x-m.mx,dy=pt.y-m.my,t=dx*m.ux+dy*m.uy;
+    return{x:m.mx+t*m.ux,y:m.my+t*m.uy};
+  }
+  function projectToCircleModel(pt,m){
+    const dx=pt.x-m.cx,dy=pt.y-m.cy,L=Math.hypot(dx,dy)||1;
+    return{x:m.cx+dx/L*m.r,y:m.cy+dy/L*m.r};
+  }
+  function lineModelStats(points){
+    if(!points||points.length<2)return null;
+    let mx=0,my=0;for(const p of points){mx+=p.x;my+=p.y;}mx/=points.length;my/=points.length;
+    let xx=0,yy=0,xy=0;for(const p of points){const dx=p.x-mx,dy=p.y-my;xx+=dx*dx;yy+=dy*dy;xy+=dx*dy;}
+    const ang=.5*Math.atan2(2*xy,xx-yy),ux=Math.cos(ang),uy=Math.sin(ang),nx=-uy,ny=ux,errs=[];
+    for(const p of points)errs.push(Math.abs((p.x-mx)*nx+(p.y-my)*ny));
+    let L=0;for(let i=1;i<points.length;i++)L+=dist(points[i-1],points[i]);const chord=dist(points[0],points[points.length-1]);
+    return{rms:Math.sqrt(errs.reduce((a,b)=>a+b*b,0)/Math.max(1,errs.length)),p95:percentileNumber(errs,.95),max:Math.max(...errs),ratio:chord/Math.max(1e-9,L),ang,ux,uy,mx,my};
+  }
+  function primitiveCandidate(p,i0,i1,tol,d,total){
+    const pts=p.slice(i0,i1+1),n=pts.length;if(n<5)return null;
+    const lm=lineModelStats(pts);let best=null;
+    if(lm){
+      const lineCost=n*Math.pow(lm.rms/Math.max(.1,tol),2);
+      // HARD CORRIDOR: 실제 중심선에서 최대 허용 편차를 넘는 직선은 절대 채택하지 않는다.
+      if(lm.max<=tol&&lm.p95<=tol*.80&&lm.ratio>=.88)best={type:'line',i0,i1,m:lm,cost:lineCost};
+    }
+    const am=circleModelStats(pts);
+    if(am){
+      const chord=dist(pts[0],pts[pts.length-1]),sag=meaningfulSagitta(am.r,chord),maxR=d*12;
+      const genuine=am.span>=Math.PI/9&&am.span<=Math.PI*1.16&&am.r>=d*.60&&am.r<=Math.min(maxR,total*.62)&&sag>=Math.max(d*.25,tol*.8);
+      // ARC도 원본 중심선에서 벗어나면 탈락. 큰 반경으로 여러 직선 구간을 억지로 묶는 것을 금지한다.
+      if(genuine&&am.max<=tol&&am.p95<=tol*.80){
+        const arcCost=n*Math.pow(am.rms/Math.max(.1,tol),2)+4.0;
+        if(!best||arcCost<best.cost*.98)best={type:'arc',i0,i1,m:am,cost:arcCost};
+      }
+    }
+    return best;
+  }
+  function mergePrimitiveNeighbors(p,segs,tol,d,total){
+    let a=segs.map(x=>({...x})),changed=true,guard=0;
+    while(changed&&guard++<6){
+      changed=false;const out=[];
+      for(let i=0;i<a.length;i++){
+        const x=a[i],y=a[i+1];
+        if(y){
+          const cand=primitiveCandidate(p,x.i0,y.i1,tol,d,total);
+          const span=segmentSpanLength(p,x.i0,y.i1),short=Math.min(segmentSpanLength(p,x.i0,x.i1),segmentSpanLength(p,y.i0,y.i1));
+          if(cand&&((x.type===y.type)||(short<Math.max(d*3.0,total*.055)))){
+            const oldCost=(x.cost||0)+(y.cost||0)+22;
+            if(cand.cost<=oldCost*1.08&&span>=Math.max(d*4,total*.06)){
+              out.push(cand);i++;changed=true;continue;
+            }
+          }
+        }
+        out.push(x);
+      }
+      a=out;
+    }
+    return a;
+  }
+  function splitStraightTailFromArc(p,segs,tol,d,total,atStart){
+    if(!segs.length)return segs;
+    const idx=atStart?0:segs.length-1,seg=segs[idx];if(seg.type!=='arc'||seg.i1-seg.i0<11)return segs;
+    let best=null;
+    if(atStart){
+      for(let j=seg.i0+5;j<=seg.i1-5;j++){
+        const lp=p.slice(seg.i0,j+1),rp=p.slice(j,seg.i1+1),lm=lineModelStats(lp),am=circleModelStats(rp);if(!lm||!am)continue;
+        const L=segmentSpanLength(p,seg.i0,j),ratio=lm.ratio;
+        if(L>=Math.max(d*1.45,total*.028)&&ratio>=.94&&lm.rms<=tol*.70&&lm.p95<=tol*1.15&&am.span>=Math.PI/3.6&&am.rms<=tol*.90){
+          const score=-L+lm.rms*4+am.rms*2;if(!best||score<best.score)best={j,lm,am,score};
+        }
+      }
+      if(best){const out=segs.slice();out.splice(idx,1,{type:'line',i0:seg.i0,i1:best.j,m:best.lm,cost:0},{type:'arc',i0:best.j,i1:seg.i1,m:best.am,cost:0});return out;}
+    }else{
+      for(let j=seg.i0+5;j<=seg.i1-5;j++){
+        const lp=p.slice(seg.i0,j+1),rp=p.slice(j,seg.i1+1),am=circleModelStats(lp),lm=lineModelStats(rp);if(!lm||!am)continue;
+        const L=segmentSpanLength(p,j,seg.i1),ratio=lm.ratio;
+        if(L>=Math.max(d*1.45,total*.028)&&ratio>=.94&&lm.rms<=tol*.70&&lm.p95<=tol*1.15&&am.span>=Math.PI/3.6&&am.rms<=tol*.90){
+          const score=-L+lm.rms*4+am.rms*2;if(!best||score<best.score)best={j,lm,am,score};
+        }
+      }
+      if(best){const out=segs.slice();out.splice(idx,1,{type:'arc',i0:seg.i0,i1:best.j,m:best.am,cost:0},{type:'line',i0:best.j,i1:seg.i1,m:best.lm,cost:0});return out;}
+    }
+    return segs;
+  }
+  function fitEngineeringSegments(path,diameter=6){
+    const raw=fidelityPath(path);if(raw.length<3)return{path:raw,segments:[],tol:1};
+    const total=pathLength(raw),d=Math.max(.1,Number(diameter)||6),count=clamp(Math.round(total/Math.max(1,d*.55)),96,142);
+    let p=samplePathEvenly(raw,count);
+    // 중심선 위치 보존을 위해 과도한 스무딩을 금지한다. 픽셀 요철만 2회 약하게 제거.
+    p=smoothPath(p,2);p=smoothPath(p,1);
+    const n=p.length,minPts=6,tol=clamp(Math.max(d*.20,total*.0025,.78),.78,1.55),segmentPenalty=60;
+    const cache=new Map();
+    const key=(i,j)=>i+','+j;
+    const model=(i,j)=>{const k=key(i,j);if(cache.has(k))return cache.get(k);const c=primitiveCandidate(p,i,j,tol,d,total);cache.set(k,c);return c;};
+    // 공유 접속점을 갖는 DP. 단순화는 하되 HARD CORRIDOR 안에서만 허용한다.
+    const INF=1e30,dp=new Float64Array(n).fill(INF),prev=new Int16Array(n).fill(-1),prevModel=new Array(n);dp[0]=0;
+    for(let i=0;i<n-1;i++){
+      if(dp[i]>=INF)continue;
+      for(let j=i+minPts-1;j<n;j++){
+        const c=model(i,j);if(!c)continue;
+        const v=dp[i]+c.cost+segmentPenalty;
+        if(v<dp[j]){dp[j]=v;prev[j]=i;prevModel[j]=c;}
+      }
+    }
+    let segs=[];
+    if(prev[n-1]>=0){let j=n-1;while(j>0){const c=prevModel[j],i=prev[j];segs.push({...c});j=i;}segs.reverse();}
+    if(!segs.length){
+      // 어떤 단순 기하도 허용 편차를 만족하지 못하면 원본을 억지로 왜곡하지 않는다.
+      const anchors=rdpSimplify(p,Math.max(.45,tol*.45));
+      segs=[];for(let i=0;i<anchors.length-1;i++)segs.push({type:'line',i0:0,i1:0,m:null,p0:anchors[i],p1:anchors[i+1],fallback:true,cost:0});
+      return{path:p,segments:segs,tol,fallback:true};
+    }
+    return{path:p,segments:segs,tol};
+  }
+  function circleCircleNearest(a,b,target){
+    const dx=b.cx-a.cx,dy=b.cy-a.cy,D=Math.hypot(dx,dy);if(D<1e-8)return null;
+    if(D>a.r+b.r+1e-6||D<Math.abs(a.r-b.r)-1e-6)return null;
+    const x=(a.r*a.r-b.r*b.r+D*D)/(2*D),h2=a.r*a.r-x*x;if(h2<-.5)return null;
+    const h=Math.sqrt(Math.max(0,h2)),ux=dx/D,uy=dy/D,px=a.cx+x*ux,py=a.cy+x*uy;
+    const q1={x:px-h*uy,y:py+h*ux},q2={x:px+h*uy,y:py-h*ux};
+    return dist(q1,target)<=dist(q2,target)?q1:q2;
+  }
+  function lineLineIntersection(a,b,target){
+    const x1=a.mx,y1=a.my,x2=x1+a.ux,y2=y1+a.uy,x3=b.mx,y3=b.my,x4=x3+b.ux,y4=y3+b.uy;
+    const den=(x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);if(Math.abs(den)<1e-8)return null;
+    const t=((x1-x3)*(y3-y4)-(y1-y3)*(x3-x4))/den,p={x:x1+t*(x2-x1),y:y1+t*(y2-y1)};
+    return dist(p,target)<=Math.max(30,dist(a&&target,target)+30)?p:p;
+  }
+  function arcDensePoints(start,end,m,signedHint,steps=36){
+    let a0=Math.atan2(start.y-m.cy,start.x-m.cx),a1=Math.atan2(end.y-m.cy,end.x-m.cx);
+    if(signedHint>=0){while(a1<a0)a1+=Math.PI*2;}else{while(a1>a0)a1-=Math.PI*2;}
+    const out=[];for(let i=0;i<=steps;i++){const t=i/steps,a=a0+(a1-a0)*t;out.push({x:m.cx+m.r*Math.cos(a),y:m.cy+m.r*Math.sin(a)});}return out;
+  }
+  function pointSegmentDistance(p,a,b){
+    const dx=b.x-a.x,dy=b.y-a.y,L2=dx*dx+dy*dy;if(L2<1e-12)return dist(p,a);
+    const t=clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/L2,0,1),q={x:a.x+t*dx,y:a.y+t*dy};return dist(p,q);
+  }
+  function polylineNearestDistance(p,path){
+    if(!path?.length)return 1e9;if(path.length===1)return dist(p,path[0]);let best=1e9;
+    for(let i=1;i<path.length;i++)best=Math.min(best,pointSegmentDistance(p,path[i-1],path[i]));return best;
   }
   function buildCadPath(path, scale=1, diameter=6){
-    const model=fitEngineeringSegments(path,diameter),pts=model.path;if(pts.length<2)return{points:pts,d:'',arcs:[],segments:[]};
-    let d=`M ${(pts[0].x*scale).toFixed(3)} ${(pts[0].y*scale).toFixed(3)}`,arcs=[],simplePts=[pts[0]];
-    for(const seg of model.segments){const end=pts[seg.i1],start=pts[seg.i0];if(seg.type==='arc'&&seg.m){const m=seg.m,chord=dist(start,end),r=Math.max(m.r,chord*.5005),large=m.span>Math.PI?1:0,sweep=m.signedSpan>0?1:0;d+=` A ${(r*scale).toFixed(3)} ${(r*scale).toFixed(3)} 0 ${large} ${sweep} ${(end.x*scale).toFixed(3)} ${(end.y*scale).toFixed(3)}`;const mid=pts[Math.round((seg.i0+seg.i1)/2)];arcs.push({i:simplePts.length,p1:start,p2:end,r:m.r,corner:mid,center:{x:m.cx,y:m.cy},span:m.span});}else d+=` L ${(end.x*scale).toFixed(3)} ${(end.y*scale).toFixed(3)}`;simplePts.push(end);}
-    return{points:simplePts,d,arcs,segments:model.segments,fitPath:pts};
+    const model=fitEngineeringSegments(path,diameter),pts=model.path;
+    if(pts.length<2)return{points:pts,d:'',arcs:[],segments:[],fitPath:pts,totalLength:pathLength(pts),maxDeviation:0,p95Deviation:0,tol:model.tol||1};
+    if(model.fallback){
+      const fp=[];for(const g of model.segments){if(!fp.length)fp.push({...g.p0});fp.push({...g.p1});}
+      let ds=fp.length?`M ${(fp[0].x*scale).toFixed(3)} ${(fp[0].y*scale).toFixed(3)}`:'';for(let i=1;i<fp.length;i++)ds+=` L ${(fp[i].x*scale).toFixed(3)} ${(fp[i].y*scale).toFixed(3)}`;
+      return{points:fp,d:ds,arcs:[],segments:model.segments,fitPath:fp,totalLength:pathLength(fp),maxDeviation:model.tol,p95Deviation:model.tol,tol:model.tol,fallback:true};
+    }
+    const geoms=model.segments.map(seg=>{
+      const raw0=pts[seg.i0],raw1=pts[seg.i1];
+      if(seg.type==='arc'&&seg.m)return{...seg,p0:projectToCircleModel(raw0,seg.m),p1:projectToCircleModel(raw1,seg.m)};
+      return{...seg,p0:projectToLineModel(raw0,seg.m),p1:projectToLineModel(raw1,seg.m)};
+    });
+    // 접속점은 원본 중심선의 해당 위치를 기준으로 정한다. 모델 교점이 멀리 튀는 현상을 금지한다.
+    for(let i=0;i<geoms.length-1;i++){
+      const a=geoms[i],b=geoms[i+1],rawJoint=pts[a.i1];
+      let joint={...rawJoint};
+      if(a.type==='arc')joint=projectToCircleModel(rawJoint,a.m);
+      else if(b.type==='arc')joint=projectToCircleModel(rawJoint,b.m);
+      // 투영 결과조차 중심선 허용폭 밖이면 원본 접속점을 그대로 사용한다.
+      if(dist(joint,rawJoint)>model.tol)joint={...rawJoint};
+      a.p1={...joint};b.p0={...joint};
+    }
+    let dstr=`M ${(geoms[0].p0.x*scale).toFixed(3)} ${(geoms[0].p0.y*scale).toFixed(3)}`,arcs=[],simplePts=[geoms[0].p0],fitPath=[],totalLength=0;
+    for(const g of geoms){
+      if(g.type==='arc'&&g.m){
+        let a0=Math.atan2(g.p0.y-g.m.cy,g.p0.x-g.m.cx),a1=Math.atan2(g.p1.y-g.m.cy,g.p1.x-g.m.cx),delta=a1-a0,signed=g.m.signedSpan||0;
+        if(signed>=0){while(delta<0)delta+=Math.PI*2;}else{while(delta>0)delta-=Math.PI*2;}
+        if(Math.abs(delta)>Math.PI*1.35)delta+=(delta>0?-Math.PI*2:Math.PI*2);
+        const large=Math.abs(delta)>Math.PI?1:0,sweep=delta>0?1:0;
+        dstr+=` A ${(g.m.r*scale).toFixed(3)} ${(g.m.r*scale).toFixed(3)} 0 ${large} ${sweep} ${(g.p1.x*scale).toFixed(3)} ${(g.p1.y*scale).toFixed(3)}`;
+        const dense=arcDensePoints(g.p0,g.p1,g.m,delta,Math.max(18,Math.round(Math.abs(delta)*24)));if(fitPath.length)dense.shift();fitPath.push(...dense);totalLength+=Math.abs(delta)*g.m.r;
+        const mid=dense[Math.floor(dense.length/2)]||g.p0;arcs.push({i:simplePts.length,p1:g.p0,p2:g.p1,r:g.m.r,corner:mid,center:{x:g.m.cx,y:g.m.cy},span:Math.abs(delta)});
+      }else{
+        dstr+=` L ${(g.p1.x*scale).toFixed(3)} ${(g.p1.y*scale).toFixed(3)}`;
+        if(!fitPath.length)fitPath.push({...g.p0});fitPath.push({...g.p1});totalLength+=dist(g.p0,g.p1);
+      }
+      simplePts.push(g.p1);
+    }
+    const dev=pts.map(q=>polylineNearestDistance(q,fitPath)).sort((a,b)=>a-b),maxDeviation=dev.length?dev[dev.length-1]:0,p95Deviation=dev.length?dev[Math.min(dev.length-1,Math.round((dev.length-1)*.95))]:0;
+    // 최종 검증: 생성 형상이 HARD CORRIDOR를 벗어나면 원본 중심선 보존형 polyline으로 안전 복귀.
+    if(maxDeviation>model.tol*1.12){
+      const safe=rdpSimplify(pts,Math.max(.42,model.tol*.42));let ds=`M ${(safe[0].x*scale).toFixed(3)} ${(safe[0].y*scale).toFixed(3)}`;for(let i=1;i<safe.length;i++)ds+=` L ${(safe[i].x*scale).toFixed(3)} ${(safe[i].y*scale).toFixed(3)}`;
+      return{points:safe,d:ds,arcs:[],segments:[],fitPath:safe,totalLength:pathLength(safe),maxDeviation,p95Deviation,tol:model.tol,fallback:true};
+    }
+    return{points:simplePts,d:dstr,arcs,segments:geoms,fitPath,totalLength,maxDeviation,p95Deviation,tol:model.tol};
   }
   function pathBounds(path){
     let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
@@ -1858,11 +2093,12 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   function buildDimensionSpecs(pathMm, pathScreen, W, H, opt={}){
     const specs=[];
     if(pathScreen.length<2 || pathMm.length<2) return specs;
-    const b=pathBounds(pathScreen), mb=pathBounds(pathMm);
-    const left=pathScreen.reduce((a,p)=>p.x<a.x?p:a,pathScreen[0]);
-    const right=pathScreen.reduce((a,p)=>p.x>a.x?p:a,pathScreen[0]);
-    const top=pathScreen.reduce((a,p)=>p.y<a.y?p:a,pathScreen[0]);
-    const bottom=pathScreen.reduce((a,p)=>p.y>a.y?p:a,pathScreen[0]);
+    const overallScreen=(Array.isArray(opt.overallScreenPath)&&opt.overallScreenPath.length)?opt.overallScreenPath:pathScreen;
+    const b=pathBounds(overallScreen), mb=opt.overallBoundsMm||pathBounds(pathMm);
+    const left=overallScreen.reduce((a,p)=>p.x<a.x?p:a,overallScreen[0]);
+    const right=overallScreen.reduce((a,p)=>p.x>a.x?p:a,overallScreen[0]);
+    const top=overallScreen.reduce((a,p)=>p.y<a.y?p:a,overallScreen[0]);
+    const bottom=overallScreen.reduce((a,p)=>p.y>a.y?p:a,overallScreen[0]);
     const widthVal=mb.w, heightVal=mb.h;
     const widthY=Math.max(42,b.minY-42), heightX=Math.max(42,b.minX-52);
     specs.push({key:'width', value:widthVal, kind:'overallH', textX:(left.x+right.x)/2, textY:widthY-13, x1:left.x, y1:widthY, x2:right.x, y2:widthY, ext:[[left.x,left.y,left.x,widthY],[right.x,right.y,right.x,widthY]]});
@@ -1876,7 +2112,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       const len=dist(p1,p2); if(len<minSeg) continue;
       segCandidates.push({i,len,p1,p2,s1,s2});
     }
-    const segLimit=currentDimensionDetail()==='full'?6:4;
+    const segLimit=currentDimensionDetail()==='full'?5:3;
     const selected=[];
     for(const cand of segCandidates.slice().sort((a,b)=>b.len-a.len)){
       if(selected.length>=segLimit) break;
@@ -1900,7 +2136,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const arcsMm=Array.isArray(opt.arcsMm)?opt.arcsMm:[];
     const arcsScreen=Array.isArray(opt.arcsScreen)?opt.arcsScreen:[];
     if(arcsMm.length && arcsScreen.length){
-      const limit=currentDimensionDetail()==='full'?5:4;
+      const limit=currentDimensionDetail()==='full'?4:3;
       let shown=0;
       for(let k=0;k<Math.min(arcsMm.length,arcsScreen.length);k++){
         const am=arcsMm[k],as=arcsScreen[k];
@@ -1939,10 +2175,10 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const variant = r.captureType==='product' ? 'photo' : currentRenderMode();
     const mmRaw=transformedPath(r);
     const cadMm=buildCadPath(mmRaw,1,r.diameter);
-    const mmForDrawing=cadMm.fitPath||cadMm.points;
+    const mmForDrawing=cadMm.fitPath||mmRaw;
     const mmForDims=cadMm.points;
     const date=new Date().toLocaleDateString('sv-SE');
-    const width=parseFloat(r.width)||r.baseWidth, height=parseFloat(r.height)||r.baseHeight, length=parseFloat(r.length)||pathLength(mmForDrawing);
+    const width=parseFloat(r.width)||r.baseWidth, height=parseFloat(r.height)||r.baseHeight, length=Number.isFinite(cadMm.totalLength)?cadMm.totalLength:(parseFloat(r.length)||pathLength(mmForDrawing));
     let screen=[], shapeMarkup='', photoInset='', dimOpt={};
     if(variant==='photo'){
       const fit=fitRect(r.imageW||1000, r.imageH||1000, draw);
@@ -1955,12 +2191,14 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     } else {
       const pb=pathBounds(mmForDrawing), sc=Math.min(draw.w/pb.w, draw.h/pb.h)*0.84, ox=draw.x+(draw.w-pb.w*sc)/2, oy=draw.y+(draw.h-pb.h*sc)/2;
       const mapPt=p=>({x:ox+(p.x-pb.minX)*sc,y:oy+(p.y-pb.minY)*sc});
-      const screenFit=mmForDrawing.map(mapPt),wirePx=clamp((parseFloat(r.diameter)||6)*sc,3.2,16),cadScreen=buildCadPath(screenFit,1,wirePx);
+      const tx=ox-pb.minX*sc,ty=oy-pb.minY*sc,wirePx=clamp((parseFloat(r.diameter)||6)*sc,3.2,16);
       photoInset = r.photoDataUrl ? `<rect x="96" y="622" width="120" height="120" fill="none" stroke="#111" stroke-width="0.8"/><image href="${r.photoDataUrl}" x="100" y="626" width="112" height="112" preserveAspectRatio="xMidYMid meet"/>` : '';
-      shapeMarkup=`<path d="${cadScreen.d}" fill="none" stroke="#111" stroke-width="${wirePx.toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${cadScreen.d}" fill="none" stroke="#f8f8f8" stroke-width="${Math.max(1.2,wirePx*0.20).toFixed(1)}" stroke-dasharray="6 4" opacity="0.95"/>${photoInset}`;
+      // 중요: mm에서 확정된 매크로 LINE/ARC를 화면에서 다시 분석하지 않는다. 같은 CAD 경로를 그대로 확대/이동만 한다.
+      shapeMarkup=`<path d="${cadMm.d}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="#111" stroke-width="${wirePx.toFixed(1)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/><path d="${cadMm.d}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="#f8f8f8" stroke-width="${Math.max(1.2,wirePx*0.20).toFixed(1)}" vector-effect="non-scaling-stroke" stroke-dasharray="6 4" opacity="0.95"/>${photoInset}`;
       screen=mmForDims.map(mapPt);
+      const screenDense=mmForDrawing.map(mapPt);
       const arcsScreen=(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc}));
-      dimOpt={arcsMm:cadMm.arcs,arcsScreen};
+      dimOpt={arcsMm:cadMm.arcs,arcsScreen,overallScreenPath:screenDense,overallBoundsMm:pathBounds(mmForDrawing)};
     }
     const specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);
     const dimSvg=makeDimSvg(specs,r,true);
@@ -1976,7 +2214,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const W=1189,H=841, draw={x:95,y:90,w:760,h:610};
     const mmBase = transformedPath(r);
     const cadMm = buildCadPath(mmBase,1,r.diameter);
-    const mmPath = variant==='drawing' ? (cadMm.fitPath||cadMm.points) : (r.rawPath&&r.rawPath.length?r.rawPath:mmBase);
+    const mmPath = variant==='drawing' ? (cadMm.fitPath||mmBase) : (r.rawPath&&r.rawPath.length?r.rawPath:mmBase);
     const dimMm = variant==='drawing' ? cadMm.points : transformedPath(r);
     let screen=[],dimOpt={};
     if(variant==='photo'){
@@ -1986,8 +2224,9 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       const pb=pathBounds(mmPath), sc=Math.min(draw.w/pb.w, draw.h/pb.h)*0.82, ox=draw.x+(draw.w-pb.w*sc)/2, oy=draw.y+(draw.h-pb.h*sc)/2;
       const mapPt=p=>({x:ox+(p.x-pb.minX)*sc,y:oy+(p.y-pb.minY)*sc});
       screen=dimMm.map(mapPt);
+      const screenDense=mmPath.map(mapPt);
       const arcsScreen=(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc}));
-      dimOpt={arcsMm:cadMm.arcs,arcsScreen};
+      dimOpt={arcsMm:cadMm.arcs,arcsScreen,overallScreenPath:screenDense,overallBoundsMm:pathBounds(mmPath)};
     }
     const specs=buildDimensionSpecs(dimMm,screen,W,H,dimOpt);
     const inputs = r.dimEditMode ? specs.map(s=>`<input class="dim-input-overlay" data-id="${escAttr(r.id)}" data-dimkey="${escAttr(s.key)}" type="number" inputmode="decimal" step="0.1" value="${escAttr(n1(readDimValue(r,s.key,s.value)))}" style="left:${(s.textX/W*100).toFixed(2)}%;top:${(s.textY/H*100).toFixed(2)}%;" title="${escAttr(s.key)}">`).join('') : '';
@@ -2053,7 +2292,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       const quality=r.quality>.76?'양호':r.quality>.53?'보통':'확인필요';
       const modeText=(r.captureType==='product')?'제품 실제사진':'치구 '+(currentRenderMode()==='photo'?'실제사진':'도면');
       const autoOk=r.shapeConfirmed&&!r.userShapeCorrected,autoLabel=autoOk?(r.quality>.76?'자동 인식 · 양호':r.quality>.53?'자동 인식 · 보통':'자동 인식 · 확인권장'):'보정 필요';
-      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}<div class="edit-grid"><label>전체 폭 mm<input data-rfield="width" type="number" step="0.1" value="${n1(r.width)}"></label><label>전체 높이 mm<input data-rfield="height" type="number" step="0.1" value="${n1(r.height)}"></label><label>전개길이 mm<input data-rfield="length" type="number" step="0.1" value="${n1(r.length)}"></label><label>상부 R mm<input data-rfield="r1" type="number" step="0.1" value="${n1(r.r1)}"></label><label>하부 R mm<input data-rfield="r2" type="number" step="0.1" value="${n1(r.r2)}"></label><label>Ø mm<input data-rfield="diameter" type="number" step="0.1" value="${n1(r.diameter)}"></label></div><div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-edit-btn ${r.dimEditMode?'active':''}" data-id="${r.id}">${r.dimEditMode?'편집 종료':'치수 편집'}</button><button class="btn apply-dims" data-id="${r.id}">폭/높이 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 도면 PDF</button></div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. 정밀 다중스케일 중심선으로 전체 치구를 추적한 뒤, 짧은 잡선은 평균선으로 병합하고 주요 직선·곡선만 도면화합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
+      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}<div class="edit-grid"><label>전체 폭 mm<input data-rfield="width" type="number" step="0.1" value="${n1(r.width)}"></label><label>전체 높이 mm<input data-rfield="height" type="number" step="0.1" value="${n1(r.height)}"></label><label>전개길이 mm<input data-rfield="length" type="number" step="0.1" value="${n1(r.length)}"></label><label>상부 R mm<input data-rfield="r1" type="number" step="0.1" value="${n1(r.r1)}"></label><label>하부 R mm<input data-rfield="r2" type="number" step="0.1" value="${n1(r.r2)}"></label><label>Ø mm<input data-rfield="diameter" type="number" step="0.1" value="${n1(r.diameter)}"></label></div><div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-edit-btn ${r.dimEditMode?'active':''}" data-id="${r.id}">${r.dimEditMode?'편집 종료':'치수 편집'}</button><button class="btn apply-dims" data-id="${r.id}">폭/높이 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 도면 PDF</button></div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. 정밀 중심선을 평균화한 뒤 LINE/ARC 모델을 4~8개로 반복 비교하여 가장 단순하고 오차가 작은 제조 형상을 선택합니다. 직선은 회귀 직선, 곡선은 실제 원호로 재피팅합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
     }).join('');
   }
 
@@ -2121,7 +2360,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const draw={x:95,y:90,w:760,h:610},title={x:875,y:88,w:230,h:665};
     const variant=r.captureType==='product'?'photo':currentRenderMode();
     const mmRaw=transformedPath(r), mmDraw=r.userShapeCorrected?fidelityPath(mmRaw):engineeringPath(mmRaw,r.diameter), date=new Date().toLocaleDateString('sv-SE');
-    const width=parseFloat(r.width)||r.baseWidth,height=parseFloat(r.height)||r.baseHeight,length=parseFloat(r.length)||pathLength(mmRaw);
+    const width=parseFloat(r.width)||r.baseWidth,height=parseFloat(r.height)||r.baseHeight,length=Number.isFinite(cadMm.totalLength)?cadMm.totalLength:(parseFloat(r.length)||pathLength(mmRaw));
     ctx.strokeStyle='#111';ctx.lineWidth=1.4;ctx.strokeRect(28,28,1133,785);
     ctx.fillStyle='#111';ctx.font='700 13px sans-serif';ctx.fillText('3. 도면 (치수표기)',85,58);
     ctx.font='12px sans-serif';ctx.fillText(`※ 치수 단위 : mm / 재질 : ${r.material||''} / 환봉 Ø${n1(r.diameter)}`,85,82);
