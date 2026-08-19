@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
-  <title>HOOK 모바일 자동도면 v0.10.0</title>
+  <title>HOOK 모바일 자동도면 v0.10.1</title>
 <style>
 :root{
   --bg:#070b13;--panel:#111827;--panel2:#172033;--line:#263247;--text:#eef2ff;--muted:#9aa8bd;
@@ -106,7 +106,9 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 .dim-input-overlay{position:absolute;transform:translate(-50%,-50%);width:44px;min-width:44px;max-width:44px;padding:1px 2px;height:19px;border:1px solid #2563eb;border-radius:3px;background:rgba(255,255,255,.90);color:#0f172a;font-size:9px;font-weight:800;text-align:center;z-index:3;box-shadow:0 1px 3px rgba(0,0,0,.18)}
 .photo-variant .dim-input-overlay{background:rgba(255,255,255,.82)}
 .capture-type-badge{font-size:9px;color:#e0f2fe;background:#155e75;border:1px solid #0891b2;padding:4px 6px;border-radius:999px;margin-left:6px}
-@media(max-width:560px){.dim-input-overlay{width:38px;min-width:38px;max-width:38px;height:18px;font-size:8px;padding:0 1px}.mode-tabs{top:0}}
+.dim-note-box{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid #35506f;background:#0b1220;color:#cbd5e1;font-size:11px;line-height:1.5}
+.dim-editor-card{margin-top:12px;border:1px solid #294363;border-radius:14px;background:#07111f;padding:12px}.dim-editor-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.dim-editor-title b{font-size:13px}.dim-editor-title span{font-size:11px;color:#93c5fd}.symbol-grid{display:grid;grid-template-columns:56px 1fr 110px;gap:8px;align-items:center}.symbol-row{display:contents}.symbol-chip{display:inline-flex;align-items:center;justify-content:center;min-width:44px;padding:7px 8px;border-radius:10px;background:#111827;border:1px solid #475569;font-weight:900;color:#f8fafc}.symbol-name{font-size:12px;color:#dbeafe}.symbol-name small{display:block;font-size:10px;color:#94a3b8;margin-top:2px}.symbol-grid input{width:100%;padding:8px 10px;min-height:38px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff;font-weight:800}.symbol-grid .readonly{opacity:.75}.measure-hint{margin-top:8px;font-size:10px;color:#93c5fd;line-height:1.45}.ar-mode-badge{display:inline-block;padding:5px 8px;border-radius:999px;background:#14532d;border:1px solid #22c55e;color:#dcfce7;font-size:10px;font-weight:800;margin-left:6px}.photo-dim-badge{display:inline-block;padding:5px 8px;border-radius:999px;background:#082f49;border:1px solid #38bdf8;color:#e0f2fe;font-size:10px;font-weight:800;margin-left:6px}
+@media(max-width:560px){.dim-input-overlay{width:38px;min-width:38px;max-width:38px;height:18px;font-size:8px;padding:0 1px}.mode-tabs{top:0}.symbol-grid{grid-template-columns:46px 1fr 92px}}
 
 .quick-mode-row{display:flex;gap:12px;align-items:end;justify-content:space-between;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid rgba(148,163,184,.18)}
 .quick-mode-row label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#cbd5e1;font-weight:700;min-width:220px}
@@ -154,7 +156,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   <header class="topbar">
     <div>
       <div class="eyebrow">COTEC JIG DRAWING</div>
-      <h1>HOOK 모바일 자동도면 <small>v0.10.0</small></h1>
+      <h1>HOOK 모바일 자동도면 <small>v0.10.1</small></h1>
       <p>치구 · 제품 공용 / 촬영 원본은 사진첩에 저장하지 않음 / 저장된 사진 첨부 가능</p>
     </div>
     <span id="statusPill" class="pill">준비</span>
@@ -276,7 +278,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
         <div class="form-grid measure-grid">
           <label>측정 모드
             <select id="measureMode">
-              <option value="auto" selected>자동 (대략치수 → 격자 → AR)</option>
+              <option value="auto" selected>자동 (격자/AR/Ø 교차검증)</option>
               <option value="grid">1cm 격자 우선</option>
               <option value="ar">AR 자동 측정 우선</option>
               <option value="manual">대략치수 입력</option>
@@ -288,7 +290,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
             <button id="arMeasureBtn" class="btn primary">AR 자동 측정</button>
           </div>
         </div>
-        <div id="arHelp" class="message info">자동 인식을 최우선으로 사용합니다. 사진 위 보정선은 자동 형상이 실제와 다를 때만 최후 수단으로 사용합니다. 제품 촬영 모드는 실제 사진 위에 치수를 표시합니다.</div>
+        <div id="arHelp" class="message info">자동 인식을 최우선으로 사용합니다. 사진 위 보정선은 자동 형상이 실제와 다를 때만 최후 수단으로 사용합니다. 제품/치구 모두 실제 사진 위에 기호 치수를 표시합니다. 일반 바닥에서는 AR 자동 측정을 먼저 실행한 뒤 촬영하면 치수 안정도가 올라갑니다.</div>
       </div>
     </details>
 
@@ -422,7 +424,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   function currentDimensionDetail() { return ($('dimensionDetailSelect')?.value) || 'basic'; }
   function straightenLevelLabel(v){ return v==='medium' ? '보통' : v==='max' ? '최대' : '강'; }
   function setRenderModeValue(mode){
-    const safe = 'photo';
+    const safe = mode==='photo' ? 'photo' : 'drawing';
     if($('renderModeSelect')) $('renderModeSelect').value = safe;
     if($('quickRenderModeSelect')) $('quickRenderModeSelect').value = safe;
   }
@@ -433,8 +435,8 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const product = state.appMode==='product';
     if(product){ setRenderModeValue('photo'); }
     else if(!currentRenderMode()) { setRenderModeValue('photo'); }
-    if($('renderModeSelect')) $('renderModeSelect').disabled = true;
-    if($('quickRenderModeSelect')) $('quickRenderModeSelect').disabled = true;
+    if($('renderModeSelect')) $('renderModeSelect').disabled = product;
+    if($('quickRenderModeSelect')) $('quickRenderModeSelect').disabled = product;
     updateNumberPreview();
     if($('numberingMode').value==='continuous') renumberCaptures(true);
     renderCaptureList();
@@ -1341,8 +1343,19 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       for(let j=0;j<candidates.length;j++)if(i!==j){const ag=pathAgreement(candidates[i],candidates[j],pitchPx);const wt=candidates[j].method.includes('다중 인식 합의')?1.3:1;sum+=ag*wt;ws+=wt;bestAgree=Math.max(bestAgree,ag);}
       const consensus=ws?sum/ws:0;candidates[i].consensus=consensus;
       let roiBonus=0;if(candidates[i].method.includes('격자판 내부 국부명암'))roiBonus+=4.8;else if(candidates[i].method.includes('격자판 내부 전용'))roiBonus+=3.8;else if(candidates[i].method.includes('촬영판 내부 제한'))roiBonus+=2.2;
-      if(paperRect?.inner){const pb=candidates[i].pb||{},cx=(pb.minX+pb.maxX)/2,cy=(pb.minY+pb.maxY)/2,ir=paperRect.inner,rw=Math.max(1,ir.w),rh=Math.max(1,ir.h),rx=(pb.w||0)/rw,ry=(pb.h||0)/rh,band=Math.max(5,(pitchPx||24)*.55),touches=[pb.minX<=ir.x0+band,pb.maxX>=ir.x1-band,pb.minY<=ir.y0+band,pb.maxY>=ir.y1-band].filter(Boolean).length;if(cx<ir.x0||cx>ir.x1||cy<ir.y0||cy>ir.y1)roiBonus-=20;if(touches>=3)roiBonus-=18;else if(touches===2)roiBonus-=6.5;if(rx>.82&&ry>.82)roiBonus-=14;if(rx>.94||ry>.94)roiBonus-=8;if(ry<.18&&rx<.55)roiBonus-=13;else if(ry<.24&&rx<.60)roiBonus-=7;else if(ry<.30&&rx<.65)roiBonus-=3;if((pb.h||0)<(pb.w||0)*.60&&ry<.40)roiBonus-=4;if(rx>.08&&rx<.74&&ry>.24&&ry<.90)roiBonus+=2.6;if((pb.h||0)>(pb.w||0)*1.15)roiBonus+=1.1;}
-      candidates[i].finalScore=candidates[i].pathScore+consensus*2.6+bestAgree*.7+(candidates[i].method.includes('다중 인식 합의')?.3:0)+roiBonus;
+      const pb=candidates[i].pb||{};
+      if(paperRect?.inner){const cx=(pb.minX+pb.maxX)/2,cy=(pb.minY+pb.maxY)/2,ir=paperRect.inner,rw=Math.max(1,ir.w),rh=Math.max(1,ir.h),rx=(pb.w||0)/rw,ry=(pb.h||0)/rh,band=Math.max(5,(pitchPx||24)*.55),touches=[pb.minX<=ir.x0+band,pb.maxX>=ir.x1-band,pb.minY<=ir.y0+band,pb.maxY>=ir.y1-band].filter(Boolean).length;if(cx<ir.x0||cx>ir.x1||cy<ir.y0||cy>ir.y1)roiBonus-=20;if(touches>=3)roiBonus-=18;else if(touches===2)roiBonus-=6.5;if(rx>.82&&ry>.82)roiBonus-=14;if(rx>.94||ry>.94)roiBonus-=8;if(ry<.18&&rx<.55)roiBonus-=13;else if(ry<.24&&rx<.60)roiBonus-=7;else if(ry<.30&&rx<.65)roiBonus-=3;if((pb.h||0)<(pb.w||0)*.60&&ry<.40)roiBonus-=4;if(rx>.08&&rx<.74&&ry>.24&&ry<.90)roiBonus+=2.6;if((pb.h||0)>(pb.w||0)*1.15)roiBonus+=1.1;}
+      const icx=(pb.minX+pb.maxX)/2,icy=(pb.minY+pb.maxY)/2,centerDist=Math.hypot(icx-w/2,icy-h/2)/Math.max(1,Math.hypot(w,h)/2);
+      const endGap=dist(candidates[i].path[0],candidates[i].path[candidates[i].path.length-1])/Math.max(1,Math.hypot(pb.w||1,pb.h||1));
+      let plainFloorBias=0;
+      if(!paperRect?.inner){
+        plainFloorBias += Math.max(-2.8,1.6-centerDist*3.5);
+        if((pb.h||0)>(pb.w||0)*1.15) plainFloorBias += 1.0;
+        if(endGap>.18 && endGap<.92) plainFloorBias += 1.2; else plainFloorBias -= 1.2;
+        if((candidates[i].curve||0)>1.18) plainFloorBias += 1.0;
+        if((candidates[i].span||0)<.22) plainFloorBias -= 1.8;
+      }
+      candidates[i].finalScore=candidates[i].pathScore+consensus*2.6+bestAgree*.7+(candidates[i].method.includes('다중 인식 합의')?.3:0)+roiBonus+plainFloorBias;
     }
     candidates.sort((a,b)=>b.finalScore-a.finalScore);return candidates[0];
   }
@@ -2158,13 +2171,54 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const ax=x2-ux*size,ay=y2-uy*size;
     return `<path d="M ${x2.toFixed(1)} ${y2.toFixed(1)} L ${(ax+nx*size*.45).toFixed(1)} ${(ay+ny*size*.45).toFixed(1)} L ${(ax-nx*size*.45).toFixed(1)} ${(ay-ny*size*.45).toFixed(1)} Z" fill="#111"/>`;
   }
+  function dimSpecInfo(spec){
+    const map={width:{symbol:'W',name:'전체 폭',unit:'mm'},height:{symbol:'H',name:'전체 높이',unit:'mm'},length:{symbol:'D',name:'전개길이',unit:'mm'},r1:{symbol:'R1',name:'상부 R',unit:'mm'},r2:{symbol:'R2',name:'하부 R',unit:'mm'},diameter:{symbol:'Ø',name:'환봉 지름',unit:'mm'}};
+    if(map[spec.key]) return map[spec.key];
+    if(/^seg(\d+)$/.test(spec.key)) { const n=spec.key.replace('seg',''); return {symbol:`L${n}`,name:`구간 길이 ${n}`,unit:'mm'}; }
+    if(/^bendR(\d+)$/.test(spec.key)) { const n=spec.key.replace('bendR',''); return {symbol:`R${n}`,name:`곡선 반경 ${n}`,unit:'mm'}; }
+    return {symbol:String(spec.key||'DIM').toUpperCase(),name:String(spec.key||'치수'),unit:'mm'};
+  }
+  function buildResultDimSpecs(r){
+    const variant=r.captureType==='product'?'photo':currentRenderMode(),W=1189,H=841,draw={x:72,y:82,w:820,h:650};
+    const mmBase=transformedPath(r),cadMm=buildCadPath(mmBase,1,r.diameter),dimMm=cadMm.points||mmBase;
+    let screen=[],dimOpt={};
+    if(variant==='photo'){
+      const fit=fitRect(r.imageW||1000,r.imageH||1000,draw),map=cadScreenMappingForPhoto(r,cadMm,fit);
+      screen=map.points;dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,overallScreenPath:map.fitPath,overallBoundsMm:pathBounds(cadMm.fitPath||mmBase)};
+    }else{
+      const mmPath=cadMm.fitPath||mmBase,pb=pathBounds(mmPath),sc=Math.min(draw.w/pb.w,draw.h/pb.h)*.84,ox=draw.x+(draw.w-pb.w*sc)/2,oy=draw.y+(draw.h-pb.h*sc)/2,tx=ox-pb.minX*sc,ty=oy-pb.minY*sc,mapPt=p=>({x:tx+p.x*sc,y:ty+p.y*sc});
+      screen=dimMm.map(mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),overallScreenPath:mmPath.map(mapPt),overallBoundsMm:pathBounds(mmPath)};
+    }
+    const specs=buildDimensionSpecs(dimMm,screen,W,H,dimOpt);
+    const fixed=[
+      {key:'width',value:parseFloat(r.width)||r.baseWidth},
+      {key:'height',value:parseFloat(r.height)||r.baseHeight},
+      {key:'length',value:Number.isFinite(parseFloat(r.length))?parseFloat(r.length):pathLength(dimMm)},
+      {key:'r1',value:parseFloat(r.r1)},
+      {key:'r2',value:parseFloat(r.r2)},
+      {key:'diameter',value:parseFloat(r.diameter)}
+    ].filter(x=>Number.isFinite(x.value));
+    const keys=new Set();
+    return [...fixed,...specs].filter(s=>{ if(!s||!s.key||keys.has(s.key)) return false; keys.add(s.key); return true; });
+  }
+  function dimensionEditorHtml(r){
+    const specs=buildResultDimSpecs(r);
+    const rows=specs.map(spec=>{
+      const info=dimSpecInfo(spec),val=readDimValue(r,spec.key,spec.value);
+      return `<div class="symbol-row"><div class="symbol-chip">${esc(info.symbol)}</div><div class="symbol-name">${esc(info.name)}<small>${esc(spec.key)} / ${esc(info.unit)}</small></div><div><input data-rfield="${['width','height','length','r1','r2','diameter'].includes(spec.key)?spec.key:''}" data-dimkey="${['width','height','length','r1','r2','diameter'].includes(spec.key)?'':spec.key}" type="number" inputmode="decimal" step="0.1" value="${escAttr(n1(val))}"></div></div>`;
+    }).join('');
+    const arBadge=(r.arDetected||String(r.scaleSource||'').includes('AR'))?'<span class="ar-mode-badge">AR 치수</span>':'';
+    return `<div class="dim-editor-card"><div class="dim-editor-title"><b>치수 입력/수정${arBadge}<span class="photo-dim-badge">사진 위 치수 동시 반영</span></b><span>기호 기준 별도 입력</span></div><div class="symbol-grid">${rows}</div><div class="measure-hint">그림 위 직접 입력 대신, 여기 입력칸에 값을 넣으면 같은 기호의 사진 오버레이 치수와 PDF 치수에 동시에 반영됩니다. 일반 바닥 촬영에서는 AR 보정 후 촬영하면 치수 안정도가 더 높습니다.</div></div>`;
+  }
   function makeDimSvg(specs,r,forExport){
     const parts=[];
     for(const s of specs){
-      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#111" stroke-width="1.1" fill="none"/>`).join('');
-      const main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1.1" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6)}${svgArrow(s.x1,s.y1,s.x2,s.y2,6)}`;
-      const val=readDimValue(r,s.key,s.value),label=(s.prefix||'')+n1(val)+(s.suffix||'');
-      parts.push(`<g>${ext}${main}<text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="#111" stroke="#fff" stroke-width="3" paint-order="stroke" stroke-linejoin="round">${esc(label)}</text></g>`);
+      const info=dimSpecInfo(s);
+      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#111" stroke-width="1.2" fill="none"/>`).join('');
+      const main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1.2" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6)}${svgArrow(s.x1,s.y1,s.x2,s.y2,6)}`;
+      const val=readDimValue(r,s.key,s.value),label=`${info.symbol} ${n1(val)}${info.unit?` ${info.unit}`:''}`;
+      const approxW=Math.max(52,label.length*6.6),approxH=18,x=s.textX-approxW/2,y=s.textY-approxH/2;
+      parts.push(`<g>${ext}${main}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" rx="4" ry="4" width="${approxW.toFixed(1)}" height="${approxH.toFixed(1)}" fill="rgba(0,0,0,.82)" stroke="#fff" stroke-width="0.6"/><text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="${/^R/.test(info.symbol)?'#ffb4b4':/^L/.test(info.symbol)||['W','H','D','Ø'].includes(info.symbol)?'#8fe7ff':'#fff'}">${esc(label)}</text></g>`);
     }
     return parts.join('');
   }
@@ -2301,7 +2355,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       const quality=r.quality>.76?'양호':r.quality>.53?'보통':'확인필요';
       const modeText=(r.captureType==='product')?'제품 실이미지 오버레이':'치구 실이미지 오버레이';
       const autoOk=r.shapeConfirmed&&!r.userShapeCorrected,autoLabel=autoOk?(r.quality>.76?'자동 인식 · 양호':r.quality>.53?'자동 인식 · 보통':'자동 인식 · 확인권장'):'보정 필요';
-      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}<div class="edit-grid"><label>전체 폭 mm<input data-rfield="width" type="number" step="0.1" value="${n1(r.width)}"></label><label>전체 높이 mm<input data-rfield="height" type="number" step="0.1" value="${n1(r.height)}"></label><label>전개길이 mm<input data-rfield="length" type="number" step="0.1" value="${n1(r.length)}"></label><label>상부 R mm<input data-rfield="r1" type="number" step="0.1" value="${n1(r.r1)}"></label><label>하부 R mm<input data-rfield="r2" type="number" step="0.1" value="${n1(r.r2)}"></label><label>Ø mm<input data-rfield="diameter" type="number" step="0.1" value="${n1(r.diameter)}"></label></div><div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-edit-btn ${r.dimEditMode?'active':''}" data-id="${r.id}">${r.dimEditMode?'편집 종료':'치수 편집'}</button><button class="btn apply-dims" data-id="${r.id}">폭/높이 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 오버레이 PDF</button></div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. 실제 촬영 이미지 위에 확정된 LINE/ARC와 치수를 직접 표시하며, 이 오버레이 화면 자체를 PDF 도면으로 사용합니다. 별도의 형상 재도면화는 하지 않습니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
+      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}${dimensionEditorHtml(r)}<div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-edit-btn ${r.dimEditMode?'active':''}" data-id="${r.id}">${r.dimEditMode?'기호 편집 종료':'기호별 치수 편집'}</button><button class="btn apply-dims" data-id="${r.id}">수정값 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 오버레이 PDF</button></div><div class="dim-note-box">일반 바닥 촬영 인식률 보강: 격자가 없으면 AR 보정값과 Ø 추정값을 함께 사용합니다. 치수는 사진 위에 직접 표시되고, 아래 기호 입력칸에서 수정할 수 있습니다. 그림 위 직접입력 대신 기호 입력 방식으로 값을 수정하세요.</div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. 실제 촬영 이미지 위에 확정된 LINE/ARC와 기호 치수를 직접 표시하며, 이 오버레이 화면 자체를 PDF 도면으로 사용합니다. 별도의 형상 재도면화는 하지 않습니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
     }).join('');
   }
 
