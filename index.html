@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
-  <title>HOOK 모바일 자동도면 v0.10.9</title>
+  <title>HOOK 모바일 자동도면 v0.10.10</title>
 <style>
 :root{
   --bg:#070b13;--panel:#111827;--panel2:#172033;--line:#263247;--text:#eef2ff;--muted:#9aa8bd;
@@ -156,7 +156,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   <header class="topbar">
     <div>
       <div class="eyebrow">COTEC JIG DRAWING</div>
-      <h1>HOOK 모바일 자동도면 <small>v0.10.9</small></h1>
+      <h1>HOOK 모바일 자동도면 <small>v0.10.10</small></h1>
       <p>치구 · 제품 공용 / 촬영 원본은 사진첩에 저장하지 않음 / 저장된 사진 첨부 가능</p>
     </div>
     <span id="statusPill" class="pill">준비</span>
@@ -245,8 +245,8 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
           </label>
           <label>치수 표시
             <select id="dimensionDetailSelect">
-              <option value="basic" selected>기본 - 전체/주요길이/R</option>
-              <option value="full">상세 - 길이/R/각도</option>
+              <option value="basic">기본 - 전체/주요길이/R</option>
+              <option value="full" selected>상세 - 길이/R/각도</option>
             </select>
           </label>
           <label class="wide">결과 표시 방식
@@ -2368,28 +2368,38 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     if(/^bendR(\d+)$/.test(spec.key)) { const n=spec.key.replace('bendR',''); return {symbol:`R${n}`,name:`곡선 반경 ${n}`,unit:'mm'}; }
     return {symbol:String(spec.key||'DIM').toUpperCase(),name:String(spec.key||'치수'),unit:'mm'};
   }
+  function resolvedDisplayGeometry(r){
+    const mmRaw=transformedPath(r);
+    const cadMm=buildCadPath(mmRaw,1,r.diameter);
+    const fallback=majorCenterline(mmRaw,r.diameter);
+    const mmForDrawing=(cadMm.fitPath&&cadMm.fitPath.length)?cadMm.fitPath:(fallback.length?fallback:mmRaw);
+    const mmForDims=(cadMm.points&&cadMm.points.length)?cadMm.points:(mmForDrawing.length?mmForDrawing:mmRaw);
+    const totalLength=Number.isFinite(cadMm.totalLength)?cadMm.totalLength:pathLength(mmForDrawing);
+    return {mmRaw,cadMm,mmForDrawing,mmForDims,totalLength};
+  }
   function buildResultDimSpecs(r){
     const variant=r.captureType==='product'?'photo':currentRenderMode(),W=1189,H=841,draw={x:72,y:82,w:820,h:650};
-    const mmBase=transformedPath(r),visualMm=finalVisualCenterline(mmBase,r.diameter),cadMm=buildCadPath(mmBase,1,r.diameter),dimMm=visualMm.length?visualMm:(cadMm.points||mmBase);
+    const {mmRaw,cadMm,mmForDrawing,mmForDims,totalLength}=resolvedDisplayGeometry(r);
     let screen=[],dimOpt={};
     if(variant==='photo'){
       const fit=fitPhotoFocus(r,draw),map=cadScreenMappingForFocusedPhoto(r,cadMm,fit);
-      screen=dimMm.map(map.mapPt);dimOpt={overallScreenPath:screen,overallBoundsMm:pathBounds(dimMm)};
+      screen=mmForDims.map(map.mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,overallScreenPath:(map.fitPath&&map.fitPath.length)?map.fitPath:screen,overallBoundsMm:pathBounds(mmForDrawing)};
     }else{
-      const mmPath=cadMm.fitPath||mmBase,pb=pathBounds(mmPath),sc=Math.min(draw.w/pb.w,draw.h/pb.h)*.84,ox=draw.x+(draw.w-pb.w*sc)/2,oy=draw.y+(draw.h-pb.h*sc)/2,tx=ox-pb.minX*sc,ty=oy-pb.minY*sc,mapPt=p=>({x:tx+p.x*sc,y:ty+p.y*sc});
-      screen=dimMm.map(mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),overallScreenPath:mmPath.map(mapPt),overallBoundsMm:pathBounds(mmPath)};
+      const mmPath=mmForDrawing,pb=pathBounds(mmPath),sc=Math.min(draw.w/pb.w,draw.h/pb.h)*.84,ox=draw.x+(draw.w-pb.w*sc)/2,oy=draw.y+(draw.h-pb.h*sc)/2,tx=ox-pb.minX*sc,ty=oy-pb.minY*sc,mapPt=p=>({x:tx+p.x*sc,y:ty+p.y*sc});
+      screen=mmForDims.map(mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),overallScreenPath:mmPath.map(mapPt),overallBoundsMm:pathBounds(mmPath)};
     }
-    let specs=buildDimensionSpecs(dimMm,screen,W,H,dimOpt);if(variant==='photo')specs=layoutDimensionLabels([...specs,...radiusOverlaySpecs(r,screen,W,H)],W,H);
+    let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);if(variant==='photo')specs=layoutDimensionLabels([...specs,...radiusOverlaySpecs(r,screen,W,H)],W,H);
     const fixed=[
+      {key:'length',value:Number.isFinite(parseFloat(r.length))?parseFloat(r.length):totalLength},
       {key:'width',value:parseFloat(r.width)||r.baseWidth},
       {key:'height',value:parseFloat(r.height)||r.baseHeight},
-      {key:'length',value:Number.isFinite(parseFloat(r.length))?parseFloat(r.length):pathLength(dimMm)},
       {key:'r1',value:parseFloat(r.r1)},
       {key:'r2',value:parseFloat(r.r2)},
       {key:'diameter',value:parseFloat(r.diameter)}
     ].filter(x=>Number.isFinite(x.value));
+    const priority=s=> /^seg\d+$/.test(s.key)?0 : s.key==='length'?1 : /^bendR\d+$/.test(s.key)?2 : ['width','height','r1','r2','diameter'].indexOf(s.key)+3;
     const keys=new Set();
-    return [...fixed,...specs].filter(s=>{ if(!s||!s.key||keys.has(s.key)) return false; keys.add(s.key); return true; });
+    return [...specs,...fixed].filter(s=>{ if(!s||!s.key||keys.has(s.key)) return false; keys.add(s.key); return true; }).sort((a,b)=>priority(a)-priority(b));
   }
   function dimensionEditorHtml(r){
     const specs=buildResultDimSpecs(r);
@@ -2398,7 +2408,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       return `<div class="symbol-row"><div class="symbol-chip">${esc(info.symbol)}</div><div class="symbol-name">${esc(info.name)}<small>${esc(spec.key)} / ${esc(info.unit)}</small></div><div><input data-rfield="${['width','height','length','r1','r2','diameter'].includes(spec.key)?spec.key:''}" data-dimkey="${['width','height','length','r1','r2','diameter'].includes(spec.key)?'':spec.key}" type="number" inputmode="decimal" step="0.1" value="${escAttr(n1(val))}"></div></div>`;
     }).join('');
     const arBadge=(r.arDetected||String(r.scaleSource||'').includes('AR'))?'<span class="ar-mode-badge">AR 치수</span>':'';
-    return `<div class="dim-editor-card"><div class="dim-editor-title"><b>치수 입력/수정${arBadge}<span class="photo-dim-badge">사진 위 치수 동시 반영</span></b><span>기호 기준 별도 입력</span></div><div class="symbol-grid">${rows}</div><div class="measure-hint">그림 위 직접 입력 대신, 여기 입력칸에 값을 넣으면 같은 기호의 사진 오버레이 치수와 PDF 치수에 동시에 반영됩니다. 일반 바닥 촬영에서는 AR 보정 후 촬영하면 치수 안정도가 더 높습니다.</div></div>`;
+    return `<div class="dim-editor-card"><div class="dim-editor-title"><b>치수 입력/수정${arBadge}<span class="photo-dim-badge">사진 위 치수 동시 반영</span></b><span>구간 길이(L) 우선 · 기호 기준 별도 입력</span></div><div class="symbol-grid">${rows}</div><div class="measure-hint">그림 위 직접 입력 대신, 여기 입력칸에 값을 넣으면 같은 기호의 사진 오버레이 치수와 PDF 치수에 동시에 반영됩니다. 구간 길이 L1~Lx를 우선 검토하도록 정렬했습니다. 일반 바닥 촬영에서는 AR 보정 후 촬영하면 치수 안정도가 더 높습니다.</div></div>`;
   }
   function makeDimSvg(specs,r,forExport){
     const parts=[];
@@ -2417,6 +2427,8 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 
   function finalVisualCenterline(path,diameter=6){
     if(!Array.isArray(path)||path.length<2)return path||[];
+    const major=majorCenterline(path,diameter);
+    if(Array.isArray(major)&&major.length>=2) return major;
     const eps=Math.max(.12,(Number(diameter)||6)*.05);
     let pts=rdpSimplify(path,eps);
     if(pts.length<5)pts=path.slice();
@@ -2597,9 +2609,9 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   function buildSvgOnly(r){
     const W=1189,H=841, draw={x:72,y:82,w:820,h:650}, title={x:846,y:646,w:296,h:138};
     const variant = r.captureType==='product' ? 'photo' : currentRenderMode();
-    const mmRaw=transformedPath(r),visualMm=finalVisualCenterline(mmRaw,r.diameter),cadMm=buildCadPath(mmRaw,1,r.diameter),mmForDrawing=visualMm.length?visualMm:(cadMm.fitPath||mmRaw),mmForDims=visualMm.length?visualMm:(cadMm.points||mmRaw);
+    const {mmRaw,cadMm,mmForDrawing,mmForDims,totalLength}=resolvedDisplayGeometry(r);
     const date=new Date().toLocaleDateString('sv-SE');
-    const width=parseFloat(r.width)||r.baseWidth,height=parseFloat(r.height)||r.baseHeight,length=Number.isFinite(cadMm.totalLength)?cadMm.totalLength:(parseFloat(r.length)||pathLength(mmForDrawing));
+    const width=parseFloat(r.width)||r.baseWidth,height=parseFloat(r.height)||r.baseHeight,length=Number.isFinite(parseFloat(r.length))?parseFloat(r.length):totalLength;
     if(variant==='drawing') return buildRenderedDrawingSvg(r,mmRaw,cadMm,mmForDrawing,mmForDims,width,height,length,date);
     let screen=[],shapeMarkup='',dimOpt={};
     if(variant==='photo'){
@@ -2618,20 +2630,11 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);if(variant==='photo')specs=layoutDimensionLabels([...specs,...radiusOverlaySpecs(r,screen,W,H)],W,H);const dimSvg=makeDimSvg(specs,r,true);
     const sideTitle = r.captureType==='product' ? '제품 실이미지 오버레이 치수도' : '치구 실이미지 오버레이 치수도';
     const tbx=title.x,tby=title.y,tbw=title.w,tbh=title.h;
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><defs><clipPath id="photoClip"><rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}"/></clipPath></defs><rect width="${W}" height="${H}" fill="#fff"/><rect x="24" y="24" width="1141" height="793" fill="none" stroke="#111" stroke-width="1.4"/><text x="52" y="50" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">COTEC JIG DRAWING</text><text x="52" y="72" font-size="16" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${sideTitle}</text><text x="52" y="92" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${n1(r.diameter)} / 전개길이 ${n1(length)}</text>${shapeMarkup}${dimSvg}<rect x="${tbx}" y="${tby}" width="${tbw}" height="${tbh}" fill="#fff" stroke="#111" stroke-width="1"/><line x1="${tbx}" y1="${tby+24}" x2="${tbx+tbw}" y2="${tby+24}" stroke="#111"/><line x1="${tbx}" y1="${tby+48}" x2="${tbx+tbw}" y2="${tby+48}" stroke="#111"/><line x1="${tbx}" y1="${tby+72}" x2="${tbx+tbw}" y2="${tby+72}" stroke="#111"/><line x1="${tbx}" y1="${tby+96}" x2="${tbx+tbw}" y2="${tby+96}" stroke="#111"/><line x1="${tbx}" y1="${tby+116}" x2="${tbx+tbw}" y2="${tby+116}" stroke="#111"/><line x1="${tbx+92}" y1="${tby+24}" x2="${tbx+92}" y2="${tby+tbh}" stroke="#111"/><text x="${tbx+8}" y="${tby+16}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">TITLE BLOCK</text><text x="${tbx+8}" y="${tby+40}" font-size="10">도면번호</text><text x="${tbx+100}" y="${tby+40}" font-size="10">${esc(r.name)}</text><text x="${tbx+8}" y="${tby+64}" font-size="10">재질</text><text x="${tbx+100}" y="${tby+64}" font-size="10">${esc(r.material)}</text><text x="${tbx+8}" y="${tby+88}" font-size="10">전체 폭/높이</text><text x="${tbx+100}" y="${tby+88}" font-size="10">${n1(width)} / ${n1(height)}</text><text x="${tbx+8}" y="${tby+112}" font-size="10">전개길이</text><text x="${tbx+100}" y="${tby+112}" font-size="10">${n1(length)}</text><text x="${tbx+8}" y="${tby+132}" font-size="10">작성일</text><text x="${tbx+100}" y="${tby+132}" font-size="10">${date}</text><text x="52" y="800" font-size="10" font-family="Arial,'Noto Sans KR',sans-serif">NOTE : 실제 촬영 이미지 위 원본 중심선에 밀착된 LINE(파랑)/ARC(빨강)와 치수를 함께 표시한 오버레이를 최종 도면/PDF로 사용합니다.</text></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><defs><clipPath id="photoClip"><rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}"/></clipPath></defs><rect width="${W}" height="${H}" fill="#fff"/><rect x="24" y="24" width="1141" height="793" fill="none" stroke="#111" stroke-width="1.4"/><text x="52" y="50" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">COTEC JIG DRAWING</text><text x="52" y="72" font-size="16" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${sideTitle}</text><text x="52" y="92" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${n1(r.diameter)} / 전개길이 ${n1(length)}</text>${shapeMarkup}${dimSvg}<rect x="${tbx}" y="${tby}" width="${tbw}" height="${tbh}" fill="#fff" stroke="#111" stroke-width="1"/><line x1="${tbx}" y1="${tby+24}" x2="${tbx+tbw}" y2="${tby+24}" stroke="#111"/><line x1="${tbx}" y1="${tby+48}" x2="${tbx+tbw}" y2="${tby+48}" stroke="#111"/><line x1="${tbx}" y1="${tby+72}" x2="${tbx+tbw}" y2="${tby+72}" stroke="#111"/><line x1="${tbx}" y1="${tby+96}" x2="${tbx+tbw}" y2="${tby+96}" stroke="#111"/><line x1="${tbx}" y1="${tby+116}" x2="${tbx+tbw}" y2="${tby+116}" stroke="#111"/><line x1="${tbx+92}" y1="${tby+24}" x2="${tbx+92}" y2="${tby+tbh}" stroke="#111"/><text x="${tbx+8}" y="${tby+16}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">TITLE BLOCK</text><text x="${tbx+8}" y="${tby+40}" font-size="10">도면번호</text><text x="${tbx+100}" y="${tby+40}" font-size="10">${esc(r.name)}</text><text x="${tbx+8}" y="${tby+64}" font-size="10">재질</text><text x="${tbx+100}" y="${tby+64}" font-size="10">${esc(r.material)}</text><text x="${tbx+8}" y="${tby+88}" font-size="10">전체 폭/높이</text><text x="${tbx+100}" y="${tby+88}" font-size="10">${n1(width)} / ${n1(height)}</text><text x="${tbx+8}" y="${tby+112}" font-size="10">전개길이</text><text x="${tbx+100}" y="${tby+112}" font-size="10">${n1(length)}</text><text x="${tbx+8}" y="${tby+132}" font-size="10">작성일</text><text x="${tbx+100}" y="${tby+132}" font-size="10">${date}</text><text x="52" y="800" font-size="10" font-family="Arial,'Noto Sans KR',sans-serif">NOTE : 실구동 화면과 PDF는 동일한 CAD/치수 파이프라인을 사용합니다. 실제 촬영 이미지 위 LINE(파랑)/ARC(빨강)와 구간 길이 중심 치수를 함께 표시합니다.</text></svg>`;
   }
 
   function makeFigureHtml(r){
-    const svg=buildSvgOnly(r),variant=r.captureType==='product'?'photo':currentRenderMode(),W=1189,H=841,draw={x:72,y:82,w:820,h:650};
-    const mmBase=transformedPath(r),cadMm=buildCadPath(mmBase,1,r.diameter),dimMm=cadMm.points||mmBase;
-    let screen=[],dimOpt={};
-    if(variant==='photo'){
-      const fit=fitPhotoFocus(r,draw),map=cadScreenMappingForFocusedPhoto(r,cadMm,fit);
-      screen=map.points;dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,overallScreenPath:map.fitPath,overallBoundsMm:pathBounds(cadMm.fitPath||mmBase)};
-    }else{
-      const mmPath=cadMm.fitPath||mmBase,pb=pathBounds(mmPath),sc=Math.min(draw.w/pb.w,draw.h/pb.h)*.84,ox=draw.x+(draw.w-pb.w*sc)/2,oy=draw.y+(draw.h-pb.h*sc)/2,tx=ox-pb.minX*sc,ty=oy-pb.minY*sc,mapPt=p=>({x:tx+p.x*sc,y:ty+p.y*sc});
-      screen=dimMm.map(mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),overallScreenPath:mmPath.map(mapPt),overallBoundsMm:pathBounds(mmPath)};
-    }
+    const svg=buildSvgOnly(r),variant=r.captureType==='product'?'photo':currentRenderMode();
     return `<div class="figure-frame ${variant==='photo'?'photo-variant':''}">${svg}</div>`;
   }
 
@@ -2694,7 +2697,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       const quality=r.quality>.76?'양호':r.quality>.53?'보통':'확인필요';
       const modeText=(r.captureType==='product')?'제품 실이미지 오버레이':(currentRenderMode()==='drawing'?'치구 렌더링 정식 도면':'치구 실이미지 오버레이');
       const autoOk=r.shapeConfirmed&&!r.userShapeCorrected,autoLabel=autoOk?(r.quality>.76?'자동 인식 · 양호':r.quality>.53?'자동 인식 · 보통':'자동 인식 · 확인권장'):'보정 필요';
-      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}${dimensionEditorHtml(r)}<div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-jump-btn" data-id="${r.id}">기호별 치수 입력</button><button class="btn apply-dims" data-id="${r.id}">수정값 형상 반영</button><button class="btn export-one" data-id="${r.id}">${currentRenderMode()==='drawing'?'이 도면 PDF':'이 오버레이 PDF'}</button></div><div class="dim-note-box">격자 촬영은 격자판 X/Y 주기 경계를 먼저 잠그고 그 내부에서만 치구를 선택합니다. 일반 바닥은 AR/Ø 교차검증과 중심 후보 점수를 사용합니다. 치수는 사진 위에 직접 표시되고, 아래 기호 입력칸에서 수정할 수 있습니다. 그림 위 직접입력 대신 기호 입력 방식으로 값을 수정하세요.</div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. ${currentRenderMode()==='drawing'?'정리된 중심선으로 정식 렌더링 도면을 생성하며, 본도/측면도/단면도와 기호 치수를 함께 PDF로 출력합니다.':'실제 촬영 이미지 위에 검증된 LINE(파랑)/ARC(빨강)과 기호 치수를 표시하며, 이 오버레이 화면 자체를 PDF 도면으로 사용합니다.'} RED/BLUE 표시도 원본 중심선 이탈 시에는 원본 중심선 기반으로 자동 보정합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
+      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}${dimensionEditorHtml(r)}<div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-jump-btn" data-id="${r.id}">기호별 치수 입력</button><button class="btn apply-dims" data-id="${r.id}">수정값 형상 반영</button><button class="btn export-one" data-id="${r.id}">${currentRenderMode()==='drawing'?'이 도면 PDF':'이 오버레이 PDF'}</button></div><div class="dim-note-box">격자 촬영은 격자판 X/Y 주기 경계를 먼저 잠그고 그 내부에서만 치구를 선택합니다. 일반 바닥은 AR/Ø 교차검증과 중심 후보 점수를 사용합니다. 치수는 사진 위에 직접 표시되고, 아래 기호 입력칸에서 수정할 수 있습니다. 그림 위 직접입력 대신 기호 입력 방식으로 값을 수정하세요.</div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. ${currentRenderMode()==='drawing'?'정리된 중심선으로 정식 렌더링 도면을 생성하며, 본도/측면도/단면도와 기호 치수를 함께 PDF로 출력합니다.':'실제 촬영 이미지 위에 검증된 LINE(파랑)/ARC(빨강)과 기호 치수를 표시하며, 이 오버레이 화면 자체를 PDF 도면으로 사용합니다.'} 실구동 도면과 PDF는 동일한 CAD/치수 파이프라인을 사용합니다. RED/BLUE 표시도 원본 중심선 이탈 시에는 원본 중심선 기반으로 자동 보정합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
     }).join('');
   }
 
