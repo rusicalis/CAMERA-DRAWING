@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
-  <title>HOOK 모바일 자동도면 v0.10.1</title>
+  <title>HOOK 모바일 자동도면 v0.10.9</title>
 <style>
 :root{
   --bg:#070b13;--panel:#111827;--panel2:#172033;--line:#263247;--text:#eef2ff;--muted:#9aa8bd;
@@ -156,7 +156,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   <header class="topbar">
     <div>
       <div class="eyebrow">COTEC JIG DRAWING</div>
-      <h1>HOOK 모바일 자동도면 <small>v0.10.1</small></h1>
+      <h1>HOOK 모바일 자동도면 <small>v0.10.9</small></h1>
       <p>치구 · 제품 공용 / 촬영 원본은 사진첩에 저장하지 않음 / 저장된 사진 첨부 가능</p>
     </div>
     <span id="statusPill" class="pill">준비</span>
@@ -199,11 +199,12 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       <div id="cameraError" class="message hidden"></div>
       <div class="quick-mode-row">
         <label>결과 표시 방식
-          <select id="quickRenderModeSelect" disabled>
+          <select id="quickRenderModeSelect">
             <option value="photo" selected>실이미지 오버레이 치수도</option>
+            <option value="drawing">렌더링 정식 도면</option>
           </select>
         </label>
-        <div class="small quick-help">치구/제품 모두 실제 촬영 이미지 위 LINE/ARC + 치수 오버레이를 최종 도면으로 사용</div>
+        <div class="small quick-help">치구는 실이미지 오버레이 치수도와 렌더링 정식 도면 중 선택할 수 있습니다. 제품 촬영 모드는 항상 실이미지 오버레이를 사용합니다.</div>
       </div>
     </section>
 
@@ -249,8 +250,9 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
             </select>
           </label>
           <label class="wide">결과 표시 방식
-            <select id="renderModeSelect" disabled>
+            <select id="renderModeSelect">
               <option value="photo" selected>실이미지 오버레이 치수도</option>
+              <option value="drawing">렌더링 정식 도면</option>
             </select>
           </label>
         </div>
@@ -419,7 +421,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   function cleanLineCode(v) { return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10); }
   function currentLineCode() { return cleanLineCode($('lineCodeSelect').value) || 'NNI'; }
   function currentCaptureCode() { return state.appMode==='product' ? 'PRD' : currentLineCode(); }
-  function currentRenderMode() { return 'photo'; }
+  function currentRenderMode() { return ($('renderModeSelect')?.value)||($('quickRenderModeSelect')?.value)||'photo'; }
   function currentStraightenLevel() { return ($('straightenLevelSelect')?.value) || 'medium'; }
   function currentDimensionDetail() { return ($('dimensionDetailSelect')?.value) || 'basic'; }
   function straightenLevelLabel(v){ return v==='medium' ? '보통' : v==='max' ? '최대' : '강'; }
@@ -1089,6 +1091,48 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     if(inner.w<20||inner.h<20)return null;
     return{outer,inner,method:'격자 주기 + 중앙 종이색 검증',confidence:clamp(.62+xr.count*.018,0,.96)};
   }
+  function detectBrightGridBoardRect(imageData,w,h,pitchPx){
+    const d=imageData.data,cols=new Float32Array(w),rows=new Float32Array(h);
+    const stepY=Math.max(1,Math.floor(h/260)),stepX=Math.max(1,Math.floor(w/260));
+    for(let x=0;x<w;x++){
+      let hit=0,n=0;
+      for(let y=0;y<h;y+=stepY){const i=(y*w+x)*4,r=d[i],g=d[i+1],b=d[i+2],lum=.299*r+.587*g+.114*b,sat=Math.max(r,g,b)-Math.min(r,g,b);if(lum>105&&sat<68)hit++;n++;}
+      cols[x]=hit/Math.max(1,n);
+    }
+    const colFlags=Array.from(cols,v=>v>.34),cr=longestTrueRun(colFlags,Math.max(30,Math.floor(w*.24)));
+    if(!cr)return null;
+    for(let y=0;y<h;y++){
+      let hit=0,n=0;
+      for(let x=cr.start;x<=cr.end;x+=stepX){const i=(y*w+x)*4,r=d[i],g=d[i+1],b=d[i+2],lum=.299*r+.587*g+.114*b,sat=Math.max(r,g,b)-Math.min(r,g,b);if(lum>105&&sat<68)hit++;n++;}
+      rows[y]=hit/Math.max(1,n);
+    }
+    const rowFlags=Array.from(rows,v=>v>.20),rr=longestTrueRun(rowFlags,Math.max(40,Math.floor(h*.25)));
+    if(!rr)return null;
+    const pad=Math.max(2,Math.round((pitchPx||20)*.18)),outer={x0:clamp(cr.start-pad,0,w-1),y0:clamp(rr.start-pad,0,h-1),x1:clamp(cr.end+pad,0,w-1),y1:clamp(rr.end+pad,0,h-1)};
+    outer.w=outer.x1-outer.x0+1;outer.h=outer.y1-outer.y0+1;
+    const spanX=outer.w/w,spanY=outer.h/h;if(spanX<.24||spanY<.25||spanX>.98||spanY>.98)return null;
+    const margin=Math.max(5,Math.round((pitchPx||20)*.52)),inner={x0:clamp(outer.x0+margin,0,w-1),y0:clamp(outer.y0+margin,0,h-1),x1:clamp(outer.x1-margin,0,w-1),y1:clamp(outer.y1-margin,0,h-1)};
+    inner.w=inner.x1-inner.x0+1;inner.h=inner.y1-inner.y0+1;if(inner.w<25||inner.h<25)return null;
+    return{outer,inner,method:'격자판 밝기/저채도 영역 경계 검출',confidence:.76};
+  }
+
+  function detectGridSupportRect(gray,w,h,pitchPx){
+    if(!(pitchPx>=6)) return null;
+    const px=axisEdgeProjection(gray,w,h,'x',.04,.98),py=axisEdgeProjection(gray,w,h,'y',.04,.98);
+    const xr=periodicProjectionRun(px,pitchPx,6),yr=periodicProjectionRun(py,pitchPx,6);
+    if(!xr||!yr) return null;
+    const pad=Math.max(3,Math.round(pitchPx*.42));
+    const outer={x0:clamp(xr.start-pad,0,w-1),y0:clamp(yr.start-pad,0,h-1),x1:clamp(xr.end+pad,0,w-1),y1:clamp(yr.end+pad,0,h-1)};
+    outer.w=outer.x1-outer.x0+1;outer.h=outer.y1-outer.y0+1;
+    const area=(outer.w*outer.h)/Math.max(1,w*h),spanX=outer.w/w,spanY=outer.h/h;
+    if(area<.09||spanX<.25||spanY<.25||spanX>.97||spanY>.97) return null;
+    const margin=Math.max(5,Math.round(pitchPx*.55));
+    const inner={x0:clamp(outer.x0+margin,0,w-1),y0:clamp(outer.y0+margin,0,h-1),x1:clamp(outer.x1-margin,0,w-1),y1:clamp(outer.y1-margin,0,h-1)};
+    inner.w=inner.x1-inner.x0+1;inner.h=inner.y1-inner.y0+1;
+    if(inner.w<30||inner.h<30) return null;
+    return {outer,inner,method:'격자선 X/Y 주기 경계 강제검출',confidence:.72};
+  }
+
   function roiGridWireComponent(gray,w,h,pitchPx,rect){
     if(!rect||!(pitchPx>=6))return null;
     const phase=estimatePeriodicGridPhase(gray,w,h,pitchPx),p=Math.max(6,Math.round(pitchPx));
@@ -1332,6 +1376,21 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const cc=consensusComponentCandidate(arr,w,h,pitchPx);if(cc)arr.unshift(cc);
     return arr;
   }
+  function componentInsideRectScore(c,rect){
+    if(!c?.pb||!rect) return 1;
+    const pb=c.pb,ix=Math.max(0,Math.min(pb.maxX,rect.x1)-Math.max(pb.minX,rect.x0)),iy=Math.max(0,Math.min(pb.maxY,rect.y1)-Math.max(pb.minY,rect.y0));
+    const inter=ix*iy,area=Math.max(1,(pb.w||1)*(pb.h||1));
+    return inter/area;
+  }
+  function strictRoiCandidate(imageData,gray,w,h,pitchPx,diameter,paperRect){
+    if(!paperRect?.inner) return null;
+    const arr=[];
+    const lc=localContrastWireComponent(imageData,gray,w,h,pitchPx,paperRect.inner); if(lc?.comp)arr.push(lc);
+    const rg=roiGridWireComponent(gray,w,h,pitchPx,paperRect.inner); if(rg?.comp)arr.push(rg);
+    const pg=periodicGridWireComponent(gray,w,h,pitchPx); if(pg?.comp){const x=restrictCandidateToRect(pg,w,h,paperRect.inner,pitchPx);if(x?.comp)arr.push(x);}
+    return arr.map(c=>candidateCenterPath(c,w,h,pitchPx,diameter)).filter(Boolean).sort((a,b)=>(b.pathScore||0)-(a.pathScore||0))[0]||null;
+  }
+
   function chooseComponent(imageData,gray,w,h,pitchPx,diameter,paperRect) {
     const precise=precisionVesselnessCandidate(gray,w,h,pitchPx,diameter,paperRect);
     const candidates=collectComponentCandidates(imageData,gray,w,h,pitchPx,paperRect).map(c=>candidateCenterPath(c,w,h,pitchPx,diameter)).filter(Boolean);
@@ -1357,7 +1416,13 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       }
       candidates[i].finalScore=candidates[i].pathScore+consensus*2.6+bestAgree*.7+(candidates[i].method.includes('다중 인식 합의')?.3:0)+roiBonus+plainFloorBias;
     }
-    candidates.sort((a,b)=>b.finalScore-a.finalScore);return candidates[0];
+    candidates.sort((a,b)=>b.finalScore-a.finalScore);
+    let chosen=candidates[0];
+    if(paperRect?.inner && componentInsideRectScore(chosen,paperRect.inner)<.78){
+      const strict=strictRoiCandidate(imageData,gray,w,h,pitchPx,diameter,paperRect);
+      if(strict)chosen={...strict,consensus:chosen.consensus||0,finalScore:(strict.pathScore||0)+5};
+    }
+    return chosen;
   }
 
   function cropComponent(comp,w,h,pad=4){const x0=Math.max(0,comp.minX-pad),y0=Math.max(0,comp.minY-pad),x1=Math.min(w-1,comp.maxX+pad),y1=Math.min(h-1,comp.maxY+pad),cw=x1-x0+1,ch=y1-y0+1,m=new Uint8Array(cw*ch);for(const p of comp.pix){const y=(p/w)|0,x=p-y*w;m[(y-y0)*cw+(x-x0)]=1;}return{mask:m,w:cw,h:ch,x0,y0};}
@@ -1428,7 +1493,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const ds=await blobToCanvas(item.blob),gray=grayArray(ds.imageData),grid=detectGrid(gray,ds.w,ds.h);
     const diameter=Math.max(.1,parseFloat(item.diameter)||6);
     const pitch=grid.pitch||Math.max(18,Math.min(ds.w,ds.h)/20);
-    const paperRect=detectGridPaperRect(ds.imageData,gray,ds.w,ds.h,pitch)||detectPaperRect(ds.imageData,ds.w,ds.h,pitch);
+    const paperRect=detectGridPaperRect(ds.imageData,gray,ds.w,ds.h,pitch)||detectGridSupportRect(gray,ds.w,ds.h,pitch)||((grid.pitch)?detectBrightGridBoardRect(ds.imageData,ds.w,ds.h,pitch):null)||detectPaperRect(ds.imageData,ds.w,ds.h,pitch);
     const seg=chooseComponent(ds.imageData,gray,ds.w,ds.h,grid.pitch||pitch,diameter,paperRect);
     if(!seg?.comp||seg.comp.area<Math.max(70,ds.w*ds.h*.00035)) return await makeEmergencyResult(item,'치구 형상을 충분히 찾지 못해 임시 형상으로 생성했습니다.');
     const comp=seg.comp;
@@ -1960,17 +2025,138 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     }
     return segs;
   }
+  function angleLineDirection(points){
+    if(!points||points.length<2)return 0;const a=points[0],b=points[points.length-1];return Math.atan2(b.y-a.y,b.x-a.x);
+  }
+  function lineAngleError(a,b){
+    let d=Math.abs(a-b);while(d>Math.PI)d=Math.abs(d-Math.PI*2);return Math.min(d,Math.abs(Math.PI-d));
+  }
+  function findMajorEndBend(q,tol,d,total){
+    const n=q.length;if(n<28)return null;
+    const searchStart=Math.max(5,Math.floor(n*.62)),searchEnd=n-4;
+    let best=null;
+    for(let a=searchStart;a<=n-14;a++){
+      for(let b=a+7;b<=searchEnd;b++){
+        const pre0=Math.max(0,a-Math.max(16,Math.round(n*.18))),pre=q.slice(pre0,a+1),arc=q.slice(a,b+1),tail=q.slice(b);
+        if(pre.length<8||arc.length<8||tail.length<4)continue;
+        const lm0=lineModelStats(pre),am=circleModelStats(arc),lm1=lineModelStats(tail);if(!lm0||!am||!lm1)continue;
+        const preLen=segmentSpanLength(q,pre0,a),arcLen=segmentSpanLength(q,a,b),tailLen=segmentSpanLength(q,b,n-1);
+        if(preLen<Math.max(d*3,total*.045)||tailLen<Math.max(d*1.15,total*.016))continue;
+        if(am.span<Math.PI*.46||am.span>Math.PI*1.22)continue;
+        if(am.r<d*.65||am.r>Math.min(d*9,total*.28))continue;
+        if(lm0.ratio<.955||lm1.ratio<.91)continue;
+        const sign=am.signedSpan>=0?1:-1;
+        const t0=Math.atan2(q[a].y-am.cy,q[a].x-am.cx)+(sign>=0?Math.PI/2:-Math.PI/2);
+        const t1=Math.atan2(q[b].y-am.cy,q[b].x-am.cx)+(sign>=0?Math.PI/2:-Math.PI/2);
+        const e0=lineAngleError(t0,angleLineDirection(pre)),e1=lineAngleError(t1,angleLineDirection(tail));
+        if(e0>Math.PI/7||e1>Math.PI/6)continue;
+        if(am.rms>tol*1.75||am.p95>tol*2.65)continue;
+        const score=am.rms*3+lm0.rms*.8+lm1.rms*.9+e0*5+e1*5+(1-lm0.ratio)*4+(1-lm1.ratio)*3-am.span*.62-arcLen/Math.max(1,total)*1.5;
+        if(!best||score<best.score)best={a,b,am,lm0,lm1,score,span:am.span};
+      }
+    }
+    return best;
+  }
+  function refineEndpointHookBends(p,segs,tol,d,total){
+    if(!p?.length||p.length<28||!segs?.length)return segs;
+    let out=segs.map(x=>({...x})),n=p.length;
+    const applyEnd=(reverse)=>{
+      const q=reverse?p.slice().reverse():p,best=findMajorEndBend(q,tol,d,total);if(!best)return;
+      let a,b,am;
+      if(!reverse){a=best.a;b=best.b;am=best.am;}
+      else{a=n-1-best.b;b=n-1-best.a;am={...best.am,signedSpan:-best.am.signedSpan};}
+      if(!(a>=0&&b>a&&b<n))return;
+      if(!reverse){
+        const keep=out.filter(g=>g.i1<=a);
+        let start=keep.length?keep[keep.length-1].i1:0;
+        if(start<a){const lm=lineModelStats(p.slice(start,a+1));if(lm)keep.push({type:'line',i0:start,i1:a,m:lm,cost:0,endRefined:true});}
+        keep.push({type:'arc',i0:a,i1:b,m:am,cost:0,endRefined:true});
+        if(b<n-1){const lm=lineModelStats(p.slice(b));if(lm)keep.push({type:'line',i0:b,i1:n-1,m:lm,cost:0,endRefined:true});}
+        out=keep;
+      }else{
+        const suffix=out.filter(g=>g.i0>=b);
+        const rebuilt=[];
+        if(a>0){const lm=lineModelStats(p.slice(0,a+1));if(lm)rebuilt.push({type:'line',i0:0,i1:a,m:lm,cost:0,endRefined:true});}
+        rebuilt.push({type:'arc',i0:a,i1:b,m:am,cost:0,endRefined:true});
+        if(suffix.length&&suffix[0].i0>b){const lm=lineModelStats(p.slice(b,suffix[0].i0+1));if(lm)rebuilt.push({type:'line',i0:b,i1:suffix[0].i0,m:lm,cost:0,endRefined:true});}
+        rebuilt.push(...suffix);
+        out=rebuilt;
+      }
+    };
+    applyEnd(false);applyEnd(true);
+    out=out.filter((g,i)=>g&&g.i1>g.i0&&(i===0||g.i1>out[i-1].i1)).sort((a,b)=>a.i0-b.i0);
+    for(let i=1;i<out.length;i++)if(out[i].i0<out[i-1].i1)out[i].i0=out[i-1].i1;
+    return out;
+  }
+  function segmentationSummary(p,segs){
+    const stats=primitiveSetStats(p,segs,0,p.length-1);
+    const segList=Array.isArray(segs)?segs:[];
+    const arcSegs=segList.filter(g=>g.type==='arc'&&g.m);
+    const first=segList[0],last=segList[segList.length-1];
+    const endArcSpan=(first&&first.type==='arc'&&first.m?first.m.span:0)+(last&&last!==first&&last.type==='arc'&&last.m?last.m.span:0);
+    const endArcCount=(first&&first.type==='arc'?1:0)+((last&&last!==first&&last.type==='arc')?1:0);
+    const longArcBonus=arcSegs.reduce((s,g)=>s+(g.m.span>=Math.PI*.45?g.m.span:0),0);
+    return{...stats,segmentCount:segList.length,arcCount:arcSegs.length,endArcSpan,endArcCount,longArcBonus};
+  }
+  function choosePreferredHookSegmentation(p,baseSegs,hookSegs){
+    if(!hookSegs?.length)return baseSegs;
+    const base=segmentationSummary(p,baseSegs),alt=segmentationSummary(p,hookSegs);
+    const baseScore=base.p95*3.8+base.rms*2.2+base.max*1.6+base.segmentCount*.28-base.longArcBonus*.10;
+    const altScore=alt.p95*3.8+alt.rms*2.2+alt.max*1.6+alt.segmentCount*.28-alt.longArcBonus*.18-alt.endArcSpan*.12;
+    const nearAccurate=alt.p95<=base.p95*1.28&&alt.max<=base.max*1.22&&alt.rms<=base.rms*1.22;
+    const clearlyBetter=altScore<=baseScore*.985;
+    const visuallyPreferred=alt.longArcBonus>base.longArcBonus+0.20&&alt.endArcSpan>=base.endArcSpan*.92&&nearAccurate;
+    return (clearlyBetter||visuallyPreferred)?hookSegs:baseSegs;
+  }
+
+  function primitiveSetStats(p,segs,a,b){
+    const errs=[];
+    for(let i=a;i<=b;i++){
+      const q=p[i];let best=1e9;
+      for(const g of segs){
+        if(i<g.i0-1||i>g.i1+1||!g.m)continue;
+        let e;if(g.type==='arc')e=Math.abs(Math.hypot(q.x-g.m.cx,q.y-g.m.cy)-g.m.r);
+        else e=Math.abs((q.x-g.m.mx)*(-g.m.uy)+(q.y-g.m.my)*g.m.ux);
+        best=Math.min(best,e);
+      }
+      if(best<1e8)errs.push(best);
+    }
+    if(!errs.length)return{rms:1e9,p95:1e9,max:1e9};
+    return{rms:Math.sqrt(errs.reduce((z,e)=>z+e*e,0)/errs.length),p95:percentileNumber(errs,.95),max:Math.max(...errs)};
+  }
+  function splitWideEndpointArcOnlyIfMoreAccurate(p,segs,tol,d,total,atStart){
+    if(!segs?.length)return segs;
+    const idx=atStart?0:segs.length-1,seg=segs[idx];
+    if(seg.type!=='arc'||!seg.m||seg.m.span<Math.PI*.78||seg.i1-seg.i0<12)return segs;
+    const base=primitiveSetStats(p,[seg],seg.i0,seg.i1);let best=null;
+    for(let j=seg.i0+5;j<=seg.i1-5;j++){
+      const left=p.slice(seg.i0,j+1),right=p.slice(j,seg.i1+1),lmL=lineModelStats(left),lmR=lineModelStats(right),amL=circleModelStats(left),amR=circleModelStats(right);
+      const tests=[];
+      if(lmL&&amR)tests.push([{type:'line',i0:seg.i0,i1:j,m:lmL,cost:0},{type:'arc',i0:j,i1:seg.i1,m:amR,cost:0}]);
+      if(amL&&lmR)tests.push([{type:'arc',i0:seg.i0,i1:j,m:amL,cost:0},{type:'line',i0:j,i1:seg.i1,m:lmR,cost:0}]);
+      for(const cand of tests){
+        const arc=cand.find(g=>g.type==='arc'),line=cand.find(g=>g.type==='line');if(!arc||!line)continue;
+        const spanLen=segmentSpanLength(p,line.i0,line.i1);
+        if(spanLen<Math.max(d*1.2,total*.018)||line.m.ratio<.93||line.m.p95>tol*.95||arc.m.span<Math.PI/4||arc.m.max>tol||arc.m.p95>tol*.82)continue;
+        const st=primitiveSetStats(p,cand,seg.i0,seg.i1);
+        // 시각적으로 단순하다는 이유만으로 정확도를 희생하지 않는다.
+        if(st.max>base.max||st.p95>base.p95*.985)continue;
+        const score=st.p95*3+st.rms*2+st.max;
+        if(!best||score<best.score)best={cand,score};
+      }
+    }
+    if(!best)return segs;
+    const out=segs.slice();out.splice(idx,1,...best.cand);return out;
+  }
   function fitEngineeringSegments(path,diameter=6){
     const raw=fidelityPath(path);if(raw.length<3)return{path:raw,segments:[],tol:1};
     const total=pathLength(raw),d=Math.max(.1,Number(diameter)||6),count=clamp(Math.round(total/Math.max(1,d*.55)),96,142);
     let p=samplePathEvenly(raw,count);
-    // 중심선 위치 보존을 위해 과도한 스무딩을 금지한다. 픽셀 요철만 2회 약하게 제거.
     p=smoothPath(p,2);p=smoothPath(p,1);
     const n=p.length,minPts=6,tol=clamp(Math.max(d*.20,total*.0025,.78),.78,1.55),segmentPenalty=60;
     const cache=new Map();
     const key=(i,j)=>i+','+j;
     const model=(i,j)=>{const k=key(i,j);if(cache.has(k))return cache.get(k);const c=primitiveCandidate(p,i,j,tol,d,total);cache.set(k,c);return c;};
-    // 공유 접속점을 갖는 DP. 단순화는 하되 HARD CORRIDOR 안에서만 허용한다.
     const INF=1e30,dp=new Float64Array(n).fill(INF),prev=new Int16Array(n).fill(-1),prevModel=new Array(n);dp[0]=0;
     for(let i=0;i<n-1;i++){
       if(dp[i]>=INF)continue;
@@ -1983,11 +2169,15 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     let segs=[];
     if(prev[n-1]>=0){let j=n-1;while(j>0){const c=prevModel[j],i=prev[j];segs.push({...c});j=i;}segs.reverse();}
     if(!segs.length){
-      // 어떤 단순 기하도 허용 편차를 만족하지 못하면 원본을 억지로 왜곡하지 않는다.
       const anchors=rdpSimplify(p,Math.max(.45,tol*.45));
       segs=[];for(let i=0;i<anchors.length-1;i++)segs.push({type:'line',i0:0,i1:0,m:null,p0:anchors[i],p1:anchors[i+1],fallback:true,cost:0});
       return{path:p,segments:segs,tol,fallback:true};
     }
+    let baseSegs=segs.map(x=>({...x}));
+    baseSegs=splitWideEndpointArcOnlyIfMoreAccurate(p,baseSegs,tol,d,total,true);
+    baseSegs=splitWideEndpointArcOnlyIfMoreAccurate(p,baseSegs,tol,d,total,false);
+    const hookSegs=refineEndpointHookBends(p,segs,tol,d,total);
+    segs=choosePreferredHookSegmentation(p,baseSegs,hookSegs);
     return{path:p,segments:segs,tol};
   }
   function circleCircleNearest(a,b,target){
@@ -2019,11 +2209,11 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   }
   function buildCadPath(path, scale=1, diameter=6){
     const model=fitEngineeringSegments(path,diameter),pts=model.path;
-    if(pts.length<2)return{points:pts,d:'',arcs:[],segments:[],fitPath:pts,totalLength:pathLength(pts),maxDeviation:0,p95Deviation:0,tol:model.tol||1};
+    if(pts.length<2)return{points:pts,d:'',arcs:[],segments:[],fitPath:pts,sourcePath:pts,totalLength:pathLength(pts),maxDeviation:0,p95Deviation:0,tol:model.tol||1};
     if(model.fallback){
       const fp=[];for(const g of model.segments){if(!fp.length)fp.push({...g.p0});fp.push({...g.p1});}
       let ds=fp.length?`M ${(fp[0].x*scale).toFixed(3)} ${(fp[0].y*scale).toFixed(3)}`:'';for(let i=1;i<fp.length;i++)ds+=` L ${(fp[i].x*scale).toFixed(3)} ${(fp[i].y*scale).toFixed(3)}`;
-      return{points:fp,d:ds,arcs:[],segments:model.segments,fitPath:fp,totalLength:pathLength(fp),maxDeviation:model.tol,p95Deviation:model.tol,tol:model.tol,fallback:true};
+      return{points:fp,d:ds,arcs:[],segments:model.segments,fitPath:fp,sourcePath:pts,totalLength:pathLength(fp),maxDeviation:model.tol,p95Deviation:model.tol,tol:model.tol,fallback:true};
     }
     const geoms=model.segments.map(seg=>{
       const raw0=pts[seg.i0],raw1=pts[seg.i1];
@@ -2060,9 +2250,9 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     // 최종 검증: 생성 형상이 HARD CORRIDOR를 벗어나면 원본 중심선 보존형 polyline으로 안전 복귀.
     if(maxDeviation>model.tol*1.12){
       const safe=rdpSimplify(pts,Math.max(.42,model.tol*.42));let ds=`M ${(safe[0].x*scale).toFixed(3)} ${(safe[0].y*scale).toFixed(3)}`;for(let i=1;i<safe.length;i++)ds+=` L ${(safe[i].x*scale).toFixed(3)} ${(safe[i].y*scale).toFixed(3)}`;
-      return{points:safe,d:ds,arcs:[],segments:[],fitPath:safe,totalLength:pathLength(safe),maxDeviation,p95Deviation,tol:model.tol,fallback:true};
+      return{points:safe,d:ds,arcs:[],segments:[],fitPath:safe,sourcePath:pts,totalLength:pathLength(safe),maxDeviation,p95Deviation,tol:model.tol,fallback:true};
     }
-    return{points:simplePts,d:dstr,arcs,segments:geoms,fitPath,totalLength,maxDeviation,p95Deviation,tol:model.tol};
+    return{points:simplePts,d:dstr,arcs,segments:geoms,fitPath,sourcePath:pts,totalLength,maxDeviation,p95Deviation,tol:model.tol};
   }
   function pathBounds(path){
     let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
@@ -2180,16 +2370,16 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   }
   function buildResultDimSpecs(r){
     const variant=r.captureType==='product'?'photo':currentRenderMode(),W=1189,H=841,draw={x:72,y:82,w:820,h:650};
-    const mmBase=transformedPath(r),cadMm=buildCadPath(mmBase,1,r.diameter),dimMm=cadMm.points||mmBase;
+    const mmBase=transformedPath(r),visualMm=finalVisualCenterline(mmBase,r.diameter),cadMm=buildCadPath(mmBase,1,r.diameter),dimMm=visualMm.length?visualMm:(cadMm.points||mmBase);
     let screen=[],dimOpt={};
     if(variant==='photo'){
-      const fit=fitRect(r.imageW||1000,r.imageH||1000,draw),map=cadScreenMappingForPhoto(r,cadMm,fit);
-      screen=map.points;dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,overallScreenPath:map.fitPath,overallBoundsMm:pathBounds(cadMm.fitPath||mmBase)};
+      const fit=fitPhotoFocus(r,draw),map=cadScreenMappingForFocusedPhoto(r,cadMm,fit);
+      screen=dimMm.map(map.mapPt);dimOpt={overallScreenPath:screen,overallBoundsMm:pathBounds(dimMm)};
     }else{
       const mmPath=cadMm.fitPath||mmBase,pb=pathBounds(mmPath),sc=Math.min(draw.w/pb.w,draw.h/pb.h)*.84,ox=draw.x+(draw.w-pb.w*sc)/2,oy=draw.y+(draw.h-pb.h*sc)/2,tx=ox-pb.minX*sc,ty=oy-pb.minY*sc,mapPt=p=>({x:tx+p.x*sc,y:ty+p.y*sc});
       screen=dimMm.map(mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),overallScreenPath:mmPath.map(mapPt),overallBoundsMm:pathBounds(mmPath)};
     }
-    const specs=buildDimensionSpecs(dimMm,screen,W,H,dimOpt);
+    let specs=buildDimensionSpecs(dimMm,screen,W,H,dimOpt);if(variant==='photo')specs=layoutDimensionLabels([...specs,...radiusOverlaySpecs(r,screen,W,H)],W,H);
     const fixed=[
       {key:'width',value:parseFloat(r.width)||r.baseWidth},
       {key:'height',value:parseFloat(r.height)||r.baseHeight},
@@ -2215,7 +2405,9 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     for(const s of specs){
       const info=dimSpecInfo(s);
       const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#111" stroke-width="1.2" fill="none"/>`).join('');
-      const main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1.2" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6)}${svgArrow(s.x1,s.y1,s.x2,s.y2,6)}`;
+      let main='';
+      if(s.kind==='leader') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1.2" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6)}`;
+      else main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1.2" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6)}${svgArrow(s.x1,s.y1,s.x2,s.y2,6)}`;
       const val=readDimValue(r,s.key,s.value),label=`${info.symbol} ${n1(val)}${info.unit?` ${info.unit}`:''}`;
       const approxW=Math.max(52,label.length*6.6),approxH=18,x=s.textX-approxW/2,y=s.textY-approxH/2;
       parts.push(`<g>${ext}${main}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" rx="4" ry="4" width="${approxW.toFixed(1)}" height="${approxH.toFixed(1)}" fill="rgba(0,0,0,.82)" stroke="#fff" stroke-width="0.6"/><text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="${/^R/.test(info.symbol)?'#ffb4b4':/^L/.test(info.symbol)||['W','H','D','Ø'].includes(info.symbol)?'#8fe7ff':'#fff'}">${esc(label)}</text></g>`);
@@ -2223,6 +2415,39 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     return parts.join('');
   }
 
+  function finalVisualCenterline(path,diameter=6){
+    if(!Array.isArray(path)||path.length<2)return path||[];
+    const eps=Math.max(.12,(Number(diameter)||6)*.05);
+    let pts=rdpSimplify(path,eps);
+    if(pts.length<5)pts=path.slice();
+    return pts;
+  }
+  function catmullRomSvgD(points,tension=.55){
+    if(!Array.isArray(points)||!points.length)return'';
+    if(points.length===1)return`M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+    if(points.length===2)return`M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)} L ${points[1].x.toFixed(2)} ${points[1].y.toFixed(2)}`;
+    const ext=[points[0],...points,points[points.length-1]];
+    let d=`M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+    for(let i=1;i<ext.length-2;i++){
+      const p0=ext[i-1],p1=ext[i],p2=ext[i+1],p3=ext[i+2];
+      const c1={x:p1.x+(p2.x-p0.x)*(tension/6),y:p1.y+(p2.y-p0.y)*(tension/6)};
+      const c2={x:p2.x-(p3.x-p1.x)*(tension/6),y:p2.y-(p3.y-p1.y)*(tension/6)};
+      d+=` C ${c1.x.toFixed(2)} ${c1.y.toFixed(2)} ${c2.x.toFixed(2)} ${c2.y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+    }
+    return d;
+  }
+  function finalCenterlineSvg(path,mapPt,strokeWidth=5){
+    const mapped=(path||[]).map(mapPt);if(mapped.length<2)return'';
+    const d=catmullRomSvgD(mapped,.55);
+    return `<path d="${d}" fill="none" stroke="#fff" stroke-opacity=".78" stroke-width="${(strokeWidth+3).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="#ff7a00" stroke-width="${strokeWidth.toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  function radiusOverlaySpecs(r,visualScreen,W,H){
+    const specs=[];if(!visualScreen?.length)return specs;
+    const top=visualScreen.reduce((a,p)=>p.y<a.y?p:a,visualScreen[0]),bottom=visualScreen.reduce((a,p)=>p.y>a.y?p:a,visualScreen[0]);
+    if(Number.isFinite(Number(r.r1))){const tx=clamp(top.x+72,70,W-70),ty=clamp(top.y+26,46,H-46);specs.push({key:'r1',value:Number(r.r1),kind:'leader',textX:tx,textY:ty,x1:top.x,y1:top.y,x2:tx-10,y2:ty-6});}
+    if(Number.isFinite(Number(r.r2))){const tx=clamp(bottom.x+78,70,W-70),ty=clamp(bottom.y-24,46,H-46);specs.push({key:'r2',value:Number(r.r2),kind:'leader',textX:tx,textY:ty,x1:bottom.x,y1:bottom.y,x2:tx-10,y2:ty+5});}
+    return specs;
+  }
   function cadArcPathD(g){
     if(!(g&&g.type==='arc'&&g.m)) return '';
     let a0=Math.atan2(g.p0.y-g.m.cy,g.p0.x-g.m.cx),a1=Math.atan2(g.p1.y-g.m.cy,g.p1.x-g.m.cx),delta=a1-a0,signed=g.m.signedSpan||0;
@@ -2231,20 +2456,80 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const large=Math.abs(delta)>Math.PI?1:0,sweep=delta>0?1:0;
     return `M ${g.p0.x.toFixed(3)} ${g.p0.y.toFixed(3)} A ${g.m.r.toFixed(3)} ${g.m.r.toFixed(3)} 0 ${large} ${sweep} ${g.p1.x.toFixed(3)} ${g.p1.y.toFixed(3)}`;
   }
+
+  function rawSegmentSourcePoints(cad,g){
+    const src=(cad&&Array.isArray(cad.sourcePath)&&cad.sourcePath.length)?cad.sourcePath:[];
+    if(!src.length||!g) return [];
+    const i0=clamp(Math.round(g.i0||0),0,src.length-1),i1=clamp(Math.round(g.i1||0),0,src.length-1);
+    const a=Math.min(i0,i1),b=Math.max(i0,i1),pts=src.slice(a,b+1).map(p=>({...p}));
+    if(pts.length<2)return pts;
+    if(g.type==='line'){
+      const first=pts[0],last=pts[pts.length-1],n=Math.max(2,pts.length-1),out=[];
+      for(let k=0;k<=n;k++){const t=k/n;out.push({x:first.x+(last.x-first.x)*t,y:first.y+(last.y-first.y)*t});}
+      return out;
+    }
+    return smoothPath(pts,Math.max(1,Math.min(3,Math.floor(pts.length/8))));
+  }
+  function pathToSvgD(points){
+    if(!Array.isArray(points)||!points.length)return'';
+    if(points.length===1)return`M ${points[0].x.toFixed(3)} ${points[0].y.toFixed(3)}`;
+    if(points.length===2)return`M ${points[0].x.toFixed(3)} ${points[0].y.toFixed(3)} L ${points[1].x.toFixed(3)} ${points[1].y.toFixed(3)}`;
+    return catmullRomSvgD(points,.50);
+  }
   function cadGeometrySvg(cad,tx,ty,sc,reviewColors=false,strokeWidth=4){
     if(!cad?.segments?.length){
       return `<path d="${cad?.d||''}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${reviewColors?'#1976ff':'#111'}" stroke-width="${strokeWidth}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`;
     }
     const out=[];
     for(const g of cad.segments){
+      const color=reviewColors?(g.type==='arc'?'#ff2d2d':'#1976ff'):'#111';
+      if(reviewColors){
+        const segPts=rawSegmentSourcePoints(cad,g);
+        if(segPts.length>=2){
+          const d=pathToSvgD(segPts);
+          out.push(`<path d="${d}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="#fff" stroke-opacity=".88" stroke-width="${(strokeWidth+2.2).toFixed(1)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
+          out.push(`<path d="${d}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${color}" stroke-width="${strokeWidth}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
+          continue;
+        }
+      }
       if(g.type==='arc'&&g.m){
-        out.push(`<path d="${cadArcPathD(g)}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${reviewColors?'#ff2d2d':'#111'}" stroke-width="${strokeWidth}" vector-effect="non-scaling-stroke" stroke-linecap="round"/>`);
+        out.push(`<path d="${cadArcPathD(g)}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${color}" stroke-width="${strokeWidth}" vector-effect="non-scaling-stroke" stroke-linecap="round"/>`);
       }else{
-        out.push(`<line x1="${g.p0.x.toFixed(3)}" y1="${g.p0.y.toFixed(3)}" x2="${g.p1.x.toFixed(3)}" y2="${g.p1.y.toFixed(3)}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" stroke="${reviewColors?'#1976ff':'#111'}" stroke-width="${strokeWidth}" vector-effect="non-scaling-stroke" stroke-linecap="round"/>`);
+        out.push(`<line x1="${g.p0.x.toFixed(3)}" y1="${g.p0.y.toFixed(3)}" x2="${g.p1.x.toFixed(3)}" y2="${g.p1.y.toFixed(3)}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" stroke="${color}" stroke-width="${strokeWidth}" vector-effect="non-scaling-stroke" stroke-linecap="round"/>`);
       }
     }
     return out.join('');
   }
+  function photoFocusRect(r){
+    const iw=Math.max(1,r.imageW||1000),ih=Math.max(1,r.imageH||1000),pr=r.paperRect?.outer;
+    if(pr&&pr.w>iw*.22&&pr.h>ih*.25){
+      const pad=Math.max(10,Math.round(Math.min(iw,ih)*.025));
+      const x0=clamp(pr.x0-pad,0,iw-1),y0=clamp(pr.y0-pad,0,ih-1),x1=clamp(pr.x1+pad,0,iw-1),y1=clamp(pr.y1+pad,0,ih-1);
+      return{x:x0,y:y0,w:Math.max(1,x1-x0),h:Math.max(1,y1-y0)};
+    }
+    return{x:0,y:0,w:iw,h:ih};
+  }
+  function fitPhotoFocus(r,draw){
+    const fr=photoFocusRect(r),fit=fitRect(fr.w,fr.h,draw);
+    return{...fit,focus:fr};
+  }
+  function photoImageMarkup(r,fit){
+    if(!r.photoDataUrl)return'';
+    const fr=fit.focus||{x:0,y:0,w:r.imageW||1000,h:r.imageH||1000};
+    // SVG image is scaled to the focus crop and clipped by the drawing rectangle.
+    const fullW=fit.w*(r.imageW||fr.w)/fr.w,fullH=fit.h*(r.imageH||fr.h)/fr.h;
+    const x=fit.x-fr.x*(fit.w/fr.w),y=fit.y-fr.y*(fit.h/fr.h);
+    return `<g clip-path=\"url(#photoClip)\"><image href=\"${r.photoDataUrl}\" x=\"${x}\" y=\"${y}\" width=\"${fullW}\" height=\"${fullH}\" preserveAspectRatio=\"none\"/></g>`;
+  }
+  function cadScreenMappingForFocusedPhoto(r,cad,fit){
+    const fr=fit.focus||{x:0,y:0,w:r.imageW||1000,h:r.imageH||1000},pxScale=Math.max(.0001,Number(r.mmPerPx)||1),pb=r.rawBBox||{minX:0,minY:0};
+    const imageScale=fit.w/fr.w,sc=imageScale/pxScale,tx=fit.x+(pb.minX-fr.x)*imageScale,ty=fit.y+(pb.minY-fr.y)*imageScale;
+    const mapPt=p=>({x:tx+p.x*sc,y:ty+p.y*sc});
+    const points=(cad.points||[]).map(mapPt),fitPath=(cad.fitPath||[]).map(mapPt);
+    const arcs=(cad.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc}));
+    return{sc,tx,ty,mapPt,points,fitPath,arcs};
+  }
+
   function cadScreenMappingForPhoto(r,cad,fit){
     const pxScale=Math.max(.0001,Number(r.mmPerPx)||1),pb=r.rawBBox||{minX:0,minY:0};
     const sc=fit.scale/pxScale,tx=fit.x+(pb.minX||0)*fit.scale,ty=fit.y+(pb.minY||0)*fit.scale;
@@ -2254,19 +2539,75 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     return{sc,tx,ty,mapPt,points,fitPath,arcs};
   }
 
+  function makeDimSvgFormal(specs,r){
+    const parts=[];
+    for(const s of specs||[]){
+      const info=dimSpecInfo(s);
+      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#111" stroke-width="1" fill="none"/>`).join('');
+      const val=readDimValue(r,s.key,s.value),label=`${info.symbol==='Ø'?'Ø':info.symbol}${n1(val)}`;
+      let main='';
+      if(s.kind==='leader') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5)}`;
+      else main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5)}${svgArrow(s.x1,s.y1,s.x2,s.y2,5)}`;
+      const w=Math.max(28,label.length*7.2),x=s.textX-w/2,y=s.textY-10;
+      parts.push(`<g>${ext}${main}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="16" fill="#fff"/><text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial,'Noto Sans KR',sans-serif" font-size="10.5" fill="#111">${esc(label)}</text></g>`);
+    }
+    return parts.join('');
+  }
+
+  function buildRenderedDrawingSvg(r,mmRaw,cadMm,mmForDrawing,mmForDims,width,height,length,date){
+    const W=1189,H=841;
+    const main={x:95,y:55,w:455,h:610};
+    const side={x:772,y:92,w:92,h:440};
+    const section={cx:818,cy:638,rad:34};
+    const title={x:452,y:680,w:646,h:120};
+    const notes={x:48,y:684,w:360,h:116};
+
+    const pb=pathBounds(mmForDrawing);
+    const sc=Math.min(main.w/Math.max(1,pb.w),main.h/Math.max(1,pb.h))*0.84;
+    const ox=main.x+(main.w-pb.w*sc)/2, oy=main.y+(main.h-pb.h*sc)/2;
+    const tx=ox-pb.minX*sc, ty=oy-pb.minY*sc;
+    const mapPt=p=>({x:tx+p.x*sc,y:ty+p.y*sc});
+    const centerPath=(cadMm.fitPath||mmForDrawing).map(mapPt);
+    const centerD=pathToSvgD(centerPath);
+    const diaVal=Number(readDimValue(r,'diameter',r.diameter)||6);
+    const outlineW=Math.max(6,diaVal*sc), innerW=Math.max(1,outlineW-2.4);
+    const mainShape=`<path d="${centerD}" fill="none" stroke="#111" stroke-width="${outlineW.toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${centerD}" fill="none" stroke="#fff" stroke-width="${innerW.toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${centerD}" fill="none" stroke="#777" stroke-width="1" stroke-dasharray="7 5" stroke-linecap="round"/>`;
+
+    let specs=buildDimensionSpecs(mmForDims,centerPath,W,H,{arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),overallScreenPath:centerPath,overallBoundsMm:pathBounds(mmForDrawing)});
+    const detail=($('dimensionDetailSelect')?.value)||'basic';
+    specs=specs.filter(s=>['width','height','r1','r2'].includes(s.key) || /^seg[1-3]$/.test(s.key) || (detail==='full' && (/^seg\d+$/.test(s.key) || /^bendR\d+$/.test(s.key))));
+    const dimSvg=makeDimSvgFormal(specs,r);
+
+    const sideCx=side.x+side.w/2, sideTop=side.y+10, sideBot=side.y+side.h-10;
+    const sideW=Math.max(8,diaVal*5.5), sideInner=Math.max(2,sideW-2.4);
+    const sideSvg=`<path d="M ${sideCx} ${sideTop} L ${sideCx} ${sideBot}" fill="none" stroke="#111" stroke-width="${sideW.toFixed(1)}" stroke-linecap="round"/><path d="M ${sideCx} ${sideTop} L ${sideCx} ${sideBot}" fill="none" stroke="#fff" stroke-width="${sideInner.toFixed(1)}" stroke-linecap="round"/><path d="M ${sideCx} ${sideTop} L ${sideCx} ${sideBot}" fill="none" stroke="#777" stroke-width="1" stroke-dasharray="7 5" stroke-linecap="round"/>`;
+    const diaText=`<line x1="${sideCx-sideW/2}" y1="${side.y+side.h/2}" x2="${sideCx+sideW/2}" y2="${side.y+side.h/2}" stroke="#111" stroke-width="1"/>${svgArrow(sideCx-sideW/2,side.y+side.h/2,sideCx+sideW/2,side.y+side.h/2,5)}${svgArrow(sideCx+sideW/2,side.y+side.h/2,sideCx-sideW/2,side.y+side.h/2,5)}<text x="${side.x+side.w+40}" y="${side.y+side.h/2-4}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif">Ø${n1(diaVal)}</text>`;
+    let hatch=''; for(let i=-26;i<=18;i+=8){ hatch+=`<line x1="${section.cx-28+i}" y1="${section.cy+28}" x2="${section.cx+28+i}" y2="${section.cy-28}" stroke="#888" stroke-width="1"/>`; }
+    const sectionSvg=`<text x="${section.cx-44}" y="${section.cy-54}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif">단면 A-A</text><circle cx="${section.cx}" cy="${section.cy}" r="${section.rad}" fill="#fff" stroke="#111" stroke-width="1.5"/>${hatch}<line x1="${section.cx-section.rad-30}" y1="${section.cy}" x2="${section.cx+section.rad+30}" y2="${section.cy}" stroke="#111" stroke-width="1"/>${svgArrow(section.cx-section.rad,section.cy,section.cx+section.rad,section.cy,5)}${svgArrow(section.cx+section.rad,section.cy,section.cx-section.rad,section.cy,5)}<text x="${section.cx+section.rad+36}" y="${section.cy-4}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif">Ø${n1(diaVal)}</text>`;
+
+    const photoInset=r.photoDataUrl?`<rect x="${main.x+8}" y="${main.y+main.h-96}" width="82" height="82" fill="#fff" stroke="#777"/><image href="${r.photoDataUrl}" x="${main.x+12}" y="${main.y+main.h-92}" width="74" height="74" preserveAspectRatio="xMidYMid meet"/>`:'';
+
+    const noteSvg=`<text x="${notes.x}" y="${notes.y}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif">주서</text><text x="${notes.x}" y="${notes.y+24}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">1. 재질 : ${esc(r.material)}</text><text x="${notes.x}" y="${notes.y+44}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">2. 재질규격 : 환봉 Ø${n1(diaVal)}</text><text x="${notes.x}" y="${notes.y+64}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">3. 표면처리 : 없음</text><text x="${notes.x}" y="${notes.y+84}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">4. 일반공차 : ±0.5</text><text x="${notes.x}" y="${notes.y+104}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">5. 날카로운 부분은 R0.3~0.5 제거</text><text x="${notes.x}" y="${notes.y+124}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">6. 치수 단위 : mm</text>`;
+
+    const titleSvg=`<rect x="${title.x}" y="${title.y}" width="${title.w}" height="${title.h}" fill="#fff" stroke="#111" stroke-width="1.2"/><line x1="${title.x}" y1="${title.y+30}" x2="${title.x+title.w}" y2="${title.y+30}" stroke="#111"/><line x1="${title.x}" y1="${title.y+60}" x2="${title.x+title.w}" y2="${title.y+60}" stroke="#111"/><line x1="${title.x}" y1="${title.y+90}" x2="${title.x+title.w}" y2="${title.y+90}" stroke="#111"/><line x1="${title.x+110}" y1="${title.y}" x2="${title.x+110}" y2="${title.y+title.h}" stroke="#111"/><line x1="${title.x+290}" y1="${title.y}" x2="${title.x+290}" y2="${title.y+title.h}" stroke="#111"/><line x1="${title.x+425}" y1="${title.y}" x2="${title.x+425}" y2="${title.y+title.h}" stroke="#111"/><text x="${title.x+16}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">품 명</text><text x="${title.x+126}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">J HOOK</text><text x="${title.x+306}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">도면번호</text><text x="${title.x+442}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">${esc(r.name)}</text><text x="${title.x+16}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">재 질</text><text x="${title.x+126}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">${esc(r.material)}</text><text x="${title.x+306}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">척 도</text><text x="${title.x+442}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">1 : 1</text><text x="${title.x+16}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">재질규격</text><text x="${title.x+126}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">환봉 Ø${n1(diaVal)}</text><text x="${title.x+306}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">단 위</text><text x="${title.x+442}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">mm</text><text x="${title.x+16}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">작 성 일</text><text x="${title.x+126}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">${date.replace(/-/g,'. ') + '.'}</text><text x="${title.x+306}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">작 성</text><text x="${title.x+442}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">-</text><text x="${title.x+520}" y="${title.y+110}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">전체 폭 ${n1(width)} / 전체 높이 ${n1(height)} / 전개길이 ${n1(length)}</text>`;
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff"/><rect x="16" y="16" width="${W-32}" height="${H-32}" fill="none" stroke="#111" stroke-width="1.4"/>${mainShape}${photoInset}${dimSvg}<text x="${side.x+4}" y="${side.y-18}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif">측면도</text>${sideSvg}${diaText}${sectionSvg}${noteSvg}${titleSvg}</svg>`;
+  }
+
   function buildSvgOnly(r){
     const W=1189,H=841, draw={x:72,y:82,w:820,h:650}, title={x:846,y:646,w:296,h:138};
     const variant = r.captureType==='product' ? 'photo' : currentRenderMode();
-    const mmRaw=transformedPath(r),cadMm=buildCadPath(mmRaw,1,r.diameter),mmForDrawing=cadMm.fitPath||mmRaw,mmForDims=cadMm.points||mmRaw;
+    const mmRaw=transformedPath(r),visualMm=finalVisualCenterline(mmRaw,r.diameter),cadMm=buildCadPath(mmRaw,1,r.diameter),mmForDrawing=visualMm.length?visualMm:(cadMm.fitPath||mmRaw),mmForDims=visualMm.length?visualMm:(cadMm.points||mmRaw);
     const date=new Date().toLocaleDateString('sv-SE');
     const width=parseFloat(r.width)||r.baseWidth,height=parseFloat(r.height)||r.baseHeight,length=Number.isFinite(cadMm.totalLength)?cadMm.totalLength:(parseFloat(r.length)||pathLength(mmForDrawing));
+    if(variant==='drawing') return buildRenderedDrawingSvg(r,mmRaw,cadMm,mmForDrawing,mmForDims,width,height,length,date);
     let screen=[],shapeMarkup='',dimOpt={};
     if(variant==='photo'){
-      const fit=fitRect(r.imageW||1000,r.imageH||1000,draw),map=cadScreenMappingForPhoto(r,cadMm,fit);
-      const guideStroke=4.4;
-      shapeMarkup=`<rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}" fill="#f5f5f5" stroke="#111" stroke-width="1"/>${r.photoDataUrl?`<image href="${r.photoDataUrl}" x="${fit.x}" y="${fit.y}" width="${fit.w}" height="${fit.h}" preserveAspectRatio="xMidYMid meet"/>`:''}${cadGeometrySvg(cadMm,map.tx,map.ty,map.sc,true,guideStroke)}<g font-family="Arial,'Noto Sans KR',sans-serif" font-size="10" font-weight="700"><rect x="${draw.x+10}" y="${draw.y+10}" width="154" height="28" rx="5" fill="rgba(0,0,0,.72)"/><line x1="${draw.x+20}" y1="${draw.y+24}" x2="${draw.x+45}" y2="${draw.y+24}" stroke="#1976ff" stroke-width="4"/><text x="${draw.x+51}" y="${draw.y+28}" fill="#fff">LINE</text><line x1="${draw.x+92}" y1="${draw.y+24}" x2="${draw.x+117}" y2="${draw.y+24}" stroke="#ff2d2d" stroke-width="4"/><text x="${draw.x+123}" y="${draw.y+28}" fill="#fff">ARC</text></g>`;
-      screen=map.points;
-      dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,overallScreenPath:map.fitPath,overallBoundsMm:pathBounds(mmForDrawing)};
+      const fit=fitPhotoFocus(r,draw),map=cadScreenMappingForFocusedPhoto(r,cadMm,fit),visualScreen=mmForDims.map(map.mapPt);
+      const guideStroke=4.8;
+      shapeMarkup=`<rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}" fill="#f5f5f5" stroke="#111" stroke-width="1"/>${photoImageMarkup(r,fit)}${cadGeometrySvg(cadMm,map.tx,map.ty,map.sc,true,guideStroke)}<g font-family="Arial,'Noto Sans KR',sans-serif" font-size="10" font-weight="700"><rect x="${draw.x+10}" y="${draw.y+10}" width="160" height="28" rx="5" fill="rgba(0,0,0,.72)"/><line x1="${draw.x+20}" y1="${draw.y+24}" x2="${draw.x+45}" y2="${draw.y+24}" stroke="#1976ff" stroke-width="4"/><text x="${draw.x+51}" y="${draw.y+28}" fill="#fff">LINE</text><line x1="${draw.x+92}" y1="${draw.y+24}" x2="${draw.x+117}" y2="${draw.y+24}" stroke="#ff2d2d" stroke-width="4"/><text x="${draw.x+123}" y="${draw.y+28}" fill="#fff">ARC</text></g>`;
+      screen=visualScreen;
+      dimOpt={overallScreenPath:visualScreen,overallBoundsMm:pathBounds(mmForDrawing)};
     }else{
       const pb=pathBounds(mmForDrawing),sc=Math.min(draw.w/pb.w,draw.h/pb.h)*.84,ox=draw.x+(draw.w-pb.w*sc)/2,oy=draw.y+(draw.h-pb.h*sc)/2,tx=ox-pb.minX*sc,ty=oy-pb.minY*sc;
       const mapPt=p=>({x:tx+p.x*sc,y:ty+p.y*sc});
@@ -2274,10 +2615,10 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       screen=(cadMm.points||[]).map(mapPt);
       dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),overallScreenPath:(cadMm.fitPath||[]).map(mapPt),overallBoundsMm:pathBounds(mmForDrawing)};
     }
-    const specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt),dimSvg=makeDimSvg(specs,r,true);
+    let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);if(variant==='photo')specs=layoutDimensionLabels([...specs,...radiusOverlaySpecs(r,screen,W,H)],W,H);const dimSvg=makeDimSvg(specs,r,true);
     const sideTitle = r.captureType==='product' ? '제품 실이미지 오버레이 치수도' : '치구 실이미지 오버레이 치수도';
     const tbx=title.x,tby=title.y,tbw=title.w,tbh=title.h;
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff"/><rect x="24" y="24" width="1141" height="793" fill="none" stroke="#111" stroke-width="1.4"/><text x="52" y="50" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">COTEC JIG DRAWING</text><text x="52" y="72" font-size="16" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${sideTitle}</text><text x="52" y="92" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${n1(r.diameter)} / 전개길이 ${n1(length)}</text>${shapeMarkup}${dimSvg}<rect x="${tbx}" y="${tby}" width="${tbw}" height="${tbh}" fill="#fff" stroke="#111" stroke-width="1"/><line x1="${tbx}" y1="${tby+24}" x2="${tbx+tbw}" y2="${tby+24}" stroke="#111"/><line x1="${tbx}" y1="${tby+48}" x2="${tbx+tbw}" y2="${tby+48}" stroke="#111"/><line x1="${tbx}" y1="${tby+72}" x2="${tbx+tbw}" y2="${tby+72}" stroke="#111"/><line x1="${tbx}" y1="${tby+96}" x2="${tbx+tbw}" y2="${tby+96}" stroke="#111"/><line x1="${tbx}" y1="${tby+116}" x2="${tbx+tbw}" y2="${tby+116}" stroke="#111"/><line x1="${tbx+92}" y1="${tby+24}" x2="${tbx+92}" y2="${tby+tbh}" stroke="#111"/><text x="${tbx+8}" y="${tby+16}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">TITLE BLOCK</text><text x="${tbx+8}" y="${tby+40}" font-size="10">도면번호</text><text x="${tbx+100}" y="${tby+40}" font-size="10">${esc(r.name)}</text><text x="${tbx+8}" y="${tby+64}" font-size="10">재질</text><text x="${tbx+100}" y="${tby+64}" font-size="10">${esc(r.material)}</text><text x="${tbx+8}" y="${tby+88}" font-size="10">전체 폭/높이</text><text x="${tbx+100}" y="${tby+88}" font-size="10">${n1(width)} / ${n1(height)}</text><text x="${tbx+8}" y="${tby+112}" font-size="10">전개길이</text><text x="${tbx+100}" y="${tby+112}" font-size="10">${n1(length)}</text><text x="${tbx+8}" y="${tby+132}" font-size="10">작성일</text><text x="${tbx+100}" y="${tby+132}" font-size="10">${date}</text><text x="52" y="800" font-size="10" font-family="Arial,'Noto Sans KR',sans-serif">NOTE : 실제 촬영 이미지 + LINE/ARC + 치수 오버레이 화면을 그대로 최종 도면/PDF로 사용합니다. 파랑=직선, 빨강=원호.</text></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><defs><clipPath id="photoClip"><rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}"/></clipPath></defs><rect width="${W}" height="${H}" fill="#fff"/><rect x="24" y="24" width="1141" height="793" fill="none" stroke="#111" stroke-width="1.4"/><text x="52" y="50" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">COTEC JIG DRAWING</text><text x="52" y="72" font-size="16" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${sideTitle}</text><text x="52" y="92" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${n1(r.diameter)} / 전개길이 ${n1(length)}</text>${shapeMarkup}${dimSvg}<rect x="${tbx}" y="${tby}" width="${tbw}" height="${tbh}" fill="#fff" stroke="#111" stroke-width="1"/><line x1="${tbx}" y1="${tby+24}" x2="${tbx+tbw}" y2="${tby+24}" stroke="#111"/><line x1="${tbx}" y1="${tby+48}" x2="${tbx+tbw}" y2="${tby+48}" stroke="#111"/><line x1="${tbx}" y1="${tby+72}" x2="${tbx+tbw}" y2="${tby+72}" stroke="#111"/><line x1="${tbx}" y1="${tby+96}" x2="${tbx+tbw}" y2="${tby+96}" stroke="#111"/><line x1="${tbx}" y1="${tby+116}" x2="${tbx+tbw}" y2="${tby+116}" stroke="#111"/><line x1="${tbx+92}" y1="${tby+24}" x2="${tbx+92}" y2="${tby+tbh}" stroke="#111"/><text x="${tbx+8}" y="${tby+16}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">TITLE BLOCK</text><text x="${tbx+8}" y="${tby+40}" font-size="10">도면번호</text><text x="${tbx+100}" y="${tby+40}" font-size="10">${esc(r.name)}</text><text x="${tbx+8}" y="${tby+64}" font-size="10">재질</text><text x="${tbx+100}" y="${tby+64}" font-size="10">${esc(r.material)}</text><text x="${tbx+8}" y="${tby+88}" font-size="10">전체 폭/높이</text><text x="${tbx+100}" y="${tby+88}" font-size="10">${n1(width)} / ${n1(height)}</text><text x="${tbx+8}" y="${tby+112}" font-size="10">전개길이</text><text x="${tbx+100}" y="${tby+112}" font-size="10">${n1(length)}</text><text x="${tbx+8}" y="${tby+132}" font-size="10">작성일</text><text x="${tbx+100}" y="${tby+132}" font-size="10">${date}</text><text x="52" y="800" font-size="10" font-family="Arial,'Noto Sans KR',sans-serif">NOTE : 실제 촬영 이미지 위 원본 중심선에 밀착된 LINE(파랑)/ARC(빨강)와 치수를 함께 표시한 오버레이를 최종 도면/PDF로 사용합니다.</text></svg>`;
   }
 
   function makeFigureHtml(r){
@@ -2285,15 +2626,13 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const mmBase=transformedPath(r),cadMm=buildCadPath(mmBase,1,r.diameter),dimMm=cadMm.points||mmBase;
     let screen=[],dimOpt={};
     if(variant==='photo'){
-      const fit=fitRect(r.imageW||1000,r.imageH||1000,draw),map=cadScreenMappingForPhoto(r,cadMm,fit);
+      const fit=fitPhotoFocus(r,draw),map=cadScreenMappingForFocusedPhoto(r,cadMm,fit);
       screen=map.points;dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,overallScreenPath:map.fitPath,overallBoundsMm:pathBounds(cadMm.fitPath||mmBase)};
     }else{
       const mmPath=cadMm.fitPath||mmBase,pb=pathBounds(mmPath),sc=Math.min(draw.w/pb.w,draw.h/pb.h)*.84,ox=draw.x+(draw.w-pb.w*sc)/2,oy=draw.y+(draw.h-pb.h*sc)/2,tx=ox-pb.minX*sc,ty=oy-pb.minY*sc,mapPt=p=>({x:tx+p.x*sc,y:ty+p.y*sc});
       screen=dimMm.map(mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),overallScreenPath:mmPath.map(mapPt),overallBoundsMm:pathBounds(mmPath)};
     }
-    const specs=buildDimensionSpecs(dimMm,screen,W,H,dimOpt);
-    const inputs=r.dimEditMode?specs.map(s=>`<input class="dim-input-overlay" data-id="${escAttr(r.id)}" data-dimkey="${escAttr(s.key)}" type="number" inputmode="decimal" step="0.1" value="${escAttr(n1(readDimValue(r,s.key,s.value)))}" style="left:${(s.textX/W*100).toFixed(2)}%;top:${(s.textY/H*100).toFixed(2)}%;" title="${escAttr(s.key)}">`).join(''):'';
-    return `<div class="figure-frame ${variant==='photo'?'photo-variant':''}">${svg}${inputs}</div>${r.dimEditMode?'<div class="dim-edit-note">치수 편집 중 · 숫자 입력 후 「편집 종료」를 누르면 오버레이/PDF에 동일 반영됩니다.</div>':''}`;
+    return `<div class="figure-frame ${variant==='photo'?'photo-variant':''}">${svg}</div>`;
   }
 
   function samplePathEvenly(path,count=14){
@@ -2353,9 +2692,9 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     host.innerHTML=state.results.map((r,i)=>{
       if(!r.ok)return `<div class="result-item failed" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge quality bad">생성 실패</span></div><div class="result-msg">${esc(r.error)}</div></div>`;
       const quality=r.quality>.76?'양호':r.quality>.53?'보통':'확인필요';
-      const modeText=(r.captureType==='product')?'제품 실이미지 오버레이':'치구 실이미지 오버레이';
+      const modeText=(r.captureType==='product')?'제품 실이미지 오버레이':(currentRenderMode()==='drawing'?'치구 렌더링 정식 도면':'치구 실이미지 오버레이');
       const autoOk=r.shapeConfirmed&&!r.userShapeCorrected,autoLabel=autoOk?(r.quality>.76?'자동 인식 · 양호':r.quality>.53?'자동 인식 · 보통':'자동 인식 · 확인권장'):'보정 필요';
-      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}${dimensionEditorHtml(r)}<div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-edit-btn ${r.dimEditMode?'active':''}" data-id="${r.id}">${r.dimEditMode?'기호 편집 종료':'기호별 치수 편집'}</button><button class="btn apply-dims" data-id="${r.id}">수정값 형상 반영</button><button class="btn export-one" data-id="${r.id}">이 오버레이 PDF</button></div><div class="dim-note-box">일반 바닥 촬영 인식률 보강: 격자가 없으면 AR 보정값과 Ø 추정값을 함께 사용합니다. 치수는 사진 위에 직접 표시되고, 아래 기호 입력칸에서 수정할 수 있습니다. 그림 위 직접입력 대신 기호 입력 방식으로 값을 수정하세요.</div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. 실제 촬영 이미지 위에 확정된 LINE/ARC와 기호 치수를 직접 표시하며, 이 오버레이 화면 자체를 PDF 도면으로 사용합니다. 별도의 형상 재도면화는 하지 않습니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
+      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}${dimensionEditorHtml(r)}<div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-jump-btn" data-id="${r.id}">기호별 치수 입력</button><button class="btn apply-dims" data-id="${r.id}">수정값 형상 반영</button><button class="btn export-one" data-id="${r.id}">${currentRenderMode()==='drawing'?'이 도면 PDF':'이 오버레이 PDF'}</button></div><div class="dim-note-box">격자 촬영은 격자판 X/Y 주기 경계를 먼저 잠그고 그 내부에서만 치구를 선택합니다. 일반 바닥은 AR/Ø 교차검증과 중심 후보 점수를 사용합니다. 치수는 사진 위에 직접 표시되고, 아래 기호 입력칸에서 수정할 수 있습니다. 그림 위 직접입력 대신 기호 입력 방식으로 값을 수정하세요.</div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. ${currentRenderMode()==='drawing'?'정리된 중심선으로 정식 렌더링 도면을 생성하며, 본도/측면도/단면도와 기호 치수를 함께 PDF로 출력합니다.':'실제 촬영 이미지 위에 검증된 LINE(파랑)/ARC(빨강)과 기호 치수를 표시하며, 이 오버레이 화면 자체를 PDF 도면으로 사용합니다.'} RED/BLUE 표시도 원본 중심선 이탈 시에는 원본 중심선 기반으로 자동 보정합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
     }).join('');
   }
 
@@ -2366,15 +2705,20 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     if(dk && Number.isFinite(v)){ writeDimValue(r,dk,v); return; }
   });
 
+  $('resultList').addEventListener('change',e=>{
+    const row=e.target.closest('.result-item'),r=state.results.find(x=>x.id===row?.dataset.id);if(!r?.ok)return;
+    if(e.target.matches('.dim-editor-card input')){renderResults();}
+  });
+
   $('resultList').addEventListener('click',async e=>{
-    const shape=e.target.closest('.shape-edit-btn'),reset=e.target.closest('.shape-reset'),clear=e.target.closest('.shape-clear'),undo=e.target.closest('.shape-undo'),approve=e.target.closest('.shape-approve'),shapeApply=e.target.closest('.shape-apply'),edit=e.target.closest('.dim-edit-btn'),apply=e.target.closest('.apply-dims'),one=e.target.closest('.export-one');
+    const shape=e.target.closest('.shape-edit-btn'),reset=e.target.closest('.shape-reset'),clear=e.target.closest('.shape-clear'),undo=e.target.closest('.shape-undo'),approve=e.target.closest('.shape-approve'),shapeApply=e.target.closest('.shape-apply'),dimJump=e.target.closest('.dim-jump-btn'),apply=e.target.closest('.apply-dims'),one=e.target.closest('.export-one');
     if(shape){const r=state.results.find(x=>x.id===shape.dataset.id);if(!r?.ok)return;r.shapeEditMode=!r.shapeEditMode;if(r.shapeEditMode){if(!Array.isArray(r.shapeNodes)||r.shapeNodes.length<2)initShapeNodes(r,true);}renderResults();return;}
     if(reset){const r=state.results.find(x=>x.id===reset.dataset.id);if(!r?.ok)return;r.shapeDrawMode='auto';initShapeNodes(r,true);renderResults();toast('자동선 기준점을 불러왔습니다. 파란 점을 드래그해 수정할 수 있습니다.');return;}
     if(clear){const r=state.results.find(x=>x.id===clear.dataset.id);if(!r?.ok)return;r.shapeDrawMode='manual';r.shapeNodes=[];renderResults();toast('기존 자동선을 모두 제거했습니다. 치구 한쪽 끝부터 중심점을 순서대로 터치하세요.');return;}
     if(undo){const r=state.results.find(x=>x.id===undo.dataset.id);if(!r?.ok)return;r.shapeNodes?.pop();renderResults();return;}
     if(approve){const r=state.results.find(x=>x.id===approve.dataset.id);if(!r?.ok)return;if(!Array.isArray(r.shapeNodes)||r.shapeNodes.length<4)initShapeNodes(r,true);if(applyShapeCorrection(r)){r.segmentMethod=(r.segmentMethod||'자동')+' · 현재 중심선 승인';renderResults();toast('현재 중심선을 제작 형상으로 확정했습니다.');}return;}
     if(shapeApply){const r=state.results.find(x=>x.id===shapeApply.dataset.id);if(!r?.ok)return;if(applyShapeCorrection(r)){renderResults();toast('보정한 중심선으로 도면을 다시 생성했습니다.');}return;}
-    if(edit){const r=state.results.find(x=>x.id===edit.dataset.id);if(!r?.ok)return;r.dimEditMode=!r.dimEditMode;renderResults();return;}
+    if(dimJump){const row=dimJump.closest('.result-item'),panel=row?.querySelector('.dim-editor-card');panel?.scrollIntoView({behavior:'smooth',block:'center'});return;}
     if(apply){const r=state.results.find(x=>x.id===apply.dataset.id);if(!r?.ok)return;recalcFromDimensions(r);renderResults();toast('폭/높이를 형상에 반영했습니다.');}
     if(one){const r=state.results.find(x=>x.id===one.dataset.id);if(r?.ok)await exportPdf([r],`${safeName(r.name)}_drawing.pdf`);}
   });
@@ -2528,7 +2872,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   // Test hooks are available only when ?test=1 is present. They are not shown in normal use.
   if(new URLSearchParams(location.search).get('test')==='1'){
     window.__HOOK_TEST={
-      async addFile(file,opts={}){const url=URL.createObjectURL(file),item={id:`test_${Date.now()}_${Math.random()}`,seq:state.seq++,blob:file,url,name:opts.name||makeJigNumber(currentCaptureCode(),state.seq),diameter:opts.diameter||6,material:opts.material||'SUS304',approxWidth:opts.approxWidth||'',approxHeight:opts.approxHeight||'',measureMode:opts.measureMode||'manual',arMmPerPx:opts.arMmPerPx||null,arDistanceMm:opts.arDistanceMm||null};state.captures.push(item);renderCaptureList();updateShotUI();return item.id;},
+      async addFile(file,opts={}){const url=URL.createObjectURL(file),item={id:`test_${Date.now()}_${Math.random()}`,seq:state.seq++,blob:file,url,name:opts.name||makeJigNumber(currentCaptureCode(),state.seq),diameter:opts.diameter||6,material:opts.material||'SUS304',approxWidth:opts.approxWidth||'',approxHeight:opts.approxHeight||'',measureMode:opts.measureMode||'auto',arMmPerPx:opts.arMmPerPx||null,arDistanceMm:opts.arDistanceMm||null};state.captures.push(item);renderCaptureList();updateShotUI();return item.id;},
       analyze:batchAnalyze,
       pdfBlob:()=>makePdf(state.results.filter(r=>r.ok)),
       state
