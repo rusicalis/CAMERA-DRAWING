@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
-  <title>HOOK 모바일 자동도면 v0.10.17</title>
+  <title>HOOK 모바일 자동도면 v0.10.19</title>
 <style>
 :root{
   --bg:#070b13;--panel:#111827;--panel2:#172033;--line:#263247;--text:#eef2ff;--muted:#9aa8bd;
@@ -156,7 +156,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   <header class="topbar">
     <div>
       <div class="eyebrow">COTEC JIG DRAWING</div>
-      <h1>HOOK 모바일 자동도면 <small>v0.10.17</small></h1>
+      <h1>HOOK 모바일 자동도면 <small>v0.10.19</small></h1>
       <p>치구 · 제품 공용 / 촬영 원본은 사진첩에 저장하지 않음 / 저장된 사진 첨부 가능</p>
     </div>
     <span id="statusPill" class="pill">준비</span>
@@ -245,8 +245,8 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
           </label>
           <label>치수 표시
             <select id="dimensionDetailSelect">
-              <option value="basic">기본 - 전체/주요길이/R</option>
-              <option value="full" selected>상세 - 길이/R/각도</option>
+              <option value="basic" selected>기본 - 전체/주요길이/R</option>
+              <option value="full">상세 - 길이/R/각도</option>
             </select>
           </label>
           <label class="wide">결과 표시 방식
@@ -1370,8 +1370,11 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       arr.push(c);
     };
     add(pg);add(gw);
-    const bg=backgroundDifferenceMask(imageData,w,h,pitchPx),bgComp=largestComponent(bg.mask,w,h);
-    if(bgComp)add({comp:bgComp,mask:bg.mask,threshold:null,invert:false,method:'배경색/명암 분리'});
+    const bg=backgroundDifferenceMask(imageData,w,h,pitchPx);
+    const bgComp=paperRect?.inner
+      ? (bestWireComponentInRect(bg.mask,w,h,paperRect.inner,pitchPx)||bestWireComponent(bg.mask,w,h))
+      : (bestWireComponent(bg.mask,w,h)||largestComponent(bg.mask,w,h,true));
+    if(bgComp)add({comp:bgComp,mask:bg.mask,threshold:null,invert:false,method:paperRect?.inner?'배경색/명암 분리 · 격자판 내부':'배경색/명암 분리 · 일반바닥'});
     const t=otsu(gray);
     for(const [thr,invert] of [[clamp(Math.round(t*.72),25,215),false],[clamp(Math.round(t*.82),25,220),false],[clamp(Math.round(t*.92),30,225),false],[clamp(Math.round(t*1.04),30,230),true]]){
       const rr=processedComponent(gray,w,h,thr,invert,pitchPx);if(rr.comp)add({...rr,threshold:thr,invert,method:'명암 보조'});
@@ -1429,7 +1432,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     if(precise)candidates.unshift(precise);
     if(!candidates.length)return null;
     for(let i=0;i<candidates.length;i++){
-      if(candidates[i].method?.includes('정밀 다중스케일')){candidates[i].finalScore=(candidates[i].pathScore||0)+8.5;continue;}
+      const preciseBonus=candidates[i].method?.includes('정밀 다중스케일')?1.0:0;
       let sum=0,ws=0,bestAgree=0;
       for(let j=0;j<candidates.length;j++)if(i!==j){const ag=pathAgreement(candidates[i],candidates[j],pitchPx);const wt=candidates[j].method.includes('다중 인식 합의')?1.3:1;sum+=ag*wt;ws+=wt;bestAgree=Math.max(bestAgree,ag);}
       const consensus=ws?sum/ws:0;candidates[i].consensus=consensus;
@@ -1447,11 +1450,22 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
         if((candidates[i].span||0)<.22) plainFloorBias -= 1.8;
       }
       const falsePositivePenalty=fullFrameFalsePositivePenalty(candidates[i],w,h,pitchPx,paperRect);
-      candidates[i].finalScore=candidates[i].pathScore+consensus*2.6+bestAgree*.7+(candidates[i].method.includes('다중 인식 합의')?.3:0)+roiBonus+plainFloorBias+falsePositivePenalty;
+      const completeBonus=(candidates[i].span>0.30?1.0:0)+(candidates[i].minor>0.14?1.5:0)+(candidates[i].curve>1.18?.8:0);
+      candidates[i].finalScore=candidates[i].pathScore+consensus*2.6+bestAgree*.7+(candidates[i].method.includes('다중 인식 합의')?.3:0)+roiBonus+plainFloorBias+falsePositivePenalty+preciseBonus+completeBonus;
       candidates[i].falsePositivePenalty=falsePositivePenalty;
     }
     candidates.sort((a,b)=>b.finalScore-a.finalScore);
     let chosen=candidates[0];
+    const lowResGridBg=(paperRect?.inner&&Math.max(w,h)<320)?candidates.find(c=>c.method?.includes('배경색/명암 분리')):null;
+    if(lowResGridBg&&(lowResGridBg.span||0)>.32&&(lowResGridBg.minor||0)>.18&&(lowResGridBg.curve||0)>1.35)chosen=lowResGridBg;
+    const ensemble=candidates.find(c=>c.method?.includes('다중 인식 합의'));
+    if(!lowResGridBg&&ensemble&&chosen&&ensemble!==chosen){
+      const extendsMinor=(ensemble.minor||0)>(chosen.minor||0)*1.15;
+      const keepsMajor=(ensemble.span||0)>=(chosen.span||0)*.90;
+      const nearScore=(ensemble.pathScore||0)>=(chosen.pathScore||0)-.48;
+      const curveOk=(ensemble.curve||0)>=Math.min(1.16,(chosen.curve||0)*.88);
+      if(extendsMinor&&keepsMajor&&nearScore&&curveOk)chosen=ensemble;
+    }
     const chosenFrame=candidateFrameStats(chosen?.pb||{},w,h,pitchPx);
     const chosenLooksLikeFrame = !paperRect?.inner && (chosenFrame.touches>=2 || (chosenFrame.spanX>.55&&chosenFrame.spanY>.55));
     if(chosenLooksLikeFrame){
@@ -1528,17 +1542,40 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     };
   }
 
+  function normalizeVerifiedGridPitch(pitchPx,paperRect){
+    if(!(pitchPx>0)||!paperRect?.inner)return pitchPx||0;
+    const ir=paperRect.inner,cols=ir.w/Math.max(1,pitchPx),rows=ir.h/Math.max(1,pitchPx);
+    if(cols>34||rows>52){
+      const mul=clamp(Math.round(cols/20),2,4);
+      return pitchPx*mul;
+    }
+    return pitchPx;
+  }
+
+  function validateDetectedPaperRect(rect,w,h,pitchPx){
+    if(!rect?.outer||!rect?.inner)return null;
+    const o=rect.outer,sx=o.w/Math.max(1,w),sy=o.h/Math.max(1,h),band=Math.max(3,Math.round((pitchPx||20)*.30),Math.round(Math.min(w,h)*.012));
+    const touches=[o.x0<=band,o.x1>=w-1-band,o.y0<=band,o.y1>=h-1-band].filter(Boolean).length;
+    if(touches>=2&&(sx<.78||sy<.78))return null;
+    if(touches>=1&&(sx<.62||sy<.62))return null;
+    if(sx<.24||sy<.24)return null;
+    return rect;
+  }
+
   async function analyzeCapture(item) {
     if (!item.blob) throw new Error('촬영 원본이 없습니다. 새로 촬영하세요.');
     const ds=await blobToCanvas(item.blob),gray=grayArray(ds.imageData),grid=detectGrid(gray,ds.w,ds.h);
     const diameter=Math.max(.1,parseFloat(item.diameter)||6);
     const pitch=grid.pitch||Math.max(18,Math.min(ds.w,ds.h)/20);
-    const paperRect=detectGridPaperRect(ds.imageData,gray,ds.w,ds.h,pitch)||detectGridSupportRect(gray,ds.w,ds.h,pitch)||((grid.pitch)?detectBrightGridBoardRect(ds.imageData,ds.w,ds.h,pitch):null)||detectPaperRect(ds.imageData,ds.w,ds.h,pitch);
-    const seg=chooseComponent(ds.imageData,gray,ds.w,ds.h,grid.pitch||pitch,diameter,paperRect);
+    const paperRectRaw=detectGridPaperRect(ds.imageData,gray,ds.w,ds.h,pitch)||detectGridSupportRect(gray,ds.w,ds.h,pitch)||((grid.pitch)?detectBrightGridBoardRect(ds.imageData,ds.w,ds.h,pitch):null)||detectPaperRect(ds.imageData,ds.w,ds.h,pitch);
+    const paperRect=validateDetectedPaperRect(paperRectRaw,ds.w,ds.h,pitch);
+    const verifiedGridPitch=paperRect?.inner&&grid.pitch?normalizeVerifiedGridPitch(grid.pitch,paperRect):null;
+    const seg=chooseComponent(ds.imageData,gray,ds.w,ds.h,verifiedGridPitch||pitch,diameter,paperRect);
     if(!seg?.comp||seg.comp.area<Math.max(70,ds.w*ds.h*.00035)) return await makeEmergencyResult(item,'치구 형상을 충분히 찾지 못해 임시 형상으로 생성했습니다.');
     const comp=seg.comp;
-    const segFrame=candidateFrameStats(seg.pb||pathBBox(seg.path||[]),ds.w,ds.h,grid.pitch||pitch);
-    const suspiciousShape=!!(comp.border||comp.fill>.62||comp.spanRatio<.14||seg.span<.20||seg.curve<1.12||(segFrame.touches>=2&&(segFrame.spanX>.55||segFrame.spanY>.72)));
+    const segFrame=candidateFrameStats(seg.pb||pathBBox(seg.path||[]),ds.w,ds.h,verifiedGridPitch||pitch);
+    const narrowCoverage=!!(paperRect?.inner&&seg.span>.30&&seg.minor<.13);
+    const suspiciousShape=!!(comp.border||comp.fill>.62||comp.spanRatio<.14||seg.span<.20||seg.curve<1.12||narrowCoverage||(segFrame.touches>=2&&(segFrame.spanX>.55||segFrame.spanY>.72)));
     let path=(seg.path||[]).map(p=>({...p}));if(path.length<8)return await makeEmergencyResult(item,'중심선 추출이 불안정하여 임시 형상으로 생성했습니다.');
 
     const pb=pathBBox(path),approxW=parseFloat(item.approxWidth),approxH=parseFloat(item.approxHeight);
@@ -1549,7 +1586,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     let mmPerPx,scaleSource,scaleConfidence;
     const mode=item.measureMode||'auto', arScale=parseFloat(item.arMmPerPx);
     const wirePxEst=Number.isFinite(seg.wirePx)?seg.wirePx:estimateWirePx(comp,path);
-    const refinedGridPitch=(grid.pitch&&wirePxEst)?refineGridPitch(grid.pitch,wirePxEst,diameter):grid.pitch;
+    const refinedGridPitch=verifiedGridPitch;
     const wireDerivedScale=Number.isFinite(wirePxEst)&&wirePxEst>0 ? diameter/wirePxEst : NaN;
     const gridDerivedScale=Number.isFinite(refinedGridPitch)&&refinedGridPitch>0 ? 10/refinedGridPitch : NaN;
     if(userScales.length){
@@ -1562,7 +1599,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       }
     } else if(mode==='ar' && Number.isFinite(arScale) && arScale>0) {
       mmPerPx=arScale;scaleSource='AR 자동 측정';scaleConfidence=.68;
-    } else if(mode==='grid' && grid.pitch) {
+    } else if(mode==='grid' && verifiedGridPitch) {
       mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
     } else if(mode==='grid') {
       if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0){
@@ -1570,11 +1607,11 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       } else {
         mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.12;
       }
-    } else if(mode==='auto' && grid.pitch) {
+    } else if(mode==='auto' && verifiedGridPitch) {
       mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
     } else if(Number.isFinite(arScale) && arScale>0) {
       mmPerPx=arScale;scaleSource='AR 자동 측정';scaleConfidence=.64;
-    } else if(grid.pitch) {
+    } else if(verifiedGridPitch) {
       mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
     } else if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0) {
       mmPerPx=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.34;
@@ -1582,10 +1619,10 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.10;
     }
 
-    if(Number.isFinite(gridDerivedScale)&&Number.isFinite(wireDerivedScale)){
+    if(Number.isFinite(gridDerivedScale)&&Number.isFinite(wireDerivedScale)&&scaleSource.startsWith('1cm 격자')){
       const ratio=gridDerivedScale/wireDerivedScale;
-      if(ratio<.55||ratio>1.80){mmPerPx=wireDerivedScale;scaleSource='격자 검증 불일치 · Ø 보정';scaleConfidence=Math.min(scaleConfidence,.55);}
-      else if(scaleSource.startsWith('1cm 격자')){mmPerPx=gridDerivedScale*.75+wireDerivedScale*.25;}
+      if(ratio<.45||ratio>2.20)scaleConfidence=Math.min(scaleConfidence,.72);
+      mmPerPx=gridDerivedScale;
     }
     const width=pb.w*mmPerPx+diameter,height=pb.h*mmPerPx+diameter,length=pathLength(path)*mmPerPx;
     const r=estimateRadii(path,mmPerPx,pb,diameter);
@@ -1598,9 +1635,9 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       baseWidth:width,baseHeight:height,baseLength:length,baseR1:r.r1,baseR2:r.r2,
       width,height,length,r1:r.r1,r2:r.r2,pathBase:pathMm,path:pathMm.map(p=>({...p})), rawPath:path.map(p=>({...p})), rawBBox:pb, imageW:ds.w, imageH:ds.h,
       scaleSource,scaleConfidence,quality,threshold:seg.threshold,invert:seg.invert,segmentMethod:`${seg.method} · 다중후보 자동선택`,consensus:Number.isFinite(seg.consensus)?seg.consensus:0,
-      gridDetected:!!grid.pitch,arDetected:scaleSource==='AR 자동 측정',gridReason:grid.reason||'',shapeFill:comp.fill,arDistanceMm:item.arDistanceMm||null,
+      gridDetected:!!verifiedGridPitch,arDetected:scaleSource==='AR 자동 측정',gridReason:grid.reason||'',shapeFill:comp.fill,arDistanceMm:item.arDistanceMm||null,
       dimensionEstimated:scaleSource.includes('추정')||scaleSource.includes('임시'), wirePxEstimate:wirePxEst,
-      shapeEstimated:suspiciousShape, warning:suspiciousShape?'배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':'', photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx, mmPerPxX:mmPerPx, mmPerPxY:mmPerPx, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:false, shapeDrawMode:'auto', paperRect
+      shapeEstimated:suspiciousShape, warning:suspiciousShape?'전체 형상 커버리지가 부족하거나 배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':'', photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx, mmPerPxX:mmPerPx, mmPerPxY:mmPerPx, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:false, shapeDrawMode:'auto', paperRect
     };
   }
 
@@ -2382,8 +2419,8 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const cadSegsScreen=Array.isArray(opt.cadSegmentsScreen)?opt.cadSegmentsScreen:[];
     const segCandidates=[];
     const totalPath=Math.max(1,pathLength(pathMm)||1);
-    // 표시된 LINE/ARC 세그먼트는 전부 길이를 붙인다. 단, 1% 미만의 미세 노이즈 세그먼트만 제외한다.
-    const minSeg=Math.max(1.2,totalPath*0.008);
+    // 제작에 필요한 주요 세그먼트만 표시한다. 미세 분절/잡선은 치수 대상에서 제외한다.
+    const minSeg=Math.max(14,Math.max(mb.w,mb.h)*0.08,totalPath*0.045);
 
     if(cadSegsMm.length && cadSegsScreen.length && cadSegsMm.length===cadSegsScreen.length){
       for(let i=0;i<cadSegsMm.length;i++){
@@ -2400,14 +2437,20 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       }
     }
 
-    const selected=segCandidates.slice().sort((a,b)=>a.i-b.i);
+    const segLimit=currentDimensionDetail()==='full'?8:6;
+    const selected=[];
+    for(const cand of segCandidates.slice().sort((a,b)=>b.len-a.len)){
+      if(selected.length>=segLimit) break;
+      selected.push(cand);
+    }
+    selected.sort((a,b)=>a.i-b.i);
     let segNo=1;
     for(const g of selected){
       const key=`seg${segNo++}`;
       if(g.type==='arc'){
         const mp=g.gs.mid||cadSegmentMidPoint(g.gs);
         let nx=mp.x-shapeCenter.x,ny=mp.y-shapeCenter.y; const nm=Math.hypot(nx,ny)||1; nx/=nm; ny/=nm;
-        const off=58+((segNo%3)*14);
+        const off=50+((segNo%2)*10);
         const tx=clamp(mp.x+nx*off,64,W-64),ty=clamp(mp.y+ny*off,44,H-44);
         specs.push({key,value:g.len,kind:'leader',textX:tx,textY:ty,x1:mp.x,y1:mp.y,x2:tx-8*nx,y2:ty-8*ny});
       }else{
@@ -2416,7 +2459,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
         let nx=-dy/mag,ny=dx/mag;
         const center={x:(s1.x+s2.x)/2,y:(s1.y+s2.y)/2};
         if((center.x-shapeCenter.x)*nx+(center.y-shapeCenter.y)*ny<0){nx=-nx;ny=-ny;}
-        const off=30+(segNo%3)*10;
+        const off=26+(segNo%2)*8;
         const d1={x:s1.x+nx*off,y:s1.y+ny*off},d2={x:s2.x+nx*off,y:s2.y+ny*off};
         specs.push({key,value:len,kind:'segment',textX:clamp((d1.x+d2.x)/2+nx*8,58,W-58),textY:clamp((d1.y+d2.y)/2+ny*8,42,H-42),x1:d1.x,y1:d1.y,x2:d2.x,y2:d2.y,ext:[[s1.x,s1.y,d1.x,d1.y],[s2.x,s2.y,d2.x,d2.y]]});
       }
@@ -2441,7 +2484,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     return layoutDimensionLabels(specs,W,H);
   }
 
-  function svgArrow(x1,y1,x2,y2,size=6,color='#e52525'){
+  function svgArrow(x1,y1,x2,y2,size=6,color='#111'){
     const dx=x2-x1,dy=y2-y1,m=Math.hypot(dx,dy)||1,ux=dx/m,uy=dy/m,nx=-uy,ny=ux;
     const ax=x2-ux*size,ay=y2-uy*size;
     return `<path d="M ${x2.toFixed(1)} ${y2.toFixed(1)} L ${(ax+nx*size*.45).toFixed(1)} ${(ay+ny*size*.45).toFixed(1)} L ${(ax-nx*size*.45).toFixed(1)} ${(ay-ny*size*.45).toFixed(1)} Z" fill="${color}"/>`;
@@ -2493,16 +2536,16 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       return `<div class="symbol-row"><div class="symbol-chip">${esc(info.symbol)}</div><div class="symbol-name">${esc(info.name)}<small>${esc(spec.key)} / ${esc(info.unit)}</small></div><div><input data-rfield="${['width','height','length','r1','r2','diameter'].includes(spec.key)?spec.key:''}" data-dimkey="${['width','height','length','r1','r2','diameter'].includes(spec.key)?'':spec.key}" type="number" inputmode="decimal" step="0.1" value="${escAttr(n1(val))}"></div></div>`;
     }).join('');
     const arBadge=(r.arDetected||String(r.scaleSource||'').includes('AR'))?'<span class="ar-mode-badge">AR 치수</span>':'';
-    return `<div class="dim-editor-card"><div class="dim-editor-title"><b>치수 입력/수정${arBadge}<span class="photo-dim-badge">사진 위 치수 동시 반영</span></b><span>구간 길이(L) 우선 · 기호 기준 별도 입력</span></div><div class="symbol-grid">${rows}</div><div class="measure-hint">그림 위 직접 입력 대신, 여기 입력칸에 값을 넣으면 같은 기호의 사진 오버레이 치수와 PDF 치수에 동시에 반영됩니다. 구간 길이 L1~Lx(직선/곡선 포함)를 우선 검토하도록 정렬했습니다. 일반 바닥 촬영에서는 AR 보정 후 촬영하면 치수 안정도가 더 높습니다.</div></div>`;
+    return `<div class="dim-editor-card"><div class="dim-editor-title"><b>치수 입력/수정${arBadge}<span class="photo-dim-badge">사진 위 치수 동시 반영</span></b><span>구간 길이(L) 우선 · 기호 기준 별도 입력</span></div><div class="symbol-grid">${rows}</div><div class="measure-hint">그림 위 직접 입력 대신, 여기 입력칸에 값을 넣으면 같은 기호의 사진 오버레이 치수와 PDF 치수에 동시에 반영됩니다. 제작에 필요한 주요 구간 길이 L1~Lx(직선/곡선 포함)를 우선 검토하도록 정렬했습니다. 미세 분절 치수는 자동 제외합니다. 일반 바닥 촬영에서는 AR 보정 후 촬영하면 치수 안정도가 더 높습니다.</div></div>`;
   }
   function makeDimSvg(specs,r,forExport){
     const parts=[];
     for(const s of specs){
       const info=dimSpecInfo(s);
-      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#e52525" stroke-width="1.35" fill="none"/>`).join('');
+      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#111" stroke-width="1.15" fill="none"/>`).join('');
       let main='';
-      if(s.kind==='leader') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#e52525" stroke-width="1.35" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6)}`;
-      else main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#e52525" stroke-width="1.35" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6)}${svgArrow(s.x1,s.y1,s.x2,s.y2,6)}`;
+      if(s.kind==='leader') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1.15" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6)}`;
+      else main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1.15" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6)}${svgArrow(s.x1,s.y1,s.x2,s.y2,6)}`;
       const val=readDimValue(r,s.key,s.value),label=`${info.symbol} ${n1(val)}${info.unit?` ${info.unit}`:''}`;
       const approxW=Math.max(52,label.length*6.6),approxH=18,x=s.textX-approxW/2,y=s.textY-approxH/2;
       parts.push(`<g>${ext}${main}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" rx="4" ry="4" width="${approxW.toFixed(1)}" height="${approxH.toFixed(1)}" fill="rgba(0,0,0,.82)" stroke="#fff" stroke-width="0.6"/><text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="${/^R/.test(info.symbol)?'#ffb4b4':/^L/.test(info.symbol)||['W','H','D','Ø'].includes(info.symbol)?'#8fe7ff':'#fff'}">${esc(label)}</text></g>`);
@@ -2585,7 +2628,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
         const segPts=rawSegmentSourcePoints(cad,g);
         if(segPts.length>=2){
           const d=pathToSvgD(segPts);
-          out.push(`<path d="${d}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="#fff" stroke-opacity=".88" stroke-width="${(strokeWidth+1.2).toFixed(1)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
+          out.push(`<path d="${d}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="#fff" stroke-opacity=".88" stroke-width="${(strokeWidth+0.18).toFixed(2)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
           out.push(`<path d="${d}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${color}" stroke-width="${strokeWidth}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
           continue;
         }
@@ -2641,11 +2684,11 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const parts=[];
     for(const s of specs||[]){
       const info=dimSpecInfo(s);
-      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#e52525" stroke-width="1.15" fill="none"/>`).join('');
+      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#111" stroke-width="1.0" fill="none"/>`).join('');
       const val=readDimValue(r,s.key,s.value),label=`${info.symbol==='Ø'?'Ø':info.symbol}${n1(val)}`;
       let main='';
-      if(s.kind==='leader') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#e52525" stroke-width="1.15" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5)}`;
-      else main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#e52525" stroke-width="1.15" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5)}${svgArrow(s.x1,s.y1,s.x2,s.y2,5)}`;
+      if(s.kind==='leader') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1.0" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5)}`;
+      else main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1.0" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5)}${svgArrow(s.x1,s.y1,s.x2,s.y2,5)}`;
       const w=Math.max(28,label.length*7.2),x=s.textX-w/2,y=s.textY-10;
       parts.push(`<g>${ext}${main}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="16" fill="#fff"/><text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial,'Noto Sans KR',sans-serif" font-size="10.5" fill="#111">${esc(label)}</text></g>`);
     }
@@ -2687,7 +2730,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 
     const noteSvg=`<text x="${notes.x}" y="${notes.y}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif">주서</text><text x="${notes.x}" y="${notes.y+24}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">1. 재질 : ${esc(r.material)}</text><text x="${notes.x}" y="${notes.y+44}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">2. 재질규격 : 환봉 Ø${n1(diaVal)}</text><text x="${notes.x}" y="${notes.y+64}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">3. 표면처리 : 없음</text><text x="${notes.x}" y="${notes.y+84}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">4. 일반공차 : ±0.5</text><text x="${notes.x}" y="${notes.y+104}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">5. 날카로운 부분은 R0.3~0.5 제거</text><text x="${notes.x}" y="${notes.y+124}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">6. 치수 단위 : mm</text>`;
 
-    const titleSvg=`<rect x="${title.x}" y="${title.y}" width="${title.w}" height="${title.h}" fill="#fff" stroke="#e52525" stroke-width="1.35"/><line x1="${title.x}" y1="${title.y+30}" x2="${title.x+title.w}" y2="${title.y+30}" stroke="#111"/><line x1="${title.x}" y1="${title.y+60}" x2="${title.x+title.w}" y2="${title.y+60}" stroke="#111"/><line x1="${title.x}" y1="${title.y+90}" x2="${title.x+title.w}" y2="${title.y+90}" stroke="#111"/><line x1="${title.x+110}" y1="${title.y}" x2="${title.x+110}" y2="${title.y+title.h}" stroke="#111"/><line x1="${title.x+290}" y1="${title.y}" x2="${title.x+290}" y2="${title.y+title.h}" stroke="#111"/><line x1="${title.x+425}" y1="${title.y}" x2="${title.x+425}" y2="${title.y+title.h}" stroke="#111"/><text x="${title.x+16}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">품 명</text><text x="${title.x+126}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">J HOOK</text><text x="${title.x+306}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">도면번호</text><text x="${title.x+442}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">${esc(r.name)}</text><text x="${title.x+16}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">재 질</text><text x="${title.x+126}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">${esc(r.material)}</text><text x="${title.x+306}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">척 도</text><text x="${title.x+442}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">1 : 1</text><text x="${title.x+16}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">재질규격</text><text x="${title.x+126}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">환봉 Ø${n1(diaVal)}</text><text x="${title.x+306}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">단 위</text><text x="${title.x+442}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">mm</text><text x="${title.x+16}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">작 성 일</text><text x="${title.x+126}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">${date.replace(/-/g,'. ') + '.'}</text><text x="${title.x+306}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">작 성</text><text x="${title.x+442}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">-</text><text x="${title.x+520}" y="${title.y+110}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">전체 폭 ${n1(width)} / 전체 높이 ${n1(height)} / 전개길이 ${n1(length)}</text>`;
+    const titleSvg=`<rect x="${title.x}" y="${title.y}" width="${title.w}" height="${title.h}" fill="#fff" stroke="#111" stroke-width="1.15"/><line x1="${title.x}" y1="${title.y+30}" x2="${title.x+title.w}" y2="${title.y+30}" stroke="#111"/><line x1="${title.x}" y1="${title.y+60}" x2="${title.x+title.w}" y2="${title.y+60}" stroke="#111"/><line x1="${title.x}" y1="${title.y+90}" x2="${title.x+title.w}" y2="${title.y+90}" stroke="#111"/><line x1="${title.x+110}" y1="${title.y}" x2="${title.x+110}" y2="${title.y+title.h}" stroke="#111"/><line x1="${title.x+290}" y1="${title.y}" x2="${title.x+290}" y2="${title.y+title.h}" stroke="#111"/><line x1="${title.x+425}" y1="${title.y}" x2="${title.x+425}" y2="${title.y+title.h}" stroke="#111"/><text x="${title.x+16}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">품 명</text><text x="${title.x+126}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">J HOOK</text><text x="${title.x+306}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">도면번호</text><text x="${title.x+442}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">${esc(r.name)}</text><text x="${title.x+16}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">재 질</text><text x="${title.x+126}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">${esc(r.material)}</text><text x="${title.x+306}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">척 도</text><text x="${title.x+442}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">1 : 1</text><text x="${title.x+16}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">재질규격</text><text x="${title.x+126}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">환봉 Ø${n1(diaVal)}</text><text x="${title.x+306}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">단 위</text><text x="${title.x+442}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">mm</text><text x="${title.x+16}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">작 성 일</text><text x="${title.x+126}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">${date.replace(/-/g,'. ') + '.'}</text><text x="${title.x+306}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">작 성</text><text x="${title.x+442}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">-</text><text x="${title.x+520}" y="${title.y+110}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">전체 폭 ${n1(width)} / 전체 높이 ${n1(height)} / 전개길이 ${n1(length)}</text>`;
 
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff"/><rect x="16" y="16" width="${W-32}" height="${H-32}" fill="none" stroke="#111" stroke-width="1.4"/>${mainShape}${photoInset}${dimSvg}<text x="${side.x+4}" y="${side.y-18}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif">측면도</text>${sideSvg}${diaText}${sectionSvg}${noteSvg}${titleSvg}</svg>`;
   }
@@ -2702,8 +2745,9 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     let screen=[],shapeMarkup='',dimOpt={};
     if(variant==='photo'){
       const fit=fitPhotoFocus(r,draw),map=cadScreenMappingForFocusedPhoto(r,cadMm,fit),visualScreen=mmForDims.map(map.mapPt);
-      const guideStroke=3.0;
-      shapeMarkup=`<rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}" fill="#f5f5f5" stroke="#111" stroke-width="1"/>${photoImageMarkup(r,fit)}${cadGeometrySvg(cadMm,map.tx,map.ty,map.sc,true,guideStroke)}<g font-family="Arial,'Noto Sans KR',sans-serif" font-size="10" font-weight="700"><rect x="${draw.x+10}" y="${draw.y+10}" width="160" height="28" rx="5" fill="rgba(0,0,0,.72)"/><line x1="${draw.x+20}" y1="${draw.y+24}" x2="${draw.x+45}" y2="${draw.y+24}" stroke="#1976ff" stroke-width="3"/><text x="${draw.x+51}" y="${draw.y+28}" fill="#fff">LINE</text><line x1="${draw.x+92}" y1="${draw.y+24}" x2="${draw.x+117}" y2="${draw.y+24}" stroke="#ff2d2d" stroke-width="3"/><text x="${draw.x+123}" y="${draw.y+28}" fill="#fff">ARC</text></g>`;
+      const estimatedWireStroke=Math.max(.78,Math.min(1.45,(Number(r.diameter)||6)*Math.max(.01,map.sc)*.38));
+      const guideStroke=estimatedWireStroke;
+      shapeMarkup=`<rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}" fill="#f5f5f5" stroke="#111" stroke-width="1"/>${photoImageMarkup(r,fit)}${cadGeometrySvg(cadMm,map.tx,map.ty,map.sc,true,guideStroke)}<g font-family="Arial,'Noto Sans KR',sans-serif" font-size="10" font-weight="700"><rect x="${draw.x+10}" y="${draw.y+10}" width="160" height="28" rx="5" fill="rgba(0,0,0,.72)"/><line x1="${draw.x+20}" y1="${draw.y+24}" x2="${draw.x+45}" y2="${draw.y+24}" stroke="#1976ff" stroke-width="1.1"/><text x="${draw.x+51}" y="${draw.y+28}" fill="#fff">LINE</text><line x1="${draw.x+92}" y1="${draw.y+24}" x2="${draw.x+117}" y2="${draw.y+24}" stroke="#ff2d2d" stroke-width="1.1"/><text x="${draw.x+123}" y="${draw.y+28}" fill="#fff">ARC</text></g>`;
       screen=visualScreen;
       dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,map.mapPt),overallScreenPath:visualScreen,overallBoundsMm:pathBounds(mmForDrawing)};
     }else{
@@ -2716,7 +2760,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);if(variant==='photo')specs=layoutDimensionLabels([...specs,...radiusOverlaySpecs(r,screen,W,H)],W,H);const dimSvg=makeDimSvg(specs,r,true);
     const sideTitle = r.captureType==='product' ? '제품 실이미지 오버레이 치수도' : '치구 실이미지 오버레이 치수도';
     const tbx=title.x,tby=title.y,tbw=title.w,tbh=title.h;
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><defs><clipPath id="photoClip"><rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}"/></clipPath></defs><rect width="${W}" height="${H}" fill="#fff"/><rect x="24" y="24" width="1141" height="793" fill="none" stroke="#111" stroke-width="1.4"/><text x="52" y="50" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">COTEC JIG DRAWING</text><text x="52" y="72" font-size="16" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${sideTitle}</text><text x="52" y="92" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${n1(r.diameter)} / 전개길이 ${n1(length)}</text>${shapeMarkup}${dimSvg}<rect x="${tbx}" y="${tby}" width="${tbw}" height="${tbh}" fill="#fff" stroke="#111" stroke-width="1"/><line x1="${tbx}" y1="${tby+24}" x2="${tbx+tbw}" y2="${tby+24}" stroke="#111"/><line x1="${tbx}" y1="${tby+48}" x2="${tbx+tbw}" y2="${tby+48}" stroke="#111"/><line x1="${tbx}" y1="${tby+72}" x2="${tbx+tbw}" y2="${tby+72}" stroke="#111"/><line x1="${tbx}" y1="${tby+96}" x2="${tbx+tbw}" y2="${tby+96}" stroke="#111"/><line x1="${tbx}" y1="${tby+116}" x2="${tbx+tbw}" y2="${tby+116}" stroke="#111"/><line x1="${tbx+92}" y1="${tby+24}" x2="${tbx+92}" y2="${tby+tbh}" stroke="#111"/><text x="${tbx+8}" y="${tby+16}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">TITLE BLOCK</text><text x="${tbx+8}" y="${tby+40}" font-size="10">도면번호</text><text x="${tbx+100}" y="${tby+40}" font-size="10">${esc(r.name)}</text><text x="${tbx+8}" y="${tby+64}" font-size="10">재질</text><text x="${tbx+100}" y="${tby+64}" font-size="10">${esc(r.material)}</text><text x="${tbx+8}" y="${tby+88}" font-size="10">전체 폭/높이</text><text x="${tbx+100}" y="${tby+88}" font-size="10">${n1(width)} / ${n1(height)}</text><text x="${tbx+8}" y="${tby+112}" font-size="10">전개길이</text><text x="${tbx+100}" y="${tby+112}" font-size="10">${n1(length)}</text><text x="${tbx+8}" y="${tby+132}" font-size="10">작성일</text><text x="${tbx+100}" y="${tby+132}" font-size="10">${date}</text><text x="52" y="800" font-size="10" font-family="Arial,'Noto Sans KR',sans-serif">NOTE : 실구동 화면과 PDF는 동일한 CAD/치수 파이프라인을 사용합니다. 실제 촬영 이미지 위 LINE(파랑)/ARC(빨강)를 실제 치구보다 약간 얇게 표시하고, 표시된 모든 주요 직선/곡선 구간에 L 길이를 부여하고 R 치수를 함께 표시합니다. 치수선과 화살표는 빨간색으로 통일합니다.</text></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><defs><clipPath id="photoClip"><rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}"/></clipPath></defs><rect width="${W}" height="${H}" fill="#fff"/><rect x="24" y="24" width="1141" height="793" fill="none" stroke="#111" stroke-width="1.4"/><text x="52" y="50" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">COTEC JIG DRAWING</text><text x="52" y="72" font-size="16" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${sideTitle}</text><text x="52" y="92" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${n1(r.diameter)} / 전개길이 ${n1(length)}</text>${shapeMarkup}${dimSvg}<rect x="${tbx}" y="${tby}" width="${tbw}" height="${tbh}" fill="#fff" stroke="#111" stroke-width="1"/><line x1="${tbx}" y1="${tby+24}" x2="${tbx+tbw}" y2="${tby+24}" stroke="#111"/><line x1="${tbx}" y1="${tby+48}" x2="${tbx+tbw}" y2="${tby+48}" stroke="#111"/><line x1="${tbx}" y1="${tby+72}" x2="${tbx+tbw}" y2="${tby+72}" stroke="#111"/><line x1="${tbx}" y1="${tby+96}" x2="${tbx+tbw}" y2="${tby+96}" stroke="#111"/><line x1="${tbx}" y1="${tby+116}" x2="${tbx+tbw}" y2="${tby+116}" stroke="#111"/><line x1="${tbx+92}" y1="${tby+24}" x2="${tbx+92}" y2="${tby+tbh}" stroke="#111"/><text x="${tbx+8}" y="${tby+16}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">TITLE BLOCK</text><text x="${tbx+8}" y="${tby+40}" font-size="10">도면번호</text><text x="${tbx+100}" y="${tby+40}" font-size="10">${esc(r.name)}</text><text x="${tbx+8}" y="${tby+64}" font-size="10">재질</text><text x="${tbx+100}" y="${tby+64}" font-size="10">${esc(r.material)}</text><text x="${tbx+8}" y="${tby+88}" font-size="10">전체 폭/높이</text><text x="${tbx+100}" y="${tby+88}" font-size="10">${n1(width)} / ${n1(height)}</text><text x="${tbx+8}" y="${tby+112}" font-size="10">전개길이</text><text x="${tbx+100}" y="${tby+112}" font-size="10">${n1(length)}</text><text x="${tbx+8}" y="${tby+132}" font-size="10">작성일</text><text x="${tbx+100}" y="${tby+132}" font-size="10">${date}</text><text x="52" y="800" font-size="10" font-family="Arial,'Noto Sans KR',sans-serif">NOTE : 실구동 화면과 PDF는 동일한 CAD/치수 파이프라인을 사용합니다. 실제 촬영 이미지 위 LINE(파랑)/ARC(빨강)를 실제 치구 폭의 약 절반 수준으로 얇게 표시하고, 제작에 필요한 큰 직선/곡선 구간만 L 길이로 표시하고 R 치수를 함께 표시합니다. 치수선과 화살표는 검은색으로 통일합니다.</text></svg>`;
   }
 
   function makeFigureHtml(r){
