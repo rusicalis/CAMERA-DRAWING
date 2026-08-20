@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
-  <title>HOOK 모바일 자동도면 v0.10.15</title>
+  <title>HOOK 모바일 자동도면 v0.10.11</title>
 <style>
 :root{
   --bg:#070b13;--panel:#111827;--panel2:#172033;--line:#263247;--text:#eef2ff;--muted:#9aa8bd;
@@ -156,7 +156,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   <header class="topbar">
     <div>
       <div class="eyebrow">COTEC JIG DRAWING</div>
-      <h1>HOOK 모바일 자동도면 <small>v0.10.15</small></h1>
+      <h1>HOOK 모바일 자동도면 <small>v0.10.11</small></h1>
       <p>치구 · 제품 공용 / 촬영 원본은 사진첩에 저장하지 않음 / 저장된 사진 첨부 가능</p>
     </div>
     <span id="statusPill" class="pill">준비</span>
@@ -457,8 +457,8 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     renderLineCodes('NNI');
     suggestNextStart();
   }
-  function saveLineCodes() { try { localStorage.setItem(LINE_CODES_KEY, JSON.stringify(state.lineCodes.filter(c=>!DEFAULT_LINE_CODES.includes(c)))); } catch(_) {} }
-  function saveLastNumbers() { try { localStorage.setItem(LAST_NUMBERS_KEY, JSON.stringify(state.lastNumbers)); } catch(_) {} }
+  function saveLineCodes() { localStorage.setItem(LINE_CODES_KEY, JSON.stringify(state.lineCodes.filter(c=>!DEFAULT_LINE_CODES.includes(c)))); }
+  function saveLastNumbers() { localStorage.setItem(LAST_NUMBERS_KEY, JSON.stringify(state.lastNumbers)); }
   function renderLineCodes(selected) {
     const sel=$('lineCodeSelect'); const keep=selected||sel.value||state.lineCodes[0]||'NNI';
     sel.innerHTML=state.lineCodes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
@@ -733,15 +733,24 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 
   // ---------------- Image / analysis helpers ----------------
   async function blobToCanvas(blob, maxSide=MAX_ANALYSIS_SIDE) {
-    const dataUrl=await blobToDataURL(blob);
-    const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('촬영 이미지를 읽지 못했습니다.'));im.src=dataUrl;});
-    const sw=img.naturalWidth||img.width, sh=img.naturalHeight||img.height;
-    if(!(sw>0&&sh>0)) throw new Error('촬영 이미지 크기를 확인하지 못했습니다.');
-    const sc=Math.min(1,maxSide/Math.max(sw,sh));
-    const w=Math.max(1,Math.round(sw*sc)), h=Math.max(1,Math.round(sh*sc));
-    const c=document.createElement('canvas'); c.width=w; c.height=h;
-    const cx=c.getContext('2d',{willReadFrequently:true}); cx.drawImage(img,0,0,w,h);
-    return {canvas:c,ctx:cx,imageData:cx.getImageData(0,0,w,h),w,h,scale:sc};
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await new Promise((resolve, reject) => {
+        const im = new Image();
+        im.onload = () => resolve(im);
+        im.onerror = () => reject(new Error('촬영 이미지를 읽지 못했습니다.'));
+        im.src = url;
+      });
+      const s = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.max(1, Math.round(img.naturalWidth * s));
+      const h = Math.max(1, Math.round(img.naturalHeight * s));
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const cx = c.getContext('2d', { willReadFrequently: true });
+      cx.drawImage(img, 0, 0, w, h);
+      return { canvas:c, ctx:cx, imageData:cx.getImageData(0,0,w,h), w, h, scale:s };
+    } finally {
+      URL.revokeObjectURL(url);
+    }
   }
 
   function grayArray(imageData) {
@@ -1180,8 +1189,11 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     if(!comp)return null;
     const bw=comp.maxX-comp.minX+1,bh=comp.maxY-comp.minY+1,fill=comp.area/Math.max(1,bw*bh),areaRatio=comp.area/Math.max(1,w*h),aspect=bw/Math.max(1,bh);
     const spanX=bw/Math.max(1,w),spanY=bh/Math.max(1,h);
-    if(areaRatio<.10||fill<.42||spanX<.28||spanY<.28||spanX>.96||spanY>.96)return null;
+    const cx=(comp.minX+comp.maxX)/2,cy=(comp.minY+comp.maxY)/2;
+    const centerDist=Math.hypot(cx-w/2,cy-h/2)/Math.max(1,Math.hypot(w,h)/2);
+    if(areaRatio<.10||fill<.42||spanX<.28||spanY<.28||spanX>.90||spanY>.94)return null;
     if(aspect<.45||aspect>1.35)return null;
+    if(centerDist>.42 && (spanX>.72||spanY>.80))return null;
     const margin=Math.max(6,Math.round((pitchPx||24)*.9));
     const inner={x0:clamp(comp.minX+margin,0,w-1),y0:clamp(comp.minY+margin,0,h-1),x1:clamp(comp.maxX-margin,0,w-1),y1:clamp(comp.maxY-margin,0,h-1)};
     inner.w=Math.max(1,inner.x1-inner.x0+1);inner.h=Math.max(1,inner.y1-inner.y0+1);
@@ -1381,19 +1393,43 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const pg=periodicGridWireComponent(gray,w,h,pitchPx); if(pg?.comp){const x=restrictCandidateToRect(pg,w,h,paperRect.inner,pitchPx);if(x?.comp)arr.push(x);}
     return arr.map(c=>candidateCenterPath(c,w,h,pitchPx,diameter)).filter(Boolean).sort((a,b)=>(b.pathScore||0)-(a.pathScore||0))[0]||null;
   }
+  function candidateFrameStats(pb,w,h,pitchPx){
+    if(!pb)return{touches:0,spanX:0,spanY:0,centerDist:1};
+    const band=Math.max(6,Math.round((pitchPx||24)*.65));
+    const touches=[pb.minX<=band,pb.maxX>=w-1-band,pb.minY<=band,pb.maxY>=h-1-band].filter(Boolean).length;
+    const spanX=(pb.w||0)/Math.max(1,w),spanY=(pb.h||0)/Math.max(1,h);
+    const cx=((pb.minX||0)+(pb.maxX||0))/2,cy=((pb.minY||0)+(pb.maxY||0))/2;
+    const centerDist=Math.hypot(cx-w/2,cy-h/2)/Math.max(1,Math.hypot(w,h)/2);
+    return{touches,spanX,spanY,centerDist,band};
+  }
+  function fullFrameFalsePositivePenalty(candidate,w,h,pitchPx,paperRect){
+    const pb=candidate?.pb||{};
+    const fs=candidateFrameStats(pb,w,h,pitchPx);
+    let pen=0;
+    if(!paperRect?.inner){
+      if(fs.touches>=2) pen-=9.0;
+      if(fs.touches>=3) pen-=11.0;
+      if(fs.spanX>.72) pen-=6.0;
+      if(fs.spanY>.88) pen-=5.0;
+      if(fs.spanX>.55 && fs.spanY>.55) pen-=10.0;
+      if(fs.centerDist>.42) pen-=2.2;
+      if((candidate?.curve||0)<1.10) pen-=2.0;
+      if((candidate?.minor||0)<.05) pen-=1.5;
+      if((candidate?.wireFit||0)<.28) pen-=3.0;
+    }else{
+      const ir=paperRect.inner;
+      if(pb.minX<ir.x0||pb.maxX>ir.x1||pb.minY<ir.y0||pb.maxY>ir.y1) pen-=6.0;
+    }
+    return pen;
+  }
 
   function chooseComponent(imageData,gray,w,h,pitchPx,diameter,paperRect) {
     const precise=precisionVesselnessCandidate(gray,w,h,pitchPx,diameter,paperRect);
     const candidates=collectComponentCandidates(imageData,gray,w,h,pitchPx,paperRect).map(c=>candidateCenterPath(c,w,h,pitchPx,diameter)).filter(Boolean);
     if(precise)candidates.unshift(precise);
     if(!candidates.length)return null;
-    const credibleForCoverage=candidates.filter(c=>{
-      const pb=c.pb||{}, wire=Number(c.wirePx)||0, fill=Number(c.comp?.fill)||0, pl=(c.path?pathLength(c.path):0);
-      return pl>0 && (c.span||0)>.16 && (c.curve||0)>1.06 && (!wire || wire<Math.min(w,h)*.085) && (!fill || fill<.58) && (pb.w||0)>0 && (pb.h||0)>0;
-    });
-    const maxCredibleSpan=Math.max(.01,...credibleForCoverage.map(c=>c.span||0));
-    const maxCrediblePath=Math.max(1,...credibleForCoverage.map(c=>c.path?pathLength(c.path):0));
     for(let i=0;i<candidates.length;i++){
+      if(candidates[i].method?.includes('정밀 다중스케일')){candidates[i].finalScore=(candidates[i].pathScore||0)+8.5;continue;}
       let sum=0,ws=0,bestAgree=0;
       for(let j=0;j<candidates.length;j++)if(i!==j){const ag=pathAgreement(candidates[i],candidates[j],pitchPx);const wt=candidates[j].method.includes('다중 인식 합의')?1.3:1;sum+=ag*wt;ws+=wt;bestAgree=Math.max(bestAgree,ag);}
       const consensus=ws?sum/ws:0;candidates[i].consensus=consensus;
@@ -1410,21 +1446,18 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
         if((candidates[i].curve||0)>1.18) plainFloorBias += 1.0;
         if((candidates[i].span||0)<.22) plainFloorBias -= 1.8;
       }
-      const candPathLen=candidates[i].path?pathLength(candidates[i].path):0;
-      const spanRatio=(candidates[i].span||0)/maxCredibleSpan, pathRatio=candPathLen/maxCrediblePath;
-      const coverageRatio=Math.min(1,Math.max(0,Math.min(spanRatio,pathRatio)));
-      candidates[i].coverageRatio=coverageRatio;
-      let coverageAdjust=0;
-      if(credibleForCoverage.length>1){
-        if(spanRatio<.68 && pathRatio<.68) coverageAdjust-=9.0;
-        else if(spanRatio<.78 && pathRatio<.78) coverageAdjust-=4.8;
-        else if(spanRatio>.90 && pathRatio>.90) coverageAdjust+=1.8;
-      }
-      const precisionBonus=candidates[i].method?.includes('정밀 다중스케일')?3.2:0;
-      candidates[i].finalScore=candidates[i].pathScore+consensus*2.6+bestAgree*.7+(candidates[i].method.includes('다중 인식 합의')?.3:0)+roiBonus+plainFloorBias+coverageAdjust+precisionBonus;
+      const falsePositivePenalty=fullFrameFalsePositivePenalty(candidates[i],w,h,pitchPx,paperRect);
+      candidates[i].finalScore=candidates[i].pathScore+consensus*2.6+bestAgree*.7+(candidates[i].method.includes('다중 인식 합의')?.3:0)+roiBonus+plainFloorBias+falsePositivePenalty;
+      candidates[i].falsePositivePenalty=falsePositivePenalty;
     }
     candidates.sort((a,b)=>b.finalScore-a.finalScore);
     let chosen=candidates[0];
+    const chosenFrame=candidateFrameStats(chosen?.pb||{},w,h,pitchPx);
+    const chosenLooksLikeFrame = !paperRect?.inner && (chosenFrame.touches>=2 || (chosenFrame.spanX>.55&&chosenFrame.spanY>.55));
+    if(chosenLooksLikeFrame){
+      const alt=candidates.find(c=>c!==chosen && fullFrameFalsePositivePenalty(c,w,h,pitchPx,paperRect)>-8.5 && (candidateFrameStats(c.pb||{},w,h,pitchPx).touches<=1));
+      if(alt) chosen=alt;
+    }
     if(paperRect?.inner && componentInsideRectScore(chosen,paperRect.inner)<.78){
       const strict=strictRoiCandidate(imageData,gray,w,h,pitchPx,diameter,paperRect);
       if(strict)chosen={...strict,consensus:chosen.consensus||0,finalScore:(strict.pathScore||0)+5};
@@ -1499,15 +1532,13 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     if (!item.blob) throw new Error('촬영 원본이 없습니다. 새로 촬영하세요.');
     const ds=await blobToCanvas(item.blob),gray=grayArray(ds.imageData),grid=detectGrid(gray,ds.w,ds.h);
     const diameter=Math.max(.1,parseFloat(item.diameter)||6);
-    const minDim=Math.min(ds.w,ds.h),gridMinPitch=Math.max(6,minDim/28);
-    const gridValid=!!(grid.pitch && grid.pitch>=gridMinPitch && grid.confidence>=.45);
-    const pitch=gridValid?grid.pitch:Math.max(18,minDim/20);
-    const paperRect=gridValid?(detectGridPaperRect(ds.imageData,gray,ds.w,ds.h,pitch)||detectGridSupportRect(gray,ds.w,ds.h,pitch)||detectBrightGridBoardRect(ds.imageData,ds.w,ds.h,pitch)):null;
-    const seg=chooseComponent(ds.imageData,gray,ds.w,ds.h,gridValid?grid.pitch:pitch,diameter,paperRect);
+    const pitch=grid.pitch||Math.max(18,Math.min(ds.w,ds.h)/20);
+    const paperRect=detectGridPaperRect(ds.imageData,gray,ds.w,ds.h,pitch)||detectGridSupportRect(gray,ds.w,ds.h,pitch)||((grid.pitch)?detectBrightGridBoardRect(ds.imageData,ds.w,ds.h,pitch):null)||detectPaperRect(ds.imageData,ds.w,ds.h,pitch);
+    const seg=chooseComponent(ds.imageData,gray,ds.w,ds.h,grid.pitch||pitch,diameter,paperRect);
     if(!seg?.comp||seg.comp.area<Math.max(70,ds.w*ds.h*.00035)) return await makeEmergencyResult(item,'치구 형상을 충분히 찾지 못해 임시 형상으로 생성했습니다.');
     const comp=seg.comp;
-    const partialRecognition=!!(Number.isFinite(seg.coverageRatio)&&seg.coverageRatio<.66);
-    const suspiciousShape=!!(partialRecognition||comp.border||comp.fill>.62||comp.spanRatio<.14||seg.span<.20||seg.curve<1.12);
+    const segFrame=candidateFrameStats(seg.pb||pathBBox(seg.path||[]),ds.w,ds.h,grid.pitch||pitch);
+    const suspiciousShape=!!(comp.border||comp.fill>.62||comp.spanRatio<.14||seg.span<.20||seg.curve<1.12||(segFrame.touches>=2&&(segFrame.spanX>.55||segFrame.spanY>.72)));
     let path=(seg.path||[]).map(p=>({...p}));if(path.length<8)return await makeEmergencyResult(item,'중심선 추출이 불안정하여 임시 형상으로 생성했습니다.');
 
     const pb=pathBBox(path),approxW=parseFloat(item.approxWidth),approxH=parseFloat(item.approxHeight);
@@ -1518,9 +1549,9 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     let mmPerPx,scaleSource,scaleConfidence;
     const mode=item.measureMode||'auto', arScale=parseFloat(item.arMmPerPx);
     const wirePxEst=Number.isFinite(seg.wirePx)?seg.wirePx:estimateWirePx(comp,path);
-    const refinedGridPitch=gridValid?grid.pitch:NaN;
+    const refinedGridPitch=(grid.pitch&&wirePxEst)?refineGridPitch(grid.pitch,wirePxEst,diameter):grid.pitch;
     const wireDerivedScale=Number.isFinite(wirePxEst)&&wirePxEst>0 ? diameter/wirePxEst : NaN;
-    const gridDerivedScale=gridValid&&Number.isFinite(refinedGridPitch)&&refinedGridPitch>0 ? 10/refinedGridPitch : NaN;
+    const gridDerivedScale=Number.isFinite(refinedGridPitch)&&refinedGridPitch>0 ? 10/refinedGridPitch : NaN;
     if(userScales.length){
       mmPerPx=userScales.reduce((a,b)=>a+b,0)/userScales.length;scaleSource='사용자 대략치수';scaleConfidence=.92;
     } else if(mode==='manual') {
@@ -1531,7 +1562,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       }
     } else if(mode==='ar' && Number.isFinite(arScale) && arScale>0) {
       mmPerPx=arScale;scaleSource='AR 자동 측정';scaleConfidence=.68;
-    } else if(mode==='grid' && gridValid) {
+    } else if(mode==='grid' && grid.pitch) {
       mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
     } else if(mode==='grid') {
       if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0){
@@ -1539,11 +1570,11 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       } else {
         mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.12;
       }
-    } else if(mode==='auto' && gridValid) {
+    } else if(mode==='auto' && grid.pitch) {
       mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
     } else if(Number.isFinite(arScale) && arScale>0) {
       mmPerPx=arScale;scaleSource='AR 자동 측정';scaleConfidence=.64;
-    } else if(gridValid) {
+    } else if(grid.pitch) {
       mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
     } else if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0) {
       mmPerPx=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.34;
@@ -1551,12 +1582,10 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.10;
     }
 
-    if(gridValid&&Number.isFinite(gridDerivedScale)&&Number.isFinite(wireDerivedScale)){
+    if(Number.isFinite(gridDerivedScale)&&Number.isFinite(wireDerivedScale)){
       const ratio=gridDerivedScale/wireDerivedScale;
-      if(scaleSource.startsWith('1cm 격자')){
-        mmPerPx=gridDerivedScale;
-        if(ratio<.45||ratio>2.20){scaleSource='1cm 격자 우선 · Ø 검증 불일치';scaleConfidence=Math.min(scaleConfidence,.72);}
-      }
+      if(ratio<.55||ratio>1.80){mmPerPx=wireDerivedScale;scaleSource='격자 검증 불일치 · Ø 보정';scaleConfidence=Math.min(scaleConfidence,.55);}
+      else if(scaleSource.startsWith('1cm 격자')){mmPerPx=gridDerivedScale*.75+wireDerivedScale*.25;}
     }
     const width=pb.w*mmPerPx+diameter,height=pb.h*mmPerPx+diameter,length=pathLength(path)*mmPerPx;
     const r=estimateRadii(path,mmPerPx,pb,diameter);
@@ -1569,9 +1598,9 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       baseWidth:width,baseHeight:height,baseLength:length,baseR1:r.r1,baseR2:r.r2,
       width,height,length,r1:r.r1,r2:r.r2,pathBase:pathMm,path:pathMm.map(p=>({...p})), rawPath:path.map(p=>({...p})), rawBBox:pb, imageW:ds.w, imageH:ds.h,
       scaleSource,scaleConfidence,quality,threshold:seg.threshold,invert:seg.invert,segmentMethod:`${seg.method} · 다중후보 자동선택`,consensus:Number.isFinite(seg.consensus)?seg.consensus:0,
-      gridDetected:gridValid,arDetected:scaleSource==='AR 자동 측정',gridReason:grid.reason||'',shapeFill:comp.fill,arDistanceMm:item.arDistanceMm||null,
+      gridDetected:!!grid.pitch,arDetected:scaleSource==='AR 자동 측정',gridReason:grid.reason||'',shapeFill:comp.fill,arDistanceMm:item.arDistanceMm||null,
       dimensionEstimated:scaleSource.includes('추정')||scaleSource.includes('임시'), wirePxEstimate:wirePxEst,
-      shapeEstimated:suspiciousShape, partialRecognition, coverageRatio:Number.isFinite(seg.coverageRatio)?seg.coverageRatio:1, warning:partialRecognition?'부분 인식 가능성이 있어 전체 치구 양 끝점 포함 여부를 재확인해야 합니다.':(suspiciousShape?'배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':''), photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx, mmPerPxX:mmPerPx, mmPerPxY:mmPerPx, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:false, shapeDrawMode:'auto', paperRect
+      shapeEstimated:suspiciousShape, warning:suspiciousShape?'배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':'', photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx, mmPerPxX:mmPerPx, mmPerPxY:mmPerPx, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:false, shapeDrawMode:'auto', paperRect
     };
   }
 
@@ -1588,7 +1617,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       await new Promise(r=>setTimeout(r,25));
       try{
         item.photoDataUrl = item.photoDataUrl || await blobToDataURL(item.blob).catch(()=> '');
-        const result=await analyzeCapture(item);if(result.captureType==='product'){result.shapeConfirmed=true;result.shapeEditMode=false;}else{const emergency=(result.segmentMethod||'').includes('임시 HOOK');const autoFail=emergency||result.partialRecognition||result.shapeEstimated;result.shapeConfirmed=!autoFail;result.shapeEditMode=false;result.autoShapeAccepted=!autoFail;}state.results.push({...result,ok:true});
+        const result=await analyzeCapture(item);if(result.captureType==='product'){result.shapeConfirmed=true;result.shapeEditMode=false;}else{const emergency=(result.segmentMethod||'').includes('임시 HOOK');result.shapeConfirmed=!emergency;result.shapeEditMode=false;result.autoShapeAccepted=!emergency;}state.results.push({...result,ok:true});
         revokeCapture(item);
       }catch(err){
         try{item.photoDataUrl = item.photoDataUrl || await blobToDataURL(item.blob).catch(()=> ''); const fallback=await makeEmergencyResult(item,err?.message||String(err));state.results.push({...fallback,ok:true});revokeCapture(item);}catch(_){state.results.push({id:item.id,name:item.name,material:item.material,diameter:parseFloat(item.diameter)||6,ok:false,error:err?.message||String(err)});}
@@ -2759,8 +2788,8 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       if(!r.ok)return `<div class="result-item failed" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge quality bad">생성 실패</span></div><div class="result-msg">${esc(r.error)}</div></div>`;
       const quality=r.quality>.76?'양호':r.quality>.53?'보통':'확인필요';
       const modeText=(r.captureType==='product')?'제품 실이미지 오버레이':(currentRenderMode()==='drawing'?'치구 렌더링 정식 도면':'치구 실이미지 오버레이');
-      const autoOk=r.shapeConfirmed&&!r.userShapeCorrected,autoLabel=autoOk?(r.quality>.76?'자동 인식 · 전체형상 양호':r.quality>.53?'자동 인식 · 전체형상':'자동 인식 · 전체형상 확인권장'):(r.partialRecognition?'부분 인식 · 재분석 필요':'보정 필요');
-      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 전체 치구를 확정하지 못했습니다. 부분 인식이면 먼저 자동 재분석하고, 그래도 실패할 때만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}${dimensionEditorHtml(r)}<div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-jump-btn" data-id="${r.id}">기호별 치수 입력</button><button class="btn apply-dims" data-id="${r.id}">수정값 형상 반영</button><button class="btn export-one" data-id="${r.id}">${currentRenderMode()==='drawing'?'이 도면 PDF':'이 오버레이 PDF'}</button></div><div class="dim-note-box">격자 촬영은 격자판 X/Y 주기 경계를 먼저 잠그고 그 내부에서만 치구를 선택합니다. 일반 바닥은 AR/Ø 교차검증과 중심 후보 점수를 사용합니다. 치수는 사진 위에 직접 표시되고, 아래 기호 입력칸에서 수정할 수 있습니다. 그림 위 직접입력 대신 기호 입력 방식으로 값을 수정하세요.</div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}${Number.isFinite(r.coverageRatio)?` · 전체형상 커버리지 ${Math.round(r.coverageRatio*100)}%`:''}. ${currentRenderMode()==='drawing'?'정리된 중심선으로 정식 렌더링 도면을 생성하며, 본도/측면도/단면도와 기호 치수를 함께 PDF로 출력합니다.':'실제 촬영 이미지 위에 실제 치구보다 약간 얇게 조정한 LINE(파랑)/ARC(빨강)과 기호 치수를 표시하며, 이 오버레이 화면 자체를 PDF 도면으로 사용합니다.'} 실구동 도면과 PDF는 동일한 CAD/치수 파이프라인을 사용합니다. RED/BLUE 표시도 원본 중심선 이탈 시에는 원본 중심선 기반으로 자동 보정합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
+      const autoOk=r.shapeConfirmed&&!r.userShapeCorrected,autoLabel=autoOk?(r.quality>.76?'자동 인식 · 양호':r.quality>.53?'자동 인식 · 보통':'자동 인식 · 확인권장'):'보정 필요';
+      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}${dimensionEditorHtml(r)}<div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-jump-btn" data-id="${r.id}">기호별 치수 입력</button><button class="btn apply-dims" data-id="${r.id}">수정값 형상 반영</button><button class="btn export-one" data-id="${r.id}">${currentRenderMode()==='drawing'?'이 도면 PDF':'이 오버레이 PDF'}</button></div><div class="dim-note-box">격자 촬영은 격자판 X/Y 주기 경계를 먼저 잠그고 그 내부에서만 치구를 선택합니다. 일반 바닥은 AR/Ø 교차검증과 중심 후보 점수를 사용합니다. 치수는 사진 위에 직접 표시되고, 아래 기호 입력칸에서 수정할 수 있습니다. 그림 위 직접입력 대신 기호 입력 방식으로 값을 수정하세요.</div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. ${currentRenderMode()==='drawing'?'정리된 중심선으로 정식 렌더링 도면을 생성하며, 본도/측면도/단면도와 기호 치수를 함께 PDF로 출력합니다.':'실제 촬영 이미지 위에 실제 치구보다 약간 얇게 조정한 LINE(파랑)/ARC(빨강)과 기호 치수를 표시하며, 이 오버레이 화면 자체를 PDF 도면으로 사용합니다.'} 실구동 도면과 PDF는 동일한 CAD/치수 파이프라인을 사용합니다. RED/BLUE 표시도 원본 중심선 이탈 시에는 원본 중심선 기반으로 자동 보정합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
     }).join('');
   }
 
