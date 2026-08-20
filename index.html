@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
-  <title>HOOK 모바일 자동도면 v0.10.27</title>
+  <title>HOOK 모바일 자동도면 v0.10.28</title>
 <style>
 :root{
   --bg:#070b13;--panel:#111827;--panel2:#172033;--line:#263247;--text:#eef2ff;--muted:#9aa8bd;
@@ -149,7 +149,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 #bootStatus{position:sticky;top:0;z-index:1000;margin:0 auto;max-width:820px;padding:8px 14px;background:#0c4a6e;color:#e0f2fe;font-size:11px;font-weight:800;text-align:center;border-bottom:1px solid #38bdf8}#bootStatus.ok{display:none}#bootStatus.error{background:#7f1d1d;color:#fee2e2;display:block}.boot-fallback{display:none}
 
 
-/* v0.10.27 ACPT compact workspace */
+/* v0.10.28 ACPT compact workspace */
 :root{--acpt:#0f5f5a;--acpt-dark:#0b2f34;--acpt-soft:#eaf7f5;--acpt-line:#cfe2e3;--paper:#f4f8f8;--ink:#21333a;--sub:#6d8086}
 html{background:var(--paper);color-scheme:light}
 body{background:linear-gradient(180deg,#eef5f5 0,#f7faf9 260px,#f5f8f8 100%);color:var(--ink)}
@@ -168,7 +168,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
 @media(max-width:820px){.topbar{padding:13px 14px}.brand-mark{width:44px;height:44px;border-radius:12px}.topbar h1{font-size:18px}.topbar p{font-size:9px}.workspace-tabs-wrap{top:72px;padding:7px 9px}.workspace-tab,.mode-mini{padding:7px 10px;font-size:10px}.settings-sub-tab{padding:6px 9px;font-size:9px;min-height:30px}.settings-sub-tabs{gap:5px}.settings-sub-tabs:before{height:21px}.mode-mini{margin-left:0}.option-dock{padding:0 8px;margin-top:7px}.option-panel{padding:11px}.option-panel .form-grid{grid-template-columns:1fr 1fr}.camera-stage{max-height:50vh}.capture-item{flex-basis:132px}.capture-thumb{height:92px}.queue-actions{grid-template-columns:105px 1fr}.export-actions{grid-template-columns:1fr 1fr}.export-actions #newJobBtn{grid-column:1/-1}}
 @media(max-width:480px){.topbar{position:relative}.workspace-tabs-wrap{top:0}.topbar p{display:block}.option-panel .form-grid{grid-template-columns:1fr 1fr}.camera-stage{aspect-ratio:3/4;max-height:48vh}.capture-item{flex-basis:118px}.capture-thumb{height:82px}.capture-fields{grid-template-columns:1fr}.queue-actions{grid-template-columns:90px 1fr}.capture-btn{width:64px;height:64px}}
 
-/* v0.10.27 focused tab/camera refinements */
+/* v0.10.28 focused tab/camera refinements */
 .shoot-workspace{display:none}.shoot-workspace.active{display:block}.option-dock.hidden-for-shoot{display:none}
 .api-save-row{display:flex;align-items:center;gap:10px;margin-top:10px}.api-save-row .btn{min-height:36px;padding:7px 14px}.api-key-status{font-size:10px;font-weight:800;color:#70858a}.api-key-status.saved{color:#08786f;background:#def7f2;border:1px solid #bde8e2;border-radius:999px;padding:6px 9px}
 .camera-primary{width:100%;max-width:none}.camera-stage{width:100%;max-width:none;margin-left:auto;margin-right:auto;aspect-ratio:auto;height:clamp(360px,58vh,650px);max-height:none}.camera-stage video{width:100%;height:100%;object-fit:cover;object-position:center center}
@@ -183,7 +183,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
   <header class="topbar">
     <div class="brand-wrap">
       <div class="brand-mark"><b>H</b></div>
-      <div class="brand-copy"><div class="eyebrow">COTEC · HOOK DRAWING</div><h1>HOOK 모바일 자동도면 <small>v0.10.27</small></h1><p>치구 전용 / 로컬 인식 안정화 + 선택형 OpenAI Vision 검증 보조 / JPG 기본 출력</p></div>
+      <div class="brand-copy"><div class="eyebrow">COTEC · HOOK DRAWING</div><h1>HOOK 모바일 자동도면 <small>v0.10.28</small></h1><p>치구 전용 / 로컬 인식 안정화 + 선택형 OpenAI Vision 검증 보조 / JPG 기본 출력</p></div>
     </div>
     <span id="statusPill" class="pill">준비</span>
   </header>
@@ -1306,14 +1306,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     const fit=Math.exp(-Math.abs(Math.log(Math.max(.05,ratio)))*1.5);
     return {wirePx,fit,refinedPitch:rp};
   }
-
-  function componentMeanGray(comp,gray){
-    if(!comp||!gray||!comp.pix?.length) return 255;
-    let sum=0,n=0,step=Math.max(1,Math.floor(comp.pix.length/2400));
-    for(let i=0;i<comp.pix.length;i+=step){ sum+=gray[comp.pix[i]]||0; n++; }
-    return n?sum/n:255;
-  }
-  function candidateCenterPath(candidate,gray,w,h,pitchPx,diameter){
+  function candidateCenterPath(candidate,w,h,pitchPx,diameter){
     if(!candidate?.comp)return null;
     try{
       const crop=cropComponent(candidate.comp,w,h,5),sk=skeletonize(crop.mask,crop.w,crop.h);
@@ -1322,14 +1315,11 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
       path=smoothPath(path,Math.max(1,Math.round((pitchPx||30)*.010)));
       path=decimatePath(path,Math.max(1.0,(pitchPx||30)*.016));
       const pb=pathBBox(path),spanX=pb.w/w,spanY=pb.h/h,span=Math.max(spanX,spanY),minor=Math.min(spanX,spanY),plen=pathLength(path),diag=Math.hypot(pb.w,pb.h),curve=plen/Math.max(1,diag),comp=candidate.comp,fill=comp.fill||0;
-      const wf=wireThicknessFit(comp,path,pitchPx,diameter),meanGray=componentMeanGray(comp,gray);
+      const wf=wireThicknessFit(comp,path,pitchPx,diameter);
       const endSep=dist(path[0],path[path.length-1])/Math.max(1,diag);
-      const darknessFit=Math.exp(-Math.max(0,meanGray-142)/42);
-      let score=span*3.0+Math.min(2.6,curve)*1.25+Math.sqrt(Math.max(1,plen))/38+Math.min(.35,minor)*1.8+wf.fit*3.2+Math.min(.8,endSep)*.8+darknessFit*1.35;
+      let score=span*3.0+Math.min(2.6,curve)*1.25+Math.sqrt(Math.max(1,plen))/38+Math.min(.35,minor)*1.8+wf.fit*3.2+Math.min(.8,endSep)*.8;
       if(span<.20)score-=2.5;if(minor<.045)score-=1.2;if(curve<1.14)score-=1.0;if(comp.border)score-=3.0;if(fill>.52)score-=2.0;if(wf.fit<.22)score-=2.8;
-      if(meanGray>176) score-=2.0; if(meanGray>192) score-=4.5; if(meanGray>205) score-=6.0;
-      if(fill>.40 && meanGray>186) score-=2.4;
-      return{...candidate,path,pb,pathScore:score,pathLengthPx:plen,endSep,curve,spanX,spanY,span,minor,wirePx: wf.wirePx,refinedPitch:wf.refinedPitch,wireFit:wf.fit,meanGray,darknessFit};
+      return{...candidate,path,pb,pathScore:score,pathLengthPx:plen,endSep,curve,spanX,spanY,span,minor,wirePx: wf.wirePx,refinedPitch:wf.refinedPitch,wireFit:wf.fit};
     }catch(_){return null;}
   }
   function consensusComponentCandidate(base,w,h,pitchPx){
@@ -1405,7 +1395,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     const dual=adaptiveDualContrastWireComponent(gray,w,h,pitchPx,paperRect.inner); if(dual?.comp)arr.push(dual);
     const rg=roiGridWireComponent(gray,w,h,pitchPx,paperRect.inner); if(rg?.comp)arr.push(rg);
     const pg=periodicGridWireComponent(gray,w,h,pitchPx); if(pg?.comp){const x=restrictCandidateToRect(pg,w,h,paperRect.inner,pitchPx);if(x?.comp)arr.push(x);}
-    return arr.map(c=>candidateCenterPath(c,gray,w,h,pitchPx,diameter)).filter(Boolean).sort((a,b)=>(((b.pathScore||0)+(b.wireFit||0)*2.4-(Math.max(0,(b.meanGray||0)-175))*0.045)-((a.pathScore||0)+(a.wireFit||0)*2.4-(Math.max(0,(a.meanGray||0)-175))*0.045)))[0]||null;
+    return arr.map(c=>candidateCenterPath(c,w,h,pitchPx,diameter)).filter(Boolean).sort((a,b)=>(b.pathScore||0)-(a.pathScore||0))[0]||null;
   }
   function candidateFrameStats(pb,w,h,pitchPx){
     if(!pb)return{touches:0,spanX:0,spanY:0,centerDist:1};
@@ -1433,17 +1423,39 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     }else{
       const ir=paperRect.inner;
       if(pb.minX<ir.x0||pb.maxX>ir.x1||pb.minY<ir.y0||pb.maxY>ir.y1) pen-=6.0;
-      if((candidate?.wireFit||0)<.24) pen-=3.6;
-      if((candidate?.meanGray||0)>184) pen-=3.2;
-      if((candidate?.meanGray||0)>198) pen-=5.6;
-      if((candidate?.minor||0)<.07 && (candidate?.span||0)>.28) pen-=2.2;
     }
     return pen;
   }
 
+  function angleDegFromVec(dx,dy){return Math.atan2(dy,dx)*180/Math.PI;}
+  function axisAngleDistanceDeg(deg){
+    let a=Math.abs(deg)%90; if(a>45)a=90-a; return Math.abs(a);
+  }
+  function normalizedAngleDiffDeg(a,b){
+    let d=Math.abs(a-b)%360; if(d>180)d=360-d; return d;
+  }
+  function endpointGridTailPenalty(candidate,pitchPx,paperRect){
+    if(!paperRect?.inner||!candidate?.path||candidate.path.length<18)return 0;
+    const p=samplePathForAgreement(candidate.path,48),total=Math.max(1,pathLength(p)),minTail=Math.max((pitchPx||24)*1.65,total*.085);
+    const oneEnd=(reverse)=>{
+      const q=reverse?p.slice().reverse():p,n=q.length;
+      let cum=0,tailEnd=1;
+      for(let i=1;i<n;i++){cum+=dist(q[i-1],q[i]);tailEnd=i;if(cum>=minTail)break;}
+      if(tailEnd<3||tailEnd>=n-3)return 0;
+      const tailA=q[0],tailB=q[tailEnd],tailLen=dist(tailA,tailB),tailDeg=angleDegFromVec(tailB.x-tailA.x,tailB.y-tailA.y),axisDist=axisAngleDistanceDeg(tailDeg);
+      const preA=q[Math.min(n-1,tailEnd+4)],preB=q[tailEnd],preDeg=angleDegFromVec(preB.x-preA.x,preB.y-preA.y),turn=normalizedAngleDiffDeg(tailDeg,preDeg);
+      let lineErr=0;const dx=tailB.x-tailA.x,dy=tailB.y-tailA.y,L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;
+      for(let i=0;i<=tailEnd;i++)lineErr=Math.max(lineErr,Math.abs((q[i].x-tailA.x)*nx+(q[i].y-tailA.y)*ny));
+      const veryStraight=lineErr<=Math.max(1.6,(pitchPx||24)*.08),axisAligned=axisDist<=3.2,hardCorner=turn>=48&&turn<=132,longEnough=tailLen>=minTail*.84;
+      if(veryStraight&&axisAligned&&hardCorner&&longEnough)return 7.5;
+      if(veryStraight&&axisAligned&&turn>=38&&longEnough)return 3.8;
+      return 0;
+    };
+    return oneEnd(false)+oneEnd(true);
+  }
   function chooseComponent(imageData,gray,w,h,pitchPx,diameter,paperRect) {
     const precise=precisionVesselnessCandidate(gray,w,h,pitchPx,diameter,paperRect);
-    const candidates=collectComponentCandidates(imageData,gray,w,h,pitchPx,paperRect).map(c=>candidateCenterPath(c,gray,w,h,pitchPx,diameter)).filter(Boolean);
+    const candidates=collectComponentCandidates(imageData,gray,w,h,pitchPx,paperRect).map(c=>candidateCenterPath(c,w,h,pitchPx,diameter)).filter(Boolean);
     if(precise)candidates.unshift(precise);
     if(!candidates.length)return null;
     for(let i=0;i<candidates.length;i++){
@@ -1465,9 +1477,11 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
         if((candidates[i].span||0)<.22) plainFloorBias -= 1.8;
       }
       const falsePositivePenalty=fullFrameFalsePositivePenalty(candidates[i],w,h,pitchPx,paperRect);
+      const gridTailPenalty=endpointGridTailPenalty(candidates[i],pitchPx,paperRect);
       const completeBonus=(candidates[i].span>0.30?1.0:0)+(candidates[i].minor>0.14?1.5:0)+(candidates[i].curve>1.18?.8:0);
-      candidates[i].finalScore=candidates[i].pathScore+consensus*2.6+bestAgree*.7+(candidates[i].method.includes('다중 인식 합의')?.3:0)+roiBonus+plainFloorBias+falsePositivePenalty+preciseBonus+completeBonus;
+      candidates[i].finalScore=candidates[i].pathScore+consensus*2.6+bestAgree*.7+(candidates[i].method.includes('다중 인식 합의')?.3:0)+roiBonus+plainFloorBias+falsePositivePenalty-gridTailPenalty+preciseBonus+completeBonus;
       candidates[i].falsePositivePenalty=falsePositivePenalty;
+      candidates[i].gridTailPenalty=gridTailPenalty;
     }
     candidates.sort((a,b)=>b.finalScore-a.finalScore);
     let chosen=candidates[0];
@@ -1516,17 +1530,18 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
       const wireOk=(completeCandidate.wireFit||0)>=(chosen.wireFit||0)-.04;
       if(agree>.78&&nearScore&&falseSafe&&wireOk&&(longerEnds||fullerCover)) chosen=completeCandidate;
     }
-    const strict=paperRect?.inner?strictRoiCandidate(imageData,gray,w,h,pitchPx,diameter,paperRect):null;
-    if(paperRect?.inner && componentInsideRectScore(chosen,paperRect.inner)<.78){
-      if(strict)chosen={...strict,consensus:chosen.consensus||0,finalScore:(strict.pathScore||0)+5,falsePositivePenalty:fullFrameFalsePositivePenalty(strict,w,h,pitchPx,paperRect)};
-    }else if(paperRect?.inner && strict && strict!==chosen){
-      const strictFp=fullFrameFalsePositivePenalty(strict,w,h,pitchPx,paperRect), agree=pathAgreement(chosen,strict,pitchPx);
-      const strictSafer=(strict.wireFit||0)>(chosen.wireFit||0)+.07 || strictFp>(chosen.falsePositivePenalty||0)+1.2 || (strict.meanGray||255)<(chosen.meanGray||255)-16;
-      const strictComparable=(strict.span||0)>=(chosen.span||0)*.86 && (strict.minor||0)>=(chosen.minor||0)*.78;
-      const chosenBright=((chosen.meanGray||0)>188 && (strict.meanGray||255)<(chosen.meanGray||255)-10);
-      const chosenWeak=((chosen.falsePositivePenalty||0)<-7.8)||((chosen.wireFit||0)<.24);
-      if(((agree<.60&&strictSafer&&strictComparable)||(chosenBright&&strictComparable)||(chosenWeak&&strictSafer)) && (strict.pathScore||0)>=(chosen.pathScore||0)-2.2){
-        chosen={...strict,consensus:Math.max(chosen.consensus||0,strict.consensus||0),finalScore:(strict.pathScore||0)+4.2,falsePositivePenalty:strictFp};
+    if(paperRect?.inner){
+      const strict=strictRoiCandidate(imageData,gray,w,h,pitchPx,diameter,paperRect);
+      if(componentInsideRectScore(chosen,paperRect.inner)<.78){
+        if(strict)chosen={...strict,consensus:chosen.consensus||0,finalScore:(strict.pathScore||0)+5,gridTailPenalty:endpointGridTailPenalty(strict,pitchPx,paperRect)};
+      }else if(strict&&strict!==chosen){
+        const agree=pathAgreement(chosen,strict,pitchPx),strictTail=endpointGridTailPenalty(strict,pitchPx,paperRect),chosenTail=chosen.gridTailPenalty||endpointGridTailPenalty(chosen,pitchPx,paperRect);
+        const strictWire=(strict.wireFit||0),chosenWire=(chosen.wireFit||0),strictComparable=(strict.span||0)>=(chosen.span||0)*.86&&(strict.minor||0)>=(chosen.minor||0)*.78;
+        const saferTail=chosenTail>=3.8&&strictTail+1.5<chosenTail;
+        const saferWire=strictWire>chosenWire+.10&&strictTail<=chosenTail;
+        if(strictComparable&&(saferTail||saferWire)&&agree>.38&&(strict.pathScore||0)>=(chosen.pathScore||0)-2.0){
+          chosen={...strict,consensus:Math.max(chosen.consensus||0,strict.consensus||0),finalScore:(strict.pathScore||0)+4-strictTail,gridTailPenalty:strictTail};
+        }
       }
     }
     return chosen;
@@ -1710,7 +1725,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     const comp=seg.comp;
     const segFrame=candidateFrameStats(seg.pb||pathBBox(seg.path||[]),ds.w,ds.h,segmentationPitch);
     const narrowCoverage=!!(paperRect?.inner&&seg.span>.30&&seg.minor<.13);
-    const suspiciousShape=!!(comp.border||comp.fill>.62||comp.spanRatio<.14||seg.span<.20||seg.curve<1.12||narrowCoverage||(segFrame.touches>=2&&(segFrame.spanX>.55||segFrame.spanY>.72))||(seg.falsePositivePenalty||0)<-8.5||(seg.wireFit||0)<.23||(seg.meanGray||0)>190);
+    const suspiciousShape=!!(comp.border||comp.fill>.62||comp.spanRatio<.14||seg.span<.20||seg.curve<1.12||narrowCoverage||(segFrame.touches>=2&&(segFrame.spanX>.55||segFrame.spanY>.72))||(seg.falsePositivePenalty||0)<-9.2||(seg.wireFit||0)<.20);
     let path=(seg.path||[]).map(p=>({...p}));if(path.length<8){ const aiRes=await maybeUseOpenAiAssist(item,ds,null,true); if(aiRes) return aiRes; return await makeEmergencyResult(item,'중심선 추출이 불안정하여 임시 형상으로 생성했습니다.'); }
     const endA=endpointTangent(path,true),endB=endpointTangent(path,false),endTurn=angleBetweenVec(endA,endB);
     const endpointRecovered=String(seg.method||'').includes('배경변화 적응형')||String(seg.method||'').includes('배경색/명암 분리');
@@ -1779,7 +1794,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     };
     const aiResult=await maybeUseOpenAiAssist(item,ds,localResult,false);
     if(aiResult){
-      const localPoor=localResult.shapeEstimated || String(localResult.segmentMethod||'').includes('임시 HOOK') || (localResult.quality||0)<0.55 || (localResult.consensus||0)<0.50 || (seg.falsePositivePenalty||0)<-8.5 || (seg.wireFit||0)<.23 || (seg.meanGray||0)>190;
+      const localPoor=localResult.shapeEstimated || String(localResult.segmentMethod||'').includes('임시 HOOK') || (localResult.quality||0)<0.52 || (localResult.consensus||0)<0.46 || (seg.falsePositivePenalty||0)<-9.2 || (seg.wireFit||0)<.20;
       const aiVeryStrong=(aiResult.quality||0)>=0.88 && (aiResult.consensus||0)>=0.86;
       const geometryPlausible=(aiResult.width||0)>diameter*4 && (aiResult.height||0)>diameter*8 && (aiResult.length||0)>Math.max(aiResult.width||0,aiResult.height||0)*1.15;
       if(localPoor && aiVeryStrong && geometryPlausible){ aiResult.warning='OpenAI 보조 형상을 사용했습니다. 로컬 인식 신뢰도가 낮아 고신뢰 AI 결과로 대체했습니다.'; return aiResult; }
@@ -2183,20 +2198,32 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     let L=0;for(let i=1;i<points.length;i++)L+=dist(points[i-1],points[i]);const chord=dist(points[0],points[points.length-1]);
     return{rms:Math.sqrt(errs.reduce((a,b)=>a+b*b,0)/Math.max(1,errs.length)),p95:percentileNumber(errs,.95),max:Math.max(...errs),ratio:chord/Math.max(1e-9,L),ang,ux,uy,mx,my};
   }
+  function localTurnRangeDeg(points){
+    if(!points||points.length<5)return 180;
+    const sm=smoothPath(points,1),angs=[];
+    for(let i=2;i<sm.length-2;i+=2){const a=sm[i-2],b=sm[i+2];angs.push(Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI);}
+    if(angs.length<2)return 0;
+    const base=angs[0],un=[];
+    for(const a0 of angs){let a=a0,d=a-base;while(d>180){a-=360;d=a-base;}while(d<-180){a+=360;d=a-base;}un.push(a);}
+    return Math.max(...un)-Math.min(...un);
+  }
   function primitiveCandidate(p,i0,i1,tol,d,total){
     const pts=p.slice(i0,i1+1),n=pts.length;if(n<5)return null;
     const lm=lineModelStats(pts);let best=null,lineCost=Infinity;
+    const microTurn=localTurnRangeDeg(pts),microStraight=microTurn<=Math.max(.1,currentMicroKinkDeg());
     if(lm){
       lineCost=n*Math.pow(lm.rms/Math.max(.1,tol),2);
       // HARD CORRIDOR: 실제 중심선에서 최대 허용 편차를 넘는 직선은 절대 채택하지 않는다.
-      if(lm.max<=tol&&lm.p95<=tol*.80&&lm.ratio>=.88)best={type:'line',i0,i1,m:lm,cost:lineCost};
+      const lineOk=lm.max<=tol&&lm.p95<=tol*.80&&lm.ratio>=.88;
+      const microLineOk=microStraight&&lm.max<=tol*1.10&&lm.p95<=tol*.92&&lm.ratio>=.94;
+      if(lineOk||microLineOk)best={type:'line',i0,i1,m:lm,cost:microLineOk?lineCost*.88:lineCost,microStraight};
     }
     const am=circleModelStats(pts);
     if(am){
       const chord=dist(pts[0],pts[pts.length-1]),sag=meaningfulSagitta(am.r,chord),maxR=d*10.5,turnDeg=Math.abs((am.signedSpan||am.span||0))*180/Math.PI,radiusChord=am.r/Math.max(.001,chord);
       const genuine=am.span>=Math.PI/5.4&&am.span<=Math.PI*.98&&am.r>=d*.60&&am.r<=Math.min(maxR,total*.26)&&radiusChord<=1.42&&sag>=Math.max(d*.42,tol*1.08,chord*.10);
       // ARC도 원본 중심선에서 벗어나면 탈락. 큰 반경으로 여러 직선 구간을 억지로 묶는 것을 금지한다.
-      if(genuine&&am.max<=tol&&am.p95<=tol*.74){
+      if(genuine&&am.max<=tol&&am.p95<=tol*.74&&!microStraight){
         const arcCost=n*Math.pow(am.rms/Math.max(.1,tol),2)+5.0;
         const lineIsCompetitive=lm&&lm.max<=tol*1.06&&lm.p95<=tol*.92&&lm.ratio>=.93&&lineCost<=arcCost*1.12;
         const tooGentleForArc=turnDeg<=46||radiusChord>1.36;
