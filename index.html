@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
-  <title>HOOK 모바일 자동도면 v0.10.21</title>
+  <title>HOOK 모바일 자동도면 v0.10.23</title>
 <style>
 :root{
   --bg:#070b13;--panel:#111827;--panel2:#172033;--line:#263247;--text:#eef2ff;--muted:#9aa8bd;
@@ -148,206 +148,137 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 /* v0.9.0 boot safety */
 #bootStatus{position:sticky;top:0;z-index:1000;margin:0 auto;max-width:820px;padding:8px 14px;background:#0c4a6e;color:#e0f2fe;font-size:11px;font-weight:800;text-align:center;border-bottom:1px solid #38bdf8}#bootStatus.ok{display:none}#bootStatus.error{background:#7f1d1d;color:#fee2e2;display:block}.boot-fallback{display:none}
 
+
+/* v0.10.23 ACPT compact workspace */
+:root{--acpt:#0f5f5a;--acpt-dark:#0b2f34;--acpt-soft:#eaf7f5;--acpt-line:#cfe2e3;--paper:#f4f8f8;--ink:#21333a;--sub:#6d8086}
+html{background:var(--paper);color-scheme:light}
+body{background:linear-gradient(180deg,#eef5f5 0,#f7faf9 260px,#f5f8f8 100%);color:var(--ink)}
+.topbar{position:sticky;top:0;z-index:80;max-width:none;margin:0;padding:18px 28px;background:linear-gradient(110deg,#0a2830 0%,#0e3a3f 55%,#0c5752 100%);border-bottom:0;color:#fff;box-shadow:0 12px 30px rgba(12,46,51,.14)}
+.topbar .brand-wrap{display:flex;align-items:center;gap:14px;min-width:0}.brand-mark{width:54px;height:54px;border:1px solid rgba(255,255,255,.18);border-radius:14px;display:grid;place-items:center;background:rgba(0,0,0,.12);box-shadow:inset 0 0 0 4px rgba(255,255,255,.025)}.brand-mark b{font-size:18px;letter-spacing:.08em;color:#74f0e7}.brand-copy{min-width:0}.topbar h1{font-size:24px;margin:0 0 4px;color:#fff}.topbar h1 small{font-size:12px;color:#c4e6e3;opacity:1}.topbar p{font-size:11px;color:#b9d2d3;margin:0;max-width:760px}.eyebrow{color:#6ee7df;font-size:10px;margin-bottom:4px}.pill{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#e6fffb}
+.workspace-tabs-wrap{position:sticky;top:91px;z-index:70;background:rgba(245,249,249,.96);backdrop-filter:blur(12px);border-bottom:1px solid #dce7e7;padding:9px 14px 8px}.workspace-tabs{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:7px;overflow-x:auto;scrollbar-width:none}.workspace-tabs::-webkit-scrollbar{display:none}.workspace-tab,.mode-mini{flex:0 0 auto;border:1px solid #c9dada;background:#fff;color:#496068;border-radius:999px;padding:8px 13px;min-height:34px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}.workspace-tab.active{background:#0d8178;border-color:#0d8178;color:#fff;box-shadow:0 4px 12px rgba(13,129,120,.18)}.mode-mini{margin-left:auto}.mode-mini.active{background:#173e45;color:#fff;border-color:#173e45}.mode-mini+ .mode-mini{margin-left:0}
+.option-dock{max-width:1180px;margin:10px auto 0;padding:0 12px}.option-panel{display:none;background:#fff;border:1px solid #d5e3e3;border-radius:16px;padding:14px 16px;box-shadow:0 10px 24px rgba(48,80,84,.07)}.option-panel.active{display:block}.option-panel h3{font-size:13px;margin:0 0 10px;color:#164d51}.option-panel .form-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.option-panel label{font-size:10px;color:#60757c}.option-panel input,.option-panel select{background:#fff;color:#22363c;border:1px solid #cbdadb;min-height:38px;padding:8px 9px}.option-panel .number-preview,.option-panel .line-manager,.option-panel .ar-control{background:#f7fbfb;border-color:#d4e3e3}.option-panel .small{color:#71858b}.option-inline-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}.option-inline-title small{color:#7a8d92;font-size:10px}
+.ai-switch-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.switch{position:relative;display:inline-flex!important;align-items:center!important;flex-direction:row!important;gap:9px!important;font-size:12px!important;font-weight:900!important;color:#24484c!important}.switch input{position:absolute;opacity:0;pointer-events:none}.switch-track{width:48px;height:26px;border-radius:999px;background:#c7d4d5;position:relative;transition:.18s}.switch-track:after{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.18);transition:.18s}.switch input:checked+.switch-track{background:#0d9c90}.switch input:checked+.switch-track:after{transform:translateX(22px)}.ai-state-chip{font-size:10px;font-weight:900;padding:6px 9px;border-radius:999px;background:#eef3f3;color:#698087}.ai-state-chip.on{background:#def7f2;color:#0a766d}
+main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px solid #d5e3e3;border-radius:17px;box-shadow:0 10px 26px rgba(48,80,84,.07);color:var(--ink)}.camera-primary{margin-top:0;padding:14px}.section-title{margin-bottom:10px}.section-title>span{background:#e0f6f3;color:#0d8178}.section-title h2{color:#23454b}.section-title p{color:#75888d}.camera-stage{background:#0b1217;border-color:#c8d8d9;border-radius:14px;max-height:54vh}.camera-actions{margin-top:10px}.btn{background:#fff;border-color:#c7d8d9;color:#34545a}.btn.primary{background:#0d9c90;border-color:#0d9c90;color:#fff}.btn.danger{background:#fff3f3;border-color:#efbcbc;color:#a43c3c}.camera-tools{margin-top:9px}.shot-status span{color:#71858b}.shot-status b{color:#0d8178}.quick-mode-row{display:none}
+.capture-queue-inline{padding:12px 14px;margin-top:10px}.capture-queue-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}.capture-queue-head b{font-size:13px;color:#23484e}.capture-list{display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;padding:2px 1px 7px;scrollbar-width:thin}.capture-item{flex:0 0 148px;display:block;padding:7px;background:#f8fbfb;border:1px solid #d7e4e4;border-radius:12px}.capture-thumb{width:100%;height:102px;object-fit:cover;border-radius:9px}.capture-head{margin:6px 0 0;display:grid;grid-template-columns:1fr auto;gap:4px;align-items:center}.capture-head b{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.capture-type-badge{grid-column:1/2;justify-self:start;font-size:8px;padding:3px 5px}.icon-btn{grid-row:1/3;grid-column:2/3;padding:5px 6px;font-size:9px}.capture-mini-edit{margin-top:6px;border-top:1px solid #dde7e7;padding-top:5px}.capture-mini-edit>summary{font-size:9px;color:#547279;cursor:pointer;font-weight:800}.capture-fields{grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}.capture-fields label{font-size:8px}.capture-fields input{padding:4px 5px;min-height:28px;font-size:9px;background:#fff;color:#263f44;border-color:#d7e2e3}.field-note{font-size:7.5px;color:#788b90}.empty-state{min-width:100%;background:#f8fbfb;border-color:#ccdcdc;color:#809095;padding:18px}.queue-actions{display:grid;grid-template-columns:130px 1fr;gap:8px;margin-top:8px}.queue-actions .btn{min-height:42px}.queue-actions #batchAnalyzeBtn{font-size:13px;background:#0d9c90;border-color:#0d9c90;color:#fff}
+.progress-inline{padding:10px 14px;margin-top:10px}.progress-title{font-size:11px;color:#49656c;margin-bottom:7px}.progress{background:#edf3f3;border-color:#d6e2e2}.progress>div{background:linear-gradient(90deg,#0e8f84,#20b9ab)}
+.results-workspace{margin-top:10px;padding:14px}.results-workspace>.result-summary-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.results-workspace>.result-summary-title b{font-size:14px;color:#214a50}.result-list{display:grid;grid-template-columns:1fr;gap:12px}.result-item{background:#fff;border-color:#d4e2e2}.result-head b{color:#25484e}.drawing-wrap,.figure-frame{border:1px solid #d9e4e4}.dim-editor-card{background:#f8fbfb;border-color:#cee0df}.dim-editor-title b,.symbol-name{color:#294c52}.symbol-grid input{background:#fff;color:#223b40;border-color:#d2dfdf}.dim-note-box{background:#f6fbfb;border-color:#d1e1e1;color:#5f767c}.result-msg{color:#71858b}.export-actions{grid-template-columns:repeat(3,1fr)}.warn{background:#fff9ef;border-color:#efd7a3;color:#806229}.install-grid div{background:#f7fbfb;border-color:#d7e4e4}.install-grid span,.small{color:#75888d}
+.menu-card,.mode-tabs{display:none!important}
+#bootStatus{max-width:none;background:#0e726b;color:#eafffc;border:0}
+@media(max-width:820px){.topbar{padding:13px 14px}.brand-mark{width:44px;height:44px;border-radius:12px}.topbar h1{font-size:18px}.topbar p{font-size:9px}.workspace-tabs-wrap{top:72px;padding:7px 9px}.workspace-tab,.mode-mini{padding:7px 10px;font-size:10px}.mode-mini{margin-left:0}.option-dock{padding:0 8px;margin-top:7px}.option-panel{padding:11px}.option-panel .form-grid{grid-template-columns:1fr 1fr}.camera-stage{max-height:50vh}.capture-item{flex-basis:132px}.capture-thumb{height:92px}.queue-actions{grid-template-columns:105px 1fr}.export-actions{grid-template-columns:1fr 1fr}.export-actions #newJobBtn{grid-column:1/-1}}
+@media(max-width:480px){.topbar{position:relative}.workspace-tabs-wrap{top:0}.topbar p{display:block}.option-panel .form-grid{grid-template-columns:1fr 1fr}.camera-stage{aspect-ratio:3/4;max-height:48vh}.capture-item{flex-basis:118px}.capture-thumb{height:82px}.capture-fields{grid-template-columns:1fr}.queue-actions{grid-template-columns:90px 1fr}.capture-btn{width:64px;height:64px}}
+
 </style>
 </head>
 <body>
   <div id="bootStatus">프로그램 로딩 중…</div>
 
   <header class="topbar">
-    <div>
-      <div class="eyebrow">COTEC JIG DRAWING</div>
-      <h1>HOOK 모바일 자동도면 <small>v0.10.21</small></h1>
-      <p>치구 · 제품 공용 / 촬영 원본은 사진첩에 저장하지 않음 / 저장된 사진 첨부 가능</p>
+    <div class="brand-wrap">
+      <div class="brand-mark"><b>H</b></div>
+      <div class="brand-copy"><div class="eyebrow">COTEC · HOOK DRAWING</div><h1>HOOK 모바일 자동도면 <small>v0.10.23</small></h1><p>치구 · 제품 공용 / 로컬 인식 + 선택형 OpenAI Vision 보조 / JPG 기본 출력</p></div>
     </div>
     <span id="statusPill" class="pill">준비</span>
   </header>
 
-  <div class="mode-tabs card slim-card">
-    <button id="tabJigBtn" class="tab-btn active">치구 촬영</button>
-    <button id="tabProductBtn" class="tab-btn">제품 촬영</button>
+  <div class="workspace-tabs-wrap">
+    <nav class="workspace-tabs" aria-label="상단 기능 탭">
+      <button class="workspace-tab active" data-ui-tab="shoot">촬영</button>
+      <button class="workspace-tab" data-ui-tab="basic">기본 설정</button>
+      <button class="workspace-tab" data-ui-tab="measure">측정 기준</button>
+      <button class="workspace-tab" data-ui-tab="openai">OpenAI</button>
+      <button class="workspace-tab" data-ui-tab="output">출력</button>
+      <button class="workspace-tab" data-ui-tab="install">설치</button>
+      <button id="tabJigBtn" class="mode-mini active">치구</button>
+      <button id="tabProductBtn" class="mode-mini">제품</button>
+    </nav>
+  </div>
+
+  <div class="option-dock">
+    <section class="option-panel" data-ui-panel="basic" id="basicSettingsPanel">
+      <div class="option-inline-title"><h3>기본 설정</h3><small>번호 · 재질 · 선재 · 도면 정리 기준</small></div>
+      <div class="form-grid">
+        <label>라인 코드<select id="lineCodeSelect"></select></label>
+        <label>번호 입력 방식<select id="numberingMode"><option value="continuous" selected>연속 자동</option><option value="individual">개별 입력</option></select></label>
+        <label>시작 번호<input id="startNumber" type="number" min="1" max="999" step="1" value="1" /></label>
+        <label>최대 촬영 수<select id="maxShots"><option>6</option><option>10</option><option>12</option><option>20</option><option selected>30</option></select></label>
+        <label>기본 선재 Ø (mm)<input id="defaultDiameter" type="number" min="1" max="50" step="1" value="6" /></label>
+        <label>기본 재질<input id="defaultMaterial" type="text" value="SUS304" maxlength="40" /></label>
+        <label>도면 보정 강도<select id="straightenLevelSelect"><option value="medium" selected>보통</option><option value="high">강</option><option value="max">최대</option></select></label>
+        <label>치수 표시<select id="dimensionDetailSelect"><option value="basic" selected>기본 - 전체/주요길이/R</option><option value="full">상세 - 길이/R/각도</option></select></label>
+      </div>
+      <div class="number-preview"><span>자동 번호</span><b id="numberPreview">NNI-001 ~ NNI-030</b><button id="renumberBtn" class="btn small-btn">현재 목록 재배정</button></div>
+      <div class="line-manager"><input id="newLineCode" type="text" maxlength="10" placeholder="새 라인 코드 예: ZN" autocapitalize="characters" /><button id="addLineCodeBtn" class="btn">라인코드 추가</button><button id="deleteLineCodeBtn" class="btn danger">선택 코드 삭제</button></div>
+    </section>
+
+    <section class="option-panel" data-ui-panel="measure" id="measurePanel">
+      <div class="option-inline-title"><h3>측정 기준</h3><small>격자 · AR · 대략치수</small></div>
+      <div class="form-grid measure-grid">
+        <label>측정 모드<select id="measureMode"><option value="auto" selected>자동 (격자/AR/Ø 교차검증)</option><option value="grid">1cm 격자 우선</option><option value="ar">AR 자동 측정 우선</option><option value="manual">대략치수 입력</option></select></label>
+        <div class="ar-control"><span>AR 스케일</span><b id="arStatus">미보정</b><button id="arMeasureBtn" class="btn primary">AR 자동 측정</button></div>
+      </div>
+      <div id="arHelp" class="message info">자동 인식을 우선 사용합니다. 일반 바닥에서는 AR 자동 측정을 먼저 실행한 뒤 촬영하시면 치수 안정도가 높아집니다.</div>
+    </section>
+
+    <section class="option-panel" data-ui-panel="openai" id="openAiPanel">
+      <div class="option-inline-title"><h3>OpenAI 보조 인식</h3><small>로컬 인식이 불안정할 때 Vision 분석을 함께 사용할 수 있습니다.</small></div>
+      <div class="ai-switch-row">
+        <label class="switch"><input id="openAiEnabled" type="checkbox"><span class="switch-track"></span><span>OpenAI 사용</span></label>
+        <span id="openAiStateChip" class="ai-state-chip">OFF</span>
+      </div>
+      <div class="form-grid" style="margin-top:10px">
+        <label>보조 방식<select id="openAiAssistMode"><option value="fallback" selected>실패/저신뢰시 보조</option><option value="always">항상 병행 보조</option></select></label>
+        <label>OpenAI 모델<input id="openAiModel" type="text" value="gpt-4.1-mini" placeholder="gpt-4.1-mini" /></label>
+        <label class="wide">OpenAI API Key<input id="openAiApiKey" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false" /></label>
+      </div>
+      <p class="small">OFF 상태에서는 외부 API를 호출하지 않고 기존 로컬 인식만 사용합니다. ON 상태에서는 설정한 방식에 따라 OpenAI Vision 보조 인식을 사용합니다.</p>
+    </section>
+
+    <section class="option-panel" data-ui-panel="output" id="outputPanel">
+      <div class="option-inline-title"><h3>출력 설정</h3><small>기본 JPG · 필요 시 PDF 변환</small></div>
+      <div class="form-grid">
+        <label>결과 표시 방식<select id="quickRenderModeSelect"><option value="photo" selected>실이미지 오버레이 치수도</option><option value="drawing">렌더링 정식 도면</option></select></label>
+        <label>기본 출력 형식<select id="exportFormatSelect"><option value="jpg" selected>JPG (기본)</option><option value="pdf">PDF 변환</option></select></label>
+        <select id="renderModeSelect" hidden><option value="photo" selected>실이미지 오버레이 치수도</option><option value="drawing">렌더링 정식 도면</option></select>
+      </div>
+      <p class="small">JPG를 기본 도면 파일로 저장하며, PDF 옵션을 선택하시면 동일한 도면을 PDF로 변환하여 저장합니다.</p>
+    </section>
+
+    <section class="option-panel" data-ui-panel="install" id="installPanel">
+      <div class="option-inline-title"><h3>휴대폰 설치 · 업데이트</h3><small>iPhone / Android 홈 화면 설치</small></div>
+      <div class="install-grid"><div><b>iPhone</b><span>Safari → 공유 → 홈 화면에 추가</span></div><div><b>Android</b><span>Chrome → 메뉴 → 앱 설치 또는 홈 화면에 추가</span></div></div>
+      <button id="installBtn" class="btn hidden">Android 앱으로 설치</button>
+    </section>
   </div>
 
   <main>
     <section class="card camera-card camera-primary">
-      <div class="section-title">
-        <span>1</span>
-        <div><h2>사진 촬영 / 불러오기</h2><p>카메라 촬영 또는 저장된 사진 첨부 후 자동 인식으로 도면을 생성합니다. 보정선은 자동 인식이 실패한 경우에만 사용합니다.</p></div>
-      </div>
+      <div class="section-title"><span>●</span><div><h2>사진 촬영 / 불러오기</h2><p>촬영하거나 저장된 사진을 첨부하신 뒤 바로 아래의 분석 버튼을 눌러 주십시오.</p></div></div>
       <div id="cameraStage" class="camera-stage">
-        <video id="cameraVideo" playsinline muted autoplay></video>
-        <canvas id="captureCanvas" hidden></canvas>
-        <div id="cameraGuide" class="camera-guide">
-          <div class="guide-frame"></div>
-          <div class="guide-cross h"></div>
-          <div class="guide-cross v"></div>
-        </div>
-        <div id="cameraEmpty" class="camera-empty">
-          <strong>카메라를 시작하거나 저장 사진을 첨부하세요</strong>
-          <span>앱 내부 촬영이며 사진첩에는 저장되지 않습니다.</span>
-        </div>
+        <video id="cameraVideo" playsinline muted autoplay></video><canvas id="captureCanvas" hidden></canvas>
+        <div id="cameraGuide" class="camera-guide"><div class="guide-frame"></div><div class="guide-cross h"></div><div class="guide-cross v"></div></div>
+        <div id="cameraEmpty" class="camera-empty"><strong>카메라를 시작하거나 저장 사진을 첨부해 주십시오.</strong><span>앱 내부 촬영이며 사진첩에는 자동 저장되지 않습니다.</span></div>
       </div>
-      <div class="camera-actions">
-        <button id="startCameraBtn" class="btn">카메라 시작</button>
-        <button id="captureBtn" class="capture-btn" disabled aria-label="촬영"><span></span></button>
-        <button id="stopCameraBtn" class="btn" disabled>카메라 끄기</button>
-      </div>
-      <div class="camera-tools">
-        <button id="uploadPhotoBtn" class="btn primary">저장된 사진 첨부</button>
-        <input id="filePicker" type="file" accept="image/*" multiple hidden />
-        <div class="shot-status inline-status"><b id="shotCount">0장</b><span>최대 30장까지 촬영/첨부 후 일괄 생성합니다.</span></div>
-      </div>
+      <div class="camera-actions"><button id="startCameraBtn" class="btn">카메라 시작</button><button id="captureBtn" class="capture-btn" disabled aria-label="촬영"><span></span></button><button id="stopCameraBtn" class="btn" disabled>카메라 끄기</button></div>
+      <div class="camera-tools"><button id="uploadPhotoBtn" class="btn primary">저장된 사진 첨부</button><input id="filePicker" type="file" accept="image/*" multiple hidden /><div class="shot-status inline-status"><b id="shotCount">0장</b><span>촬영/첨부한 사진은 아래에 작은 썸네일로 표시됩니다.</span></div></div>
       <div id="cameraError" class="message hidden"></div>
-      <div class="quick-mode-row">
-        <label>결과 표시 방식
-          <select id="quickRenderModeSelect">
-            <option value="photo" selected>실이미지 오버레이 치수도</option>
-            <option value="drawing">렌더링 정식 도면</option>
-          </select>
-        </label>
-        <div class="small quick-help">치구는 실이미지 오버레이 치수도와 렌더링 정식 도면 중 선택할 수 있습니다. 제품 촬영 모드는 항상 실이미지 오버레이를 사용합니다.</div>
-      </div>
     </section>
 
-    <details class="card menu-card" id="basicSettingsPanel">
-      <summary class="menu-summary">
-        <div class="summary-main"><span class="summary-no">2</span><div><b>기본 설정</b><small>치구번호, 재질, Ø, 최대 장수, 결과 표시 방식</small></div></div>
-        <span class="summary-arrow">⌄</span>
-      </summary>
-      <div class="menu-content">
-        <div class="form-grid">
-          <label>라인 코드
-            <select id="lineCodeSelect"></select>
-          </label>
-          <label>번호 입력 방식
-            <select id="numberingMode">
-              <option value="continuous" selected>연속 자동</option>
-              <option value="individual">개별 입력</option>
-            </select>
-          </label>
-          <label>시작 번호
-            <input id="startNumber" type="number" min="1" max="999" step="1" value="1" />
-          </label>
-          <label>최대 촬영 수
-            <select id="maxShots"><option>6</option><option>10</option><option>12</option><option>20</option><option selected>30</option></select>
-          </label>
-          <label>기본 선재 Ø (mm)
-            <input id="defaultDiameter" type="number" min="1" max="50" step="1" value="6" />
-          </label>
-          <label>기본 재질
-            <input id="defaultMaterial" type="text" value="SUS304" maxlength="40" />
-          </label>
-          <label>도면 보정 강도
-            <select id="straightenLevelSelect">
-              <option value="medium" selected>보통</option>
-              <option value="high">강</option>
-              <option value="max">최대</option>
-            </select>
-          </label>
-          <label>치수 표시
-            <select id="dimensionDetailSelect">
-              <option value="basic" selected>기본 - 전체/주요길이/R</option>
-              <option value="full">상세 - 길이/R/각도</option>
-            </select>
-          </label>
-          <label class="wide">결과 표시 방식
-            <select id="renderModeSelect">
-              <option value="photo" selected>실이미지 오버레이 치수도</option>
-              <option value="drawing">렌더링 정식 도면</option>
-            </select>
-          </label>
-        </div>
+    <section class="card capture-queue-inline" id="queueCard">
+      <div class="capture-queue-head"><b>촬영 사진</b><span class="summary-count" id="queueSummaryCount">0장</span></div>
+      <div id="captureList" class="capture-list"><div class="empty-state">아직 촬영된/첨부된 사진이 없습니다.</div></div>
+      <div class="queue-actions"><button id="clearShotsBtn" class="btn danger" disabled>전체 삭제</button><button id="batchAnalyzeBtn" class="btn primary big" disabled>분석 시작</button></div>
+    </section>
 
-        <div class="number-preview">
-          <span>자동 번호</span><b id="numberPreview">NNI-001 ~ NNI-030</b>
-          <button id="renumberBtn" class="btn small-btn">현재 촬영목록 재배정</button>
-        </div>
+    <section class="card progress-inline hidden" id="progressCard">
+      <div class="progress-title" id="progressText">준비 중...</div><div class="progress"><div id="progressBar"></div></div>
+    </section>
 
-        <div class="line-manager">
-          <input id="newLineCode" type="text" maxlength="10" placeholder="새 라인 코드 예: ZN" autocapitalize="characters" />
-          <button id="addLineCodeBtn" class="btn">라인코드 추가</button>
-          <button id="deleteLineCodeBtn" class="btn danger">선택 코드 삭제</button>
-        </div>
-        <p class="small">기본 코드: NNI, AG. 제품 촬영 모드에서는 자동으로 PRD-001 형식으로 번호를 사용합니다. 저장된 사진을 첨부해도 동일하게 분석됩니다. 도면 보정 강도를 높일수록 선이 더 직선화되고 제작용 도면 형태에 가깝게 정리됩니다.</p>
-      </div>
-    </details>
-
-    <details class="card menu-card" id="measurePanel">
-      <summary class="menu-summary">
-        <div class="summary-main"><span class="summary-no">3</span><div><b>측정 기준</b><small>격자 · AR · 대략치수 설정</small></div></div>
-        <span class="summary-arrow">⌄</span>
-      </summary>
-      <div class="menu-content">
-        <div class="form-grid measure-grid">
-          <label>측정 모드
-            <select id="measureMode">
-              <option value="auto" selected>자동 (격자/AR/Ø 교차검증)</option>
-              <option value="grid">1cm 격자 우선</option>
-              <option value="ar">AR 자동 측정 우선</option>
-              <option value="manual">대략치수 입력</option>
-            </select>
-          </label>
-          <div class="ar-control">
-            <span>AR 스케일</span>
-            <b id="arStatus">미보정</b>
-            <button id="arMeasureBtn" class="btn primary">AR 자동 측정</button>
-          </div>
-        </div>
-        <div id="arHelp" class="message info">자동 인식을 최우선으로 사용합니다. 사진 위 보정선은 자동 형상이 실제와 다를 때만 최후 수단으로 사용합니다. 제품/치구 모두 실제 사진 위에 기호 치수를 표시합니다. 일반 바닥에서는 AR 자동 측정을 먼저 실행한 뒤 촬영하면 치수 안정도가 올라갑니다.</div>
-      </div>
-    </details>
-
-    <details class="card menu-card" id="queueCard">
-      <summary class="menu-summary">
-        <div class="summary-main"><span class="summary-no">4</span><div><b>도면 생성</b><small>촬영 사진 확인 · 자동 인식 · 일괄 도면 생성</small></div></div>
-        <span class="summary-count" id="queueSummaryCount">0장</span>
-        <span class="summary-arrow">⌄</span>
-      </summary>
-      <div class="menu-content">
-        <div id="captureList" class="capture-list"><div class="empty-state">아직 촬영된/첨부된 사진이 없습니다.</div></div>
-        <div class="queue-actions">
-          <button id="clearShotsBtn" class="btn danger" disabled>촬영 전체 삭제</button>
-          <button id="batchAnalyzeBtn" class="btn primary big" disabled>촬영 완료 · 일괄 생성</button>
-        </div>
-      </div>
-    </details>
-
-    <details class="card menu-card hidden" id="progressCard" open>
-      <summary class="menu-summary">
-        <div class="summary-main"><span class="summary-no">5</span><div><b>일괄 분석</b><small id="progressText">준비 중...</small></div></div>
-        <span class="summary-arrow">⌄</span>
-      </summary>
-      <div class="menu-content"><div class="progress"><div id="progressBar"></div></div></div>
-    </details>
-
-    <details class="card menu-card hidden" id="resultsSection">
-      <summary class="menu-summary">
-        <div class="summary-main"><span class="summary-no">6</span><div><b>생성 도면</b><small>실제 사진/도면 확인 · PDF/DXF 출력</small></div></div>
-        <span class="summary-arrow">⌄</span>
-      </summary>
-      <div class="menu-content">
-        <div id="resultList" class="result-list"></div>
-        <div class="export-actions">
-          <button id="exportPdfBtn" class="btn primary big">도면 전체 PDF</button>
-          <button id="exportDxfBtn" class="btn big">도면 전체 DXF</button>
-          <button id="newJobBtn" class="btn danger big">새 촬영 시작</button>
-        </div>
-        <p class="warn">최종 도면은 실제 촬영 이미지 위에 LINE/ARC와 치수를 표시한 오버레이 방식으로 고정됩니다. 별도의 선 도면으로 다시 변환하지 않습니다.</p>
-      </div>
-    </details>
-
-    <details class="card menu-card compact install-card">
-      <summary class="menu-summary">
-        <div class="summary-main"><span class="install-mini">＋</span><div><b>휴대폰 설치 · 업데이트</b><small>iPhone / Android 홈 화면 설치 안내</small></div></div>
-        <span class="summary-arrow">⌄</span>
-      </summary>
-      <div class="menu-content">
-        <div class="install-grid">
-          <div><b>iPhone</b><span>Safari → 공유 → 홈 화면에 추가</span></div>
-          <div><b>Android</b><span>Chrome → 메뉴 → 앱 설치 또는 홈 화면에 추가</span></div>
-        </div>
-        <button id="installBtn" class="btn hidden">Android 앱으로 설치</button>
-      </div>
-    </details>
+    <section class="card results-workspace hidden" id="resultsSection">
+      <div class="result-summary-title"><b>분석 결과</b><span>도면 · 치수 · 형상 보정</span></div>
+      <div id="resultList" class="result-list"></div>
+      <div class="export-actions"><button id="exportPdfBtn" class="btn primary big">도면 전체 JPG</button><button id="exportDxfBtn" class="btn big">도면 전체 DXF</button><button id="newJobBtn" class="btn danger big">새 촬영 시작</button></div>
+      <p class="warn">기본 출력은 JPG입니다. 상단의 「출력」 탭에서 PDF 변환으로 변경하실 수 있습니다.</p>
+    </section>
   </main>
 
   <div id="toast" class="toast" aria-live="polite"></div>
@@ -382,7 +313,8 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     arCalibration: null,
     lineCodes: [],
     lastNumbers: {},
-    appMode: 'jig'
+    appMode: 'jig',
+    openAiErrorShown: false
   };
 
   const MAX_ANALYSIS_SIDE = 1000;
@@ -417,6 +349,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   // ---------------- Jig numbering / settings ----------------
   const LINE_CODES_KEY = 'hookDrawing.lineCodes.v064';
   const LAST_NUMBERS_KEY = 'hookDrawing.lastNumbers.v064';
+  const EXTRA_PREFS_KEY = 'hookDrawing.extraPrefs.v1022';
   const DEFAULT_LINE_CODES = ['NNI','AG'];
 
   function padJigNo(n) { return String(clamp(Math.round(Number(n) || 1), 1, 999)).padStart(3,'0'); }
@@ -426,7 +359,16 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   function currentRenderMode() { return ($('renderModeSelect')?.value)||($('quickRenderModeSelect')?.value)||'photo'; }
   function currentStraightenLevel() { return ($('straightenLevelSelect')?.value) || 'medium'; }
   function currentDimensionDetail() { return ($('dimensionDetailSelect')?.value) || 'basic'; }
+  function currentExportFormat() { return ($('exportFormatSelect')?.value) || 'jpg'; }
+  function currentOpenAiMode() { return $('openAiEnabled')?.checked ? (($('openAiAssistMode')?.value) || 'fallback') : 'off'; }
+  function currentOpenAiConfig() { return { mode: currentOpenAiMode(), apiKey: String($('openAiApiKey')?.value||'').trim(), model: String($('openAiModel')?.value||'gpt-4.1-mini').trim()||'gpt-4.1-mini' }; }
   function straightenLevelLabel(v){ return v==='medium' ? '보통' : v==='max' ? '최대' : '강'; }
+  function updateExportUi(){ const isPdf=currentExportFormat()==='pdf'; const batch=$('exportPdfBtn'); if(batch) batch.textContent=isPdf?'도면 전체 PDF 변환':'도면 전체 JPG'; }
+  function saveExtraPrefs(){ try{ localStorage.setItem(EXTRA_PREFS_KEY, JSON.stringify({openAiEnabled:!!$('openAiEnabled')?.checked, openAiAssistMode:String($('openAiAssistMode')?.value||'fallback'), openAiApiKey:String($('openAiApiKey')?.value||''), openAiModel:String($('openAiModel')?.value||'gpt-4.1-mini'), exportFormat:currentExportFormat()})); }catch(_){ } }
+  function loadExtraPrefs(){ try{ const raw=JSON.parse(localStorage.getItem(EXTRA_PREFS_KEY)||'{}')||{}; if($('openAiEnabled')) $('openAiEnabled').checked=raw.openAiEnabled===true || (raw.openAiEnabled==null && raw.openAiAssistMode && raw.openAiAssistMode!=='off'); if($('openAiAssistMode')&&raw.openAiAssistMode&&raw.openAiAssistMode!=='off') $('openAiAssistMode').value=raw.openAiAssistMode; if($('openAiApiKey')&&typeof raw.openAiApiKey==='string') $('openAiApiKey').value=raw.openAiApiKey; if($('openAiModel')&&raw.openAiModel) $('openAiModel').value=raw.openAiModel; if($('exportFormatSelect')&&raw.exportFormat) $('exportFormatSelect').value=raw.exportFormat; }catch(_){ } updateExportUi(); updateOpenAiUi(); }
+  function updateOpenAiUi(){ const on=!!$('openAiEnabled')?.checked,chip=$('openAiStateChip'); if(chip){chip.textContent=on?'ON':'OFF';chip.classList.toggle('on',on);} if($('openAiAssistMode')) $('openAiAssistMode').disabled=!on; }
+  function setWorkspaceTab(name){ document.querySelectorAll('.workspace-tab').forEach(b=>b.classList.toggle('active',b.dataset.uiTab===name)); document.querySelectorAll('.option-panel').forEach(p=>p.classList.toggle('active',p.dataset.uiPanel===name)); }
+
   function setRenderModeValue(mode){
     const safe = mode==='photo' ? 'photo' : 'drawing';
     if($('renderModeSelect')) $('renderModeSelect').value = safe;
@@ -577,7 +519,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       $('cameraEmpty').classList.add('hidden');
       $('captureBtn').disabled = false;
       $('stopCameraBtn').disabled = false;
-      $('startCameraBtn').textContent = '카메라 재시작';
+      $('startCameraBtn').textContent = '카메라 시작';
       $('cameraError').classList.add('hidden');
       setStatus('촬영 가능', 'ok');
     } catch (err) {
@@ -597,6 +539,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     video.srcObject = null;
     $('captureBtn').disabled = true;
     $('stopCameraBtn').disabled = true;
+    $('startCameraBtn').textContent = '카메라 시작';
     $('cameraEmpty').classList.remove('hidden');
   }
 
@@ -698,17 +641,14 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     host.innerHTML = state.captures.map((c, i) => `
       <div class="capture-item" data-id="${c.id}">
         <img class="capture-thumb" src="${c.url}" alt="촬영 ${i+1}">
-        <div>
-          <div class="capture-head"><b>${i+1}. ${esc(c.name)}</b><span class="capture-type-badge">${c.captureType==='product'?'제품':'치구'} · ${c.sourceType==='upload'?'첨부':'촬영'}</span><button class="icon-btn delete-shot" data-id="${c.id}">삭제</button></div>
-          <div class="capture-fields">
-            <label class="wide jig-no">치구번호<input data-field="name" value="${esc(c.name)}" maxlength="20" autocapitalize="characters"></label>
-            <label>Ø mm<input data-field="diameter" type="number" min="1" max="50" step="1" value="${escAttr(mm0(c.diameter))}"></label>
-            <label>재질<input data-field="material" value="${esc(c.material)}" maxlength="40"></label>
-            <label>대략 폭 mm<input data-field="approxWidth" type="number" min="1" max="3000" step="1" value="${esc(c.approxWidth)}" placeholder="선택"></label>
-            <label>대략 높이 mm<input data-field="approxHeight" type="number" min="1" max="3000" step="1" value="${esc(c.approxHeight)}" placeholder="선택"></label>
-          </div>
-          <span class="field-note">측정 모드: ${esc(c.measureMode==='ar'?'AR 우선':c.measureMode==='grid'?'격자 우선':c.measureMode==='manual'?'대략치수':'자동')} ${Number.isFinite(c.arMmPerPx)?`· AR 보정 있음 (거리 약 ${Math.round(c.arDistanceMm||0)} mm)`:''}</span>
-        </div>
+        <div class="capture-head"><b>${i+1}. ${esc(c.name)}</b><span class="capture-type-badge">${c.captureType==='product'?'제품':'치구'} · ${c.sourceType==='upload'?'첨부':'촬영'}</span><button class="icon-btn delete-shot" data-id="${c.id}">삭제</button></div>
+        <details class="capture-mini-edit"><summary>상세 입력</summary><div class="capture-fields">
+          <label class="wide jig-no">치구번호<input data-field="name" value="${esc(c.name)}" maxlength="20" autocapitalize="characters"></label>
+          <label>Ø mm<input data-field="diameter" type="number" min="1" max="50" step="1" value="${escAttr(mm0(c.diameter))}"></label>
+          <label>재질<input data-field="material" value="${esc(c.material)}" maxlength="40"></label>
+          <label>대략 폭 mm<input data-field="approxWidth" type="number" min="1" max="3000" step="1" value="${esc(c.approxWidth)}" placeholder="선택"></label>
+          <label>대략 높이 mm<input data-field="approxHeight" type="number" min="1" max="3000" step="1" value="${esc(c.approxHeight)}" placeholder="선택"></label>
+        </div><span class="field-note">측정: ${esc(c.measureMode==='ar'?'AR 우선':c.measureMode==='grid'?'격자 우선':c.measureMode==='manual'?'대략치수':'자동')}</span></details>
       </div>`).join('');
   }
 
@@ -1635,6 +1575,84 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     return rect;
   }
 
+
+  function numberOrNaN(v){ const n=Number(v); return Number.isFinite(n)?n:NaN; }
+  function extractJsonObjectText(text){
+    const src=String(text||'').trim(); if(!src) return null;
+    try{return JSON.parse(src);}catch(_){ }
+    const m=src.match(/\{[\s\S]*\}/); if(m){ try{return JSON.parse(m[0]);}catch(_){ } }
+    return null;
+  }
+  function openAiOutputText(payload){
+    if(typeof payload?.output_text==='string'&&payload.output_text.trim()) return payload.output_text;
+    const chunks=[];
+    for(const node of (payload?.output||[])) for(const c of (node?.content||[])){
+      if(typeof c?.text==='string') chunks.push(c.text);
+      else if(Array.isArray(c?.text?.annotations) && typeof c?.text?.value==='string') chunks.push(c.text.value);
+      else if(typeof c?.text?.value==='string') chunks.push(c.text.value);
+    }
+    return chunks.join('\n').trim();
+  }
+  function normalizedAssistPath(points,w,h){
+    const pts=(Array.isArray(points)?points:[]).map(p=>({x:clamp(numberOrNaN(p?.x),0,1000)/1000*w,y:clamp(numberOrNaN(p?.y),0,1000)/1000*h})).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
+    if(pts.length<2) return [];
+    return decimatePath(smoothPath(pts,1), Math.max(2,Math.min(w,h)*0.008));
+  }
+  function shouldRunOpenAiAssist(localResult=null,hardFail=false){
+    const mode=currentOpenAiMode(); if(mode==='off') return false; const cfg=currentOpenAiConfig(); if(!cfg.apiKey) return false;
+    if(mode==='always') return true;
+    if(hardFail||!localResult) return true;
+    return !!(localResult.shapeEstimated||localResult.dimensionEstimated||(localResult.quality||0)<0.60||(localResult.consensus||0)<0.52||String(localResult.segmentMethod||'').includes('임시 HOOK'));
+  }
+  async function requestOpenAiAssist(item, ds, localHint={}){
+    const cfg=currentOpenAiConfig(); if(!cfg.apiKey) return null;
+    const imageDataUrl=item.photoDataUrl || await blobToDataURL(item.blob).catch(()=> ''); if(!imageDataUrl) return null;
+    const hintText=JSON.stringify({diameter_mm:Math.max(.1,parseFloat(item.diameter)||6), local_width_mm:Math.round(numberOrNaN(localHint.width)||0)||null, local_height_mm:Math.round(numberOrNaN(localHint.height)||0)||null, local_length_mm:Math.round(numberOrNaN(localHint.length)||0)||null, local_quality:numberOrNaN(localHint.quality)||null, local_warning:String(localHint.warning||'')||null, local_method:String(localHint.segmentMethod||'')||null});
+    const prompt=`Analyze exactly one metal hook/wire jig photo. Improve recognition of the jig centerline and dimensions. Return JSON only. If a square grid is visible, each square is 10 mm. The nominal wire diameter is ${Math.max(.1,parseFloat(item.diameter)||6)} mm. Return this schema exactly: {"confidence":0..1,"width_mm":number|null,"height_mm":number|null,"developed_length_mm":number|null,"top_radius_mm":number|null,"bottom_radius_mm":number|null,"centerline_points_norm":[{"x":0..1000,"y":0..1000}],"notes":"short"}. centerline_points_norm must trace the main centerline from one end of the jig to the other in order, with 8 to 24 points. Use null if a dimension is not reliable. Hints from local detector: ${hintText}`;
+    const body={model:cfg.model||'gpt-4.1-mini',input:[{role:'user',content:[{type:'input_text',text:prompt},{type:'input_image',image_url:imageDataUrl,detail:'high'}]}],temperature:0.1,max_output_tokens:1200};
+    const resp=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.apiKey},body:JSON.stringify(body)});
+    const data=await resp.json().catch(()=>({}));
+    if(!resp.ok) throw new Error(data?.error?.message||`OpenAI API ${resp.status}`);
+    const parsed=extractJsonObjectText(openAiOutputText(data));
+    if(!parsed) throw new Error('OpenAI 응답에서 JSON을 해석하지 못했습니다.');
+    return parsed;
+  }
+  function buildOpenAiAssistResult(item,ds,assist,localResult=null){
+    const diameter=Math.max(.1,parseFloat(item.diameter)||6), pathPx=normalizedAssistPath(assist?.centerline_points_norm,ds.w,ds.h); if(pathPx.length<2) return null;
+    const pb=pathBBox(pathPx), widthHint=numberOrNaN(assist?.width_mm), heightHint=numberOrNaN(assist?.height_mm), lengthHint=numberOrNaN(assist?.developed_length_mm);
+    let mmPerPx=numberOrNaN(localResult?.mmPerPx), scales=[];
+    if(widthHint>diameter&&pb.w>1) scales.push((widthHint-diameter)/pb.w);
+    if(heightHint>diameter&&pb.h>1) scales.push((heightHint-diameter)/pb.h);
+    if(lengthHint>diameter&&pathLength(pathPx)>1) scales.push(lengthHint/pathLength(pathPx));
+    if(scales.length) mmPerPx=scales.reduce((a,b)=>a+b,0)/scales.length;
+    if(!(mmPerPx>0)) mmPerPx=1;
+    const width=widthHint>0?widthHint:(pb.w*mmPerPx+diameter), height=heightHint>0?heightHint:(pb.h*mmPerPx+diameter), length=lengthHint>0?lengthHint:(pathLength(pathPx)*mmPerPx);
+    const rr=estimateRadii(pathPx,mmPerPx,pb,diameter), conf=clamp(numberOrNaN(assist?.confidence)||0.72,.25,.99), pathMm=pathPx.map(p=>({x:(p.x-pb.minX)*mmPerPx,y:(p.y-pb.minY)*mmPerPx}));
+    const r1=numberOrNaN(assist?.top_radius_mm)>0?numberOrNaN(assist?.top_radius_mm):rr.r1, r2=numberOrNaN(assist?.bottom_radius_mm)>0?numberOrNaN(assist?.bottom_radius_mm):rr.r2;
+    const quality=clamp(Math.max(conf,(numberOrNaN(localResult?.quality)||0)*0.92),.45,.98);
+    const note=String(assist?.notes||'').trim();
+    return {
+      id:item.id,name:item.name.trim()||makeJigNumber(currentLineCode(),item.seq),material:item.material.trim()||'SUS304',diameter,
+      baseWidth:width,baseHeight:height,baseLength:length,baseR1:r1,baseR2:r2,
+      width,height,length,r1:r1,r2:r2,pathBase:pathMm,path:pathMm.map(p=>({...p})), rawPath:pathPx.map(p=>({...p})), rawBBox:pb, imageW:ds.w, imageH:ds.h,
+      scaleSource:scales.length?'OpenAI Vision 보조 추정':'OpenAI Vision 형상 보조',scaleConfidence:conf,quality,threshold:0,invert:false,segmentMethod:'OpenAI Vision 보조 인식 · 중심선 앵커 재구성',consensus:conf,
+      gridDetected:!!localResult?.gridDetected,arDetected:false,gridReason:localResult?.gridReason||'',shapeFill:localResult?.shapeFill||0,arDistanceMm:item.arDistanceMm||null,
+      dimensionEstimated:!scales.length, wirePxEstimate:localResult?.wirePxEstimate||NaN,
+      endpointRecovered:true,endpointTurnDeg:localResult?.endpointTurnDeg||NaN,
+      shapeEstimated:conf<0.78, warning:`OpenAI 보조 인식 결과입니다. ${note||'세부 치수는 반드시 검토하세요.'}`, photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx, mmPerPxX:mmPerPx, mmPerPxY:mmPerPx, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:conf>=0.78, shapeDrawMode:'auto', paperRect:localResult?.paperRect||null, openAiAssisted:true
+    };
+  }
+  async function maybeUseOpenAiAssist(item, ds, localResult=null, hardFail=false){
+    if(!shouldRunOpenAiAssist(localResult,hardFail)) return null;
+    try{
+      const assist=await requestOpenAiAssist(item,ds,localResult||{}); return buildOpenAiAssistResult(item,ds,assist,localResult);
+    }catch(err){
+      console.warn('OpenAI assist failed',err);
+      if(!state.openAiErrorShown){ state.openAiErrorShown=true; setStatus('OpenAI 보조 인식 확인 필요','warn'); toast('OpenAI 보조 인식 실패 · 키/모델을 확인하세요.'); }
+      return null;
+    }
+  }
+
   async function analyzeCapture(item) {
     if (!item.blob) throw new Error('촬영 원본이 없습니다. 새로 촬영하세요.');
     const ds=await blobToCanvas(item.blob),gray=grayArray(ds.imageData),grid=detectGrid(gray,ds.w,ds.h);
@@ -1648,12 +1666,12 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const fallbackSegPitch=Math.max(18,Math.min(ds.w,ds.h)/20);
     const segmentationPitch=verifiedGridPitch||(paperRect?.inner?pitch:fallbackSegPitch);
     const seg=chooseComponent(ds.imageData,gray,ds.w,ds.h,segmentationPitch,diameter,paperRect);
-    if(!seg?.comp||seg.comp.area<Math.max(70,ds.w*ds.h*.00035)) return await makeEmergencyResult(item,'치구 형상을 충분히 찾지 못해 임시 형상으로 생성했습니다.');
+    if(!seg?.comp||seg.comp.area<Math.max(70,ds.w*ds.h*.00035)){ const aiRes=await maybeUseOpenAiAssist(item,ds,null,true); if(aiRes) return aiRes; return await makeEmergencyResult(item,'치구 형상을 충분히 찾지 못해 임시 형상으로 생성했습니다.'); }
     const comp=seg.comp;
     const segFrame=candidateFrameStats(seg.pb||pathBBox(seg.path||[]),ds.w,ds.h,segmentationPitch);
     const narrowCoverage=!!(paperRect?.inner&&seg.span>.30&&seg.minor<.13);
     const suspiciousShape=!!(comp.border||comp.fill>.62||comp.spanRatio<.14||seg.span<.20||seg.curve<1.12||narrowCoverage||(segFrame.touches>=2&&(segFrame.spanX>.55||segFrame.spanY>.72)));
-    let path=(seg.path||[]).map(p=>({...p}));if(path.length<8)return await makeEmergencyResult(item,'중심선 추출이 불안정하여 임시 형상으로 생성했습니다.');
+    let path=(seg.path||[]).map(p=>({...p}));if(path.length<8){ const aiRes=await maybeUseOpenAiAssist(item,ds,null,true); if(aiRes) return aiRes; return await makeEmergencyResult(item,'중심선 추출이 불안정하여 임시 형상으로 생성했습니다.'); }
     const endA=endpointTangent(path,true),endB=endpointTangent(path,false),endTurn=angleBetweenVec(endA,endB);
     const endpointRecovered=String(seg.method||'').includes('배경변화 적응형')||String(seg.method||'').includes('배경색/명암 분리');
 
@@ -1709,7 +1727,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const aspect=Math.max(width,height)/Math.max(1,Math.min(width,height)),curveRatio=length/Math.max(1,Math.hypot(width,height));
     let quality=scaleConfidence*.38+(comp.fill>=.025&&comp.fill<=.35?.22:.08)+(comp.border?0:.16)+(path.length>24?.14:.08)+(curveRatio>1.20?.10:.04)+(seg.method.includes('정밀 다중스케일')?.20:seg.method.includes('배경변화 적응형')?.17:seg.method.includes('주기격자')?.14:seg.method.includes('격자선 제거')?.08:0);
     quality=clamp(quality,.08,.99);
-    return {
+    const localResult={
       id:item.id,name:item.name.trim()||makeJigNumber(currentLineCode(),item.seq),material:item.material.trim()||'SUS304',diameter,
       baseWidth:width,baseHeight:height,baseLength:length,baseR1:r.r1,baseR2:r.r2,
       width,height,length,r1:r.r1,r2:r.r2,pathBase:pathMm,path:pathMm.map(p=>({...p})), rawPath:path.map(p=>({...p})), rawBBox:pb, imageW:ds.w, imageH:ds.h,
@@ -1719,6 +1737,13 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       endpointRecovered,endpointTurnDeg:endTurn,
       shapeEstimated:suspiciousShape, warning:suspiciousShape?'전체 형상 커버리지가 부족하거나 배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':'', photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx, mmPerPxX:mmPerPx, mmPerPxY:mmPerPx, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:false, shapeDrawMode:'auto', paperRect
     };
+    const aiResult=await maybeUseOpenAiAssist(item,ds,localResult,false);
+    if(aiResult){
+      const aiBetter=(aiResult.quality||0)>(localResult.quality||0)+0.03 || localResult.shapeEstimated || localResult.dimensionEstimated || (localResult.consensus||0)<0.52;
+      if(currentOpenAiMode()==='always' ? aiBetter : aiBetter) return aiResult;
+      localResult.openAiChecked=true;
+    }
+    return localResult;
   }
 
   async function batchAnalyze() {
@@ -2666,7 +2691,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       return `<div class="symbol-row"><div class="symbol-chip">${esc(info.symbol)}</div><div class="symbol-name">${esc(info.name)}<small>${esc(spec.key)} / ${esc(info.unit)}</small></div><div><input data-rfield="${['width','height','length','r1','r2','diameter'].includes(spec.key)?spec.key:''}" data-dimkey="${['width','height','length','r1','r2','diameter'].includes(spec.key)?'':spec.key}" type="number" inputmode="numeric" step="1" value="${escAttr(mm0(val))}"></div></div>`;
     }).join('');
     const arBadge=(r.arDetected||String(r.scaleSource||'').includes('AR'))?'<span class="ar-mode-badge">AR 치수</span>':'';
-    return `<div class="dim-editor-card"><div class="dim-editor-title"><b>치수 입력/수정${arBadge}<span class="photo-dim-badge">사진 위 치수 동시 반영</span></b><span>구간 길이(L) 우선 · 기호 기준 별도 입력</span></div><div class="symbol-grid">${rows}</div><div class="measure-hint">그림 위 직접 입력 대신, 여기 입력칸에 값을 넣으면 같은 기호의 사진 오버레이 치수와 PDF 치수에 동시에 반영됩니다. 제작에 필요한 주요 구간 길이 L1~Lx(직선/곡선 포함)를 우선 검토하도록 정렬했습니다. 미세 분절 치수는 자동 제외합니다. 일반 바닥 촬영에서는 AR 보정 후 촬영하면 치수 안정도가 더 높습니다.</div></div>`;
+    return `<div class="dim-editor-card"><div class="dim-editor-title"><b>치수 입력/수정${arBadge}<span class="photo-dim-badge">사진 위 치수 동시 반영</span></b><span>구간 길이(L) 우선 · 기호 기준 별도 입력</span></div><div class="symbol-grid">${rows}</div><div class="measure-hint">그림 위 직접 입력 대신, 여기 입력칸에 값을 넣으면 같은 기호의 사진 오버레이 치수와 최종 출력 치수에 동시에 반영됩니다. 제작에 필요한 주요 구간 길이 L1~Lx(직선/곡선 포함)를 우선 검토하도록 정렬했습니다. 미세 분절 치수는 자동 제외합니다. 일반 바닥 촬영에서는 AR 보정 후 촬영하면 치수 안정도가 더 높습니다.</div></div>`;
   }
   function makeDimSvg(specs,r,forExport){
     const parts=[];
@@ -2891,7 +2916,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);if(variant==='photo')specs=layoutDimensionLabels([...specs,...radiusOverlaySpecs({...r,r1:displayRadius.r1,r2:displayRadius.r2},screen,W,H)],W,H);const dimSvg=makeDimSvg(specs,r,true);
     const sideTitle = r.captureType==='product' ? '제품 실이미지 오버레이 치수도' : '치구 실이미지 오버레이 치수도';
     const tbx=title.x,tby=title.y,tbw=title.w,tbh=title.h;
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><defs><clipPath id="photoClip"><rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}"/></clipPath></defs><rect width="${W}" height="${H}" fill="#fff"/><rect x="24" y="24" width="1141" height="793" fill="none" stroke="#111" stroke-width="1.4"/><text x="52" y="50" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">COTEC JIG DRAWING</text><text x="52" y="72" font-size="16" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${sideTitle}</text><text x="52" y="92" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${mm0(r.diameter)} / 전개길이 ${mm0(length)}</text>${shapeMarkup}${dimSvg}<rect x="${tbx}" y="${tby}" width="${tbw}" height="${tbh}" fill="#fff" stroke="#111" stroke-width="1"/><line x1="${tbx}" y1="${tby+24}" x2="${tbx+tbw}" y2="${tby+24}" stroke="#111"/><line x1="${tbx}" y1="${tby+48}" x2="${tbx+tbw}" y2="${tby+48}" stroke="#111"/><line x1="${tbx}" y1="${tby+72}" x2="${tbx+tbw}" y2="${tby+72}" stroke="#111"/><line x1="${tbx}" y1="${tby+96}" x2="${tbx+tbw}" y2="${tby+96}" stroke="#111"/><line x1="${tbx}" y1="${tby+116}" x2="${tbx+tbw}" y2="${tby+116}" stroke="#111"/><line x1="${tbx+92}" y1="${tby+24}" x2="${tbx+92}" y2="${tby+tbh}" stroke="#111"/><text x="${tbx+8}" y="${tby+16}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">TITLE BLOCK</text><text x="${tbx+8}" y="${tby+40}" font-size="10">도면번호</text><text x="${tbx+100}" y="${tby+40}" font-size="10">${esc(r.name)}</text><text x="${tbx+8}" y="${tby+64}" font-size="10">재질</text><text x="${tbx+100}" y="${tby+64}" font-size="10">${esc(r.material)}</text><text x="${tbx+8}" y="${tby+88}" font-size="10">전체 폭/높이</text><text x="${tbx+100}" y="${tby+88}" font-size="10">${mm0(width)} / ${mm0(height)}</text><text x="${tbx+8}" y="${tby+112}" font-size="10">전개길이</text><text x="${tbx+100}" y="${tby+112}" font-size="10">${mm0(length)}</text><text x="${tbx+8}" y="${tby+132}" font-size="10">작성일</text><text x="${tbx+100}" y="${tby+132}" font-size="10">${date}</text><text x="52" y="800" font-size="10" font-family="Arial,'Noto Sans KR',sans-serif">NOTE : 실구동 화면과 PDF는 동일한 CAD/치수 파이프라인을 사용합니다. 실제 촬영 이미지 위 LINE(파랑)/ARC(빨강)를 실제 치구 폭의 약 절반 수준으로 얇게 표시하고, 제작에 필요한 큰 직선/곡선 구간만 L 길이로 표시하고 R 치수를 함께 표시합니다. 치수선과 화살표는 검은색으로 통일합니다.</text></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><defs><clipPath id="photoClip"><rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}"/></clipPath></defs><rect width="${W}" height="${H}" fill="#fff"/><rect x="24" y="24" width="1141" height="793" fill="none" stroke="#111" stroke-width="1.4"/><text x="52" y="50" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">COTEC JIG DRAWING</text><text x="52" y="72" font-size="16" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${sideTitle}</text><text x="52" y="92" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${mm0(r.diameter)} / 전개길이 ${mm0(length)}</text>${shapeMarkup}${dimSvg}<rect x="${tbx}" y="${tby}" width="${tbw}" height="${tbh}" fill="#fff" stroke="#111" stroke-width="1"/><line x1="${tbx}" y1="${tby+24}" x2="${tbx+tbw}" y2="${tby+24}" stroke="#111"/><line x1="${tbx}" y1="${tby+48}" x2="${tbx+tbw}" y2="${tby+48}" stroke="#111"/><line x1="${tbx}" y1="${tby+72}" x2="${tbx+tbw}" y2="${tby+72}" stroke="#111"/><line x1="${tbx}" y1="${tby+96}" x2="${tbx+tbw}" y2="${tby+96}" stroke="#111"/><line x1="${tbx}" y1="${tby+116}" x2="${tbx+tbw}" y2="${tby+116}" stroke="#111"/><line x1="${tbx+92}" y1="${tby+24}" x2="${tbx+92}" y2="${tby+tbh}" stroke="#111"/><text x="${tbx+8}" y="${tby+16}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">TITLE BLOCK</text><text x="${tbx+8}" y="${tby+40}" font-size="10">도면번호</text><text x="${tbx+100}" y="${tby+40}" font-size="10">${esc(r.name)}</text><text x="${tbx+8}" y="${tby+64}" font-size="10">재질</text><text x="${tbx+100}" y="${tby+64}" font-size="10">${esc(r.material)}</text><text x="${tbx+8}" y="${tby+88}" font-size="10">전체 폭/높이</text><text x="${tbx+100}" y="${tby+88}" font-size="10">${mm0(width)} / ${mm0(height)}</text><text x="${tbx+8}" y="${tby+112}" font-size="10">전개길이</text><text x="${tbx+100}" y="${tby+112}" font-size="10">${mm0(length)}</text><text x="${tbx+8}" y="${tby+132}" font-size="10">작성일</text><text x="${tbx+100}" y="${tby+132}" font-size="10">${date}</text><text x="52" y="800" font-size="10" font-family="Arial,'Noto Sans KR',sans-serif">NOTE : 실구동 화면과 JPG/PDF 출력은 동일한 CAD/치수 파이프라인을 사용합니다. 실제 촬영 이미지 위 LINE(파랑)/ARC(빨강)를 실제 치구 폭의 약 절반 수준으로 얇게 표시하고, 제작에 필요한 큰 직선/곡선 구간만 L 길이로 표시하고 R 치수를 함께 표시합니다. 치수선과 화살표는 검은색으로 통일합니다.</text></svg>`;
   }
 
   function makeFigureHtml(r){
@@ -2958,7 +2983,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       const quality=r.quality>.76?'양호':r.quality>.53?'보통':'확인필요';
       const modeText=(r.captureType==='product')?'제품 실이미지 오버레이':(currentRenderMode()==='drawing'?'치구 렌더링 정식 도면':'치구 실이미지 오버레이');
       const autoOk=r.shapeConfirmed&&!r.userShapeCorrected,autoLabel=autoOk?(r.quality>.76?'자동 인식 · 양호':r.quality>.53?'자동 인식 · 보통':'자동 인식 · 확인권장'):'보정 필요';
-      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}${dimensionEditorHtml(r)}<div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-jump-btn" data-id="${r.id}">기호별 치수 입력</button><button class="btn apply-dims" data-id="${r.id}">수정값 형상 반영</button><button class="btn export-one" data-id="${r.id}">${currentRenderMode()==='drawing'?'이 도면 PDF':'이 오버레이 PDF'}</button></div><div class="dim-note-box">격자 촬영은 격자판 X/Y 주기 경계를 먼저 잠그고 그 내부에서만 치구를 선택합니다. 일반 바닥은 AR/Ø 교차검증과 중심 후보 점수를 사용합니다. 치수는 사진 위에 직접 표시되고, 아래 기호 입력칸에서 수정할 수 있습니다. 그림 위 직접입력 대신 기호 입력 방식으로 값을 수정하세요.</div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. ${currentRenderMode()==='drawing'?'정리된 중심선으로 정식 렌더링 도면을 생성하며, 본도/측면도/단면도와 기호 치수를 함께 PDF로 출력합니다.':'실제 촬영 이미지 위에 실제 치구보다 약간 얇게 조정한 LINE(파랑)/ARC(빨강)과 기호 치수를 표시하며, 이 오버레이 화면 자체를 PDF 도면으로 사용합니다.'} 실구동 도면과 PDF는 동일한 CAD/치수 파이프라인을 사용합니다. RED/BLUE 표시도 원본 중심선 이탈 시에는 원본 중심선 기반으로 자동 보정합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
+      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b><span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}${dimensionEditorHtml(r)}<div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-jump-btn" data-id="${r.id}">기호별 치수 입력</button><button class="btn apply-dims" data-id="${r.id}">수정값 형상 반영</button><button class="btn export-one" data-id="${r.id}">${currentExportFormat()==='pdf'?(currentRenderMode()==='drawing'?'이 도면 PDF':'이 오버레이 PDF'):(currentRenderMode()==='drawing'?'이 도면 JPG':'이 오버레이 JPG')}</button></div><div class="dim-note-box">격자 촬영은 격자판 X/Y 주기 경계를 먼저 잠그고 그 내부에서만 치구를 선택합니다. 일반 바닥은 AR/Ø 교차검증과 중심 후보 점수를 사용합니다. 치수는 사진 위에 직접 표시되고, 아래 기호 입력칸에서 수정할 수 있습니다. 그림 위 직접입력 대신 기호 입력 방식으로 값을 수정하세요.</div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. ${currentRenderMode()==='drawing'?'정리된 중심선으로 정식 렌더링 도면을 생성하며, 본도/측면도/단면도와 기호 치수를 함께 출력합니다.':'실제 촬영 이미지 위에 실제 치구보다 약간 얇게 조정한 LINE(파랑)/ARC(빨강)과 기호 치수를 표시하며, 이 오버레이 화면 자체를 최종 도면으로 사용합니다.'} 실구동 도면과 JPG/PDF 출력은 동일한 CAD/치수 파이프라인을 사용합니다. RED/BLUE 표시도 원본 중심선 이탈 시에는 원본 중심선 기반으로 자동 보정합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
     }).join('');
   }
 
@@ -2984,7 +3009,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     if(shapeApply){const r=state.results.find(x=>x.id===shapeApply.dataset.id);if(!r?.ok)return;if(applyShapeCorrection(r)){renderResults();toast('보정한 중심선으로 도면을 다시 생성했습니다.');}return;}
     if(dimJump){const row=dimJump.closest('.result-item'),panel=row?.querySelector('.dim-editor-card');panel?.scrollIntoView({behavior:'smooth',block:'center'});return;}
     if(apply){const r=state.results.find(x=>x.id===apply.dataset.id);if(!r?.ok)return;recalcFromDimensions(r);renderResults();toast('폭/높이를 형상에 반영했습니다.');}
-    if(one){const r=state.results.find(x=>x.id===one.dataset.id);if(r?.ok)await exportPdf([r],`${safeName(r.name)}_drawing.pdf`);}
+    if(one){const r=state.results.find(x=>x.id===one.dataset.id);if(r?.ok)await exportBySelectedFormat([r],`${safeName(r.name)}_drawing`);}
   });
 
   let shapeDrag=null,shapeMoved=false;
@@ -3076,11 +3101,30 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2500);
   }
 
+  async function exportJpg(results,name='HOOK_batch_drawings.jpg') {
+    if(!results.length)return;
+    const unconfirmed=results.filter(r=>r.captureType!=='product'&&!r.shapeConfirmed);
+    if(unconfirmed.length){setStatus('형상 확인 필요','warn');alert(`자동 인식 실패 건은 보정선 적용 후 JPG를 생성하세요. 미처리 ${unconfirmed.length}건`);return;}
+    setStatus('JPG 생성중','busy');
+    try{
+      for(let i=0;i<results.length;i++){
+        const r=results[i],img=await renderPdfPageJpeg(r),blob=new Blob([img.bytes],{type:'image/jpeg'}),fileName=results.length===1?name:`${safeName(r.name)}_drawing.jpg`;
+        await shareOrDownload(blob,fileName); if(results.length>1) await new Promise(res=>setTimeout(res,180));
+      }
+      setStatus('JPG 생성 완료','ok');
+    }catch(err){setStatus('JPG 실패','warn');alert(`JPG 생성 실패: ${err?.message||err}`);}
+  }
+
   async function exportPdf(results,name='HOOK_batch_drawings.pdf') {
     if(!results.length)return;
     const unconfirmed=results.filter(r=>r.captureType!=='product'&&!r.shapeConfirmed);
     if(unconfirmed.length){setStatus('형상 확인 필요','warn');alert(`자동 인식 실패 건은 보정선 적용 후 PDF를 생성하세요. 미처리 ${unconfirmed.length}건`);return;}
     setStatus('PDF 생성중','busy');try{const pdf=await makePdf(results);await shareOrDownload(pdf,name);setStatus('PDF 생성 완료','ok');}catch(err){setStatus('PDF 실패','warn');alert(`PDF 생성 실패: ${err?.message||err}`);}
+  }
+
+  async function exportBySelectedFormat(results,batchName='HOOK_batch_drawings'){
+    if(currentExportFormat()==='pdf') return await exportPdf(results,`${batchName}.pdf`);
+    return await exportJpg(results, results.length===1?`${batchName}.jpg`:`${batchName}.jpg`);
   }
 
   async function exportDxf() {
@@ -3099,6 +3143,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   $('installBtn').addEventListener('click',async()=>{if(!state.deferredInstall)return;state.deferredInstall.prompt();await state.deferredInstall.userChoice;state.deferredInstall=null;$('installBtn').classList.add('hidden');});
 
   // ---------------- Events ----------------
+  document.querySelectorAll('.workspace-tab').forEach(btn=>btn.addEventListener('click',()=>setWorkspaceTab(btn.dataset.uiTab||'shoot')));
   $('startCameraBtn').addEventListener('click',startCamera);
   $('stopCameraBtn').addEventListener('click',()=>{stopCamera();setStatus('카메라 꺼짐');});
   $('captureBtn').addEventListener('click',captureShot);
@@ -3115,9 +3160,15 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   $('quickRenderModeSelect').addEventListener('change',e=>{setRenderModeValue(e.target.value);renderResults();});
   $('straightenLevelSelect').addEventListener('change',()=>renderResults());
   $('dimensionDetailSelect').addEventListener('change',()=>renderResults());
+
+  $('openAiEnabled').addEventListener('change',()=>{updateOpenAiUi();saveExtraPrefs();renderResults();});
+  $('openAiAssistMode').addEventListener('change',()=>{saveExtraPrefs();renderResults();});
+  $('openAiApiKey').addEventListener('change',saveExtraPrefs);
+  $('openAiModel').addEventListener('change',saveExtraPrefs);
+  $('exportFormatSelect').addEventListener('change',()=>{saveExtraPrefs();updateExportUi();renderResults();});
   $('clearShotsBtn').addEventListener('click',()=>{if(confirm('촬영한 사진을 모두 삭제할까요?'))clearCaptures();});
   $('batchAnalyzeBtn').addEventListener('click',batchAnalyze);
-  $('exportPdfBtn').addEventListener('click',()=>exportPdf(state.results.filter(r=>r.ok),'HOOK_batch_drawings.pdf'));
+  $('exportPdfBtn').addEventListener('click',()=>exportBySelectedFormat(state.results.filter(r=>r.ok),'HOOK_batch_drawings'));
   $('exportDxfBtn').addEventListener('click',exportDxf);
   $('newJobBtn').addEventListener('click',newJob);
   $('arMeasureBtn').addEventListener('click',startArAutoMeasure);
@@ -3145,10 +3196,12 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 
   try {
     loadLineSettings();
+    loadExtraPrefs();
     setAppMode('jig');
     renderCaptureList();
     updateShotUI();
     renderResults();
+    updateExportUi();
     updateNumberPreview();
     setStatus('준비');
     const boot=document.getElementById('bootStatus'); if(boot) boot.className='ok';
