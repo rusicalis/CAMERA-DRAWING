@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
-  <title>HOOK 모바일 자동도면 v0.10.20</title>
+  <title>HOOK 모바일 자동도면 v0.10.21</title>
 <style>
 :root{
   --bg:#070b13;--panel:#111827;--panel2:#172033;--line:#263247;--text:#eef2ff;--muted:#9aa8bd;
@@ -156,7 +156,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
   <header class="topbar">
     <div>
       <div class="eyebrow">COTEC JIG DRAWING</div>
-      <h1>HOOK 모바일 자동도면 <small>v0.10.20</small></h1>
+      <h1>HOOK 모바일 자동도면 <small>v0.10.21</small></h1>
       <p>치구 · 제품 공용 / 촬영 원본은 사진첩에 저장하지 않음 / 저장된 사진 첨부 가능</p>
     </div>
     <span id="statusPill" class="pill">준비</span>
@@ -1537,6 +1537,14 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       const alt=candidates.find(c=>c!==chosen && fullFrameFalsePositivePenalty(c,w,h,pitchPx,paperRect)>-8.5 && (candidateFrameStats(c.pb||{},w,h,pitchPx).touches<=1));
       if(alt) chosen=alt;
     }
+    const completeCandidate=candidates.filter(c=>c&&c!==chosen).sort((a,b)=>((b.span||0)+(b.minor||0)*1.08+(b.endSep||0)*1.4)-((a.span||0)+(a.minor||0)*1.08+(a.endSep||0)*1.4))[0];
+    if(completeCandidate&&chosen){
+      const nearScore=(completeCandidate.finalScore||0)>=(chosen.finalScore||0)-1.85;
+      const longerEnds=(completeCandidate.endSep||0)>(chosen.endSep||0)+.035;
+      const fullerCover=((completeCandidate.span||0)+(completeCandidate.minor||0)*.95)>((chosen.span||0)+(chosen.minor||0)*.95)+.05;
+      const falseSafe=(completeCandidate.falsePositivePenalty||0)>=(chosen.falsePositivePenalty||0)-1.0;
+      if(nearScore&&falseSafe&&(longerEnds||fullerCover)) chosen=completeCandidate;
+    }
     if(paperRect?.inner && componentInsideRectScore(chosen,paperRect.inner)<.78){
       const strict=strictRoiCandidate(imageData,gray,w,h,pitchPx,diameter,paperRect);
       if(strict)chosen={...strict,consensus:chosen.consensus||0,finalScore:(strict.pathScore||0)+5};
@@ -2472,6 +2480,36 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       return s;
     });
   }
+
+  function shouldDisplayStrictArc(g,total,d,bounds){
+    if(!(g&&g.type==='arc'&&g.m&&g.p0&&g.p1)) return false;
+    const span=Math.abs(Number(g.m.span)||0), chord=Math.max(.001,dist(g.p0,g.p1)), r=Math.max(.001,Number(g.m.r)||0), sag=meaningfulSagitta(r,chord), bb=bounds||pathBounds([g.p0,g.p1,{x:g.m.cx||0,y:g.m.cy||0}]);
+    const major=Math.max(bb.w||0,bb.h||0), fit95=Math.abs(Number(g.m.p95)||0), fitRms=Math.abs(Number(g.m.rms)||0), radiusChord=r/chord;
+    // 원형에 매우 가까운 실제 곡선만 R 치수 대상으로 허용한다. 완만한 S, 타원형 U, 긴 휨은 직선 분할로 처리한다.
+    return span>=Math.PI*.38 && span<=Math.PI*.78 && r>=Math.max(d*.65,2.5) && r<=Math.max(d*7.5,major*.40,total*.20) && radiusChord<=1.45 && sag>=Math.max(d*.45,chord*.12,1.2) && fit95<=Math.max(1.8,d*.28,r*.09) && fitRms<=Math.max(1.2,d*.20,r*.06);
+  }
+  function manufacturingDimSubpath(points,diameter=6){
+    if(!Array.isArray(points)||!points.length) return [];
+    let pts=fidelityPath(points);
+    if(pts.length<3) return pts.map(p=>({...p}));
+    const d=Math.max(.1,Number(diameter)||6),total=Math.max(1,pathLength(pts)||1),pb=pathBounds(pts),minor=Math.max(1,Math.min(pb.w,pb.h));
+    let out=rdpSimplify(pts,Math.max(d*.24,minor*.045,total*.070,1.0));
+    out=mergeAverageRuns(out,d);
+    out=collapseMinorKinks(out,Math.max(d*1.6,total*.085,3.2),14);
+    out=snapSegmentsToDominantAngles(out,d);
+    out=mergeAverageRuns(out,d);
+    out=collapseMinorKinks(out,Math.max(d*1.2,total*.060,2.4),10);
+    if(out.length>6) out=rdpSimplify(out,Math.max(d*.22,total*.050,1.0));
+    if(out.length<2) return [points[0],points[points.length-1]].map(p=>({...p}));
+    return out.map(p=>({...p}));
+  }
+  function displayRadiusInfo(cadMm,diameter=6){
+    const fit=(cadMm&&Array.isArray(cadMm.fitPath)&&cadMm.fitPath.length)?cadMm.fitPath:((cadMm&&Array.isArray(cadMm.sourcePath)&&cadMm.sourcePath.length)?cadMm.sourcePath:[]), bb=fit.length?pathBounds(fit):{minY:0,maxY:0,w:0,h:0}, total=Math.max(1,Number(cadMm?.totalLength)||pathLength(fit)||1), arcs=(cadMm?.segments||[]).filter(g=>shouldDisplayStrictArc(g,total,diameter,bb));
+    if(!arcs.length) return {r1:NaN,r2:NaN,arcs:[]};
+    const withMid=arcs.map(g=>({g,mid:cadSegmentMidPoint(g)})).sort((a,b)=>a.mid.y-b.mid.y);
+    const top=withMid[0]?.g||null,bottom=withMid.length>1?withMid[withMid.length-1].g:null;
+    return {r1:top?top.m.r:NaN,r2:(bottom&&bottom!==top)?bottom.m.r:NaN,arcs:arcs};
+  }
   function buildDimensionSpecs(pathMm, pathScreen, W, H, opt={}){
     const specs=[];
     if(pathScreen.length<2 || pathMm.length<2) return specs;
@@ -2489,16 +2527,34 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     const shapeCenter={x:(b.minX+b.maxX)/2,y:(b.minY+b.maxY)/2};
     const cadSegsMm=Array.isArray(opt.cadSegmentsMm)?opt.cadSegmentsMm:[];
     const cadSegsScreen=Array.isArray(opt.cadSegmentsScreen)?opt.cadSegmentsScreen:[];
+    const cadGeom=opt.cadGeometry||null;
+    const mapPtMmToScreen=typeof opt.mapPtMmToScreen==='function'?opt.mapPtMmToScreen:null;
+    const diameterMm=Math.max(.1,Number(opt.diameterMm)||6);
     const segCandidates=[];
+    const strictArcPairs=[];
     const totalPath=Math.max(1,pathLength(pathMm)||1);
     // 제작에 필요한 주요 세그먼트만 표시한다. 미세 분절/잡선은 치수 대상에서 제외한다.
     const minSeg=Math.max(14,Math.max(mb.w,mb.h)*0.08,totalPath*0.045);
 
     if(cadSegsMm.length && cadSegsScreen.length && cadSegsMm.length===cadSegsScreen.length){
+      let seq=0;
       for(let i=0;i<cadSegsMm.length;i++){
-        const gm=cadSegsMm[i],gs=cadSegsScreen[i],len=cadSegmentLengthMm(gm);
+        const gm=cadSegsMm[i],gs=cadSegsScreen[i];
+        if(gm?.type==='arc' && !shouldDisplayStrictArc(gm,totalPath,diameterMm,mb)){
+          const srcPts=(cadGeom&&typeof rawSegmentSourcePoints==='function')?rawSegmentSourcePoints(cadGeom,gm):[];
+          const seedPts=srcPts.length?srcPts:[gm.p0,cadSegmentMidPoint(gm),gm.p1];
+          const poly=manufacturingDimSubpath(seedPts,diameterMm);
+          for(let k=1;k<poly.length;k++){
+            const p0=poly[k-1],p1=poly[k],len=dist(p0,p1); if(!Number.isFinite(len)||len<minSeg) continue;
+            const s0=mapPtMmToScreen?mapPtMmToScreen(p0):gs.p0, s1=mapPtMmToScreen?mapPtMmToScreen(p1):gs.p1;
+            segCandidates.push({i:seq++,len,type:'line',gm:{p0,p1,type:'line'},gs:{p0:s0,p1:s1,type:'line',mid:{x:(s0.x+s1.x)/2,y:(s0.y+s1.y)/2}}});
+          }
+          continue;
+        }
+        const len=cadSegmentLengthMm(gm);
         if(!Number.isFinite(len)||len<minSeg) continue;
-        segCandidates.push({i,len,type:gm.type,gm,gs});
+        segCandidates.push({i:seq++,len,type:gm.type,gm,gs});
+        if(gm.type==='arc') strictArcPairs.push({gm,gs});
       }
     }else{
       const count=Math.min(pathMm.length,pathScreen.length);
@@ -2537,18 +2593,19 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       }
     }
 
-    const arcsMm=Array.isArray(opt.arcsMm)?opt.arcsMm:[];
-    const arcsScreen=Array.isArray(opt.arcsScreen)?opt.arcsScreen:[];
-    if(arcsMm.length && arcsScreen.length){
-      const limit=currentDimensionDetail()==='full'?4:3;
+    const radiusPairs=strictArcPairs.length?strictArcPairs:[];
+    if(radiusPairs.length){
+      const limit=currentDimensionDetail()==='full'?4:2;
       let shown=0;
-      for(let k=0;k<Math.min(arcsMm.length,arcsScreen.length);k++){
-        const am=arcsMm[k],as=arcsScreen[k];
-        if(!(Number.isFinite(am.r)&&am.r>0.8)) continue;
-        const anchor=as.center||as.corner||as.p1;
+      for(let k=0;k<radiusPairs.length;k++){
+        const am=radiusPairs[k].gm?.m,as=radiusPairs[k].gs;
+        if(!(am&&Number.isFinite(am.r)&&am.r>0.8&&as)) continue;
+        const anchor=as.center||as.corner||as.p1||as.mid;
+        const corner=as.corner||as.mid||as.p1;
+        if(!anchor||!corner) continue;
         let nx=anchor.x-shapeCenter.x,ny=anchor.y-shapeCenter.y; const nm=Math.hypot(nx,ny)||1; nx/=nm; ny/=nm;
         const tx=clamp(anchor.x+nx*(70+(shown%2)*14),62,W-62),ty=clamp(anchor.y+ny*(70+(shown%2)*14),46,H-46);
-        specs.push({key:`bendR${shown+1}`,value:am.r,kind:'leader',prefix:'R',textX:tx,textY:ty,x1:as.corner.x,y1:as.corner.y,x2:tx-8*nx,y2:ty-8*ny});
+        specs.push({key:`bendR${shown+1}`,value:am.r,kind:'leader',prefix:'R',textX:tx,textY:ty,x1:corner.x,y1:corner.y,x2:tx-8*nx,y2:ty-8*ny});
         shown++;
         if(shown>=limit) break;
       }
@@ -2583,18 +2640,19 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
     let screen=[],dimOpt={};
     if(variant==='photo'){
       const fit=fitPhotoFocus(r,draw),map=cadScreenMappingForFocusedPhoto(r,cadMm,fit);
-      screen=mmForDims.map(map.mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,map.mapPt),overallScreenPath:(map.fitPath&&map.fitPath.length)?map.fitPath:screen,overallBoundsMm:pathBounds(mmForDrawing)};
+      screen=mmForDims.map(map.mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,map.mapPt),cadGeometry:cadMm,mapPtMmToScreen:map.mapPt,diameterMm:Number(r.diameter)||6,overallScreenPath:(map.fitPath&&map.fitPath.length)?map.fitPath:screen,overallBoundsMm:pathBounds(mmForDrawing)};
     }else{
       const mmPath=mmForDrawing,pb=pathBounds(mmPath),sc=Math.min(draw.w/pb.w,draw.h/pb.h)*.84,ox=draw.x+(draw.w-pb.w*sc)/2,oy=draw.y+(draw.h-pb.h*sc)/2,tx=ox-pb.minX*sc,ty=oy-pb.minY*sc,mapPt=p=>({x:tx+p.x*sc,y:ty+p.y*sc});
-      screen=mmForDims.map(mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,mapPt),overallScreenPath:mmPath.map(mapPt),overallBoundsMm:pathBounds(mmPath)};
+      screen=mmForDims.map(mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,mapPt),cadGeometry:cadMm,mapPtMmToScreen:mapPt,diameterMm:Number(r.diameter)||6,overallScreenPath:mmPath.map(mapPt),overallBoundsMm:pathBounds(mmPath)};
     }
-    let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);if(variant==='photo')specs=layoutDimensionLabels([...specs,...radiusOverlaySpecs(r,screen,W,H)],W,H);
+    const displayRadius=displayRadiusInfo(cadMm,Number(r.diameter)||6);
+    let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);if(variant==='photo')specs=layoutDimensionLabels([...specs,...radiusOverlaySpecs({...r,r1:displayRadius.r1,r2:displayRadius.r2},screen,W,H)],W,H);
     const fixed=[
       {key:'length',value:Number.isFinite(parseFloat(r.length))?parseFloat(r.length):totalLength},
       {key:'width',value:parseFloat(r.width)||r.baseWidth},
       {key:'height',value:parseFloat(r.height)||r.baseHeight},
-      {key:'r1',value:parseFloat(r.r1)},
-      {key:'r2',value:parseFloat(r.r2)},
+      {key:'r1',value:displayRadius.r1},
+      {key:'r2',value:displayRadius.r2},
       {key:'diameter',value:parseFloat(r.diameter)}
     ].filter(x=>Number.isFinite(x.value));
     const priority=s=> /^seg\d+$/.test(s.key)?0 : s.key==='length'?1 : /^bendR\d+$/.test(s.key)?2 : ['width','height','r1','r2','diameter'].indexOf(s.key)+3;
@@ -2821,15 +2879,16 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
       const guideStroke=estimatedWireStroke;
       shapeMarkup=`<rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}" fill="#f5f5f5" stroke="#111" stroke-width="1"/>${photoImageMarkup(r,fit)}${cadGeometrySvg(cadMm,map.tx,map.ty,map.sc,true,guideStroke)}<g font-family="Arial,'Noto Sans KR',sans-serif" font-size="10" font-weight="700"><rect x="${draw.x+10}" y="${draw.y+10}" width="160" height="28" rx="5" fill="rgba(0,0,0,.72)"/><line x1="${draw.x+20}" y1="${draw.y+24}" x2="${draw.x+45}" y2="${draw.y+24}" stroke="#1976ff" stroke-width="1.1"/><text x="${draw.x+51}" y="${draw.y+28}" fill="#fff">LINE</text><line x1="${draw.x+92}" y1="${draw.y+24}" x2="${draw.x+117}" y2="${draw.y+24}" stroke="#ff2d2d" stroke-width="1.1"/><text x="${draw.x+123}" y="${draw.y+28}" fill="#fff">ARC</text></g>`;
       screen=visualScreen;
-      dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,map.mapPt),overallScreenPath:visualScreen,overallBoundsMm:pathBounds(mmForDrawing)};
+      dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,map.mapPt),cadGeometry:cadMm,mapPtMmToScreen:map.mapPt,diameterMm:Number(r.diameter)||6,overallScreenPath:visualScreen,overallBoundsMm:pathBounds(mmForDrawing)};
     }else{
       const pb=pathBounds(mmForDrawing),sc=Math.min(draw.w/pb.w,draw.h/pb.h)*.84,ox=draw.x+(draw.w-pb.w*sc)/2,oy=draw.y+(draw.h-pb.h*sc)/2,tx=ox-pb.minX*sc,ty=oy-pb.minY*sc;
       const mapPt=p=>({x:tx+p.x*sc,y:ty+p.y*sc});
       shapeMarkup=`<rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}" fill="none" stroke="#111" stroke-width="1"/>${cadGeometrySvg(cadMm,tx,ty,sc,false,4.2)}${r.photoDataUrl?`<rect x="${draw.x+12}" y="${draw.y+draw.h-128}" width="110" height="110" fill="none" stroke="#555"/><image href="${r.photoDataUrl}" x="${draw.x+16}" y="${draw.y+draw.h-124}" width="102" height="102" preserveAspectRatio="xMidYMid meet"/>`:''}`;
       screen=(cadMm.points||[]).map(mapPt);
-      dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,mapPt),overallScreenPath:(cadMm.fitPath||[]).map(mapPt),overallBoundsMm:pathBounds(mmForDrawing)};
+      dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,mapPt),cadGeometry:cadMm,mapPtMmToScreen:mapPt,diameterMm:Number(r.diameter)||6,overallScreenPath:(cadMm.fitPath||[]).map(mapPt),overallBoundsMm:pathBounds(mmForDrawing)};
     }
-    let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);if(variant==='photo')specs=layoutDimensionLabels([...specs,...radiusOverlaySpecs(r,screen,W,H)],W,H);const dimSvg=makeDimSvg(specs,r,true);
+    const displayRadius=displayRadiusInfo(cadMm,Number(r.diameter)||6);
+    let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);if(variant==='photo')specs=layoutDimensionLabels([...specs,...radiusOverlaySpecs({...r,r1:displayRadius.r1,r2:displayRadius.r2},screen,W,H)],W,H);const dimSvg=makeDimSvg(specs,r,true);
     const sideTitle = r.captureType==='product' ? '제품 실이미지 오버레이 치수도' : '치구 실이미지 오버레이 치수도';
     const tbx=title.x,tby=title.y,tbw=title.w,tbh=title.h;
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><defs><clipPath id="photoClip"><rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}"/></clipPath></defs><rect width="${W}" height="${H}" fill="#fff"/><rect x="24" y="24" width="1141" height="793" fill="none" stroke="#111" stroke-width="1.4"/><text x="52" y="50" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">COTEC JIG DRAWING</text><text x="52" y="72" font-size="16" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${sideTitle}</text><text x="52" y="92" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${mm0(r.diameter)} / 전개길이 ${mm0(length)}</text>${shapeMarkup}${dimSvg}<rect x="${tbx}" y="${tby}" width="${tbw}" height="${tbh}" fill="#fff" stroke="#111" stroke-width="1"/><line x1="${tbx}" y1="${tby+24}" x2="${tbx+tbw}" y2="${tby+24}" stroke="#111"/><line x1="${tbx}" y1="${tby+48}" x2="${tbx+tbw}" y2="${tby+48}" stroke="#111"/><line x1="${tbx}" y1="${tby+72}" x2="${tbx+tbw}" y2="${tby+72}" stroke="#111"/><line x1="${tbx}" y1="${tby+96}" x2="${tbx+tbw}" y2="${tby+96}" stroke="#111"/><line x1="${tbx}" y1="${tby+116}" x2="${tbx+tbw}" y2="${tby+116}" stroke="#111"/><line x1="${tbx+92}" y1="${tby+24}" x2="${tbx+92}" y2="${tby+tbh}" stroke="#111"/><text x="${tbx+8}" y="${tby+16}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">TITLE BLOCK</text><text x="${tbx+8}" y="${tby+40}" font-size="10">도면번호</text><text x="${tbx+100}" y="${tby+40}" font-size="10">${esc(r.name)}</text><text x="${tbx+8}" y="${tby+64}" font-size="10">재질</text><text x="${tbx+100}" y="${tby+64}" font-size="10">${esc(r.material)}</text><text x="${tbx+8}" y="${tby+88}" font-size="10">전체 폭/높이</text><text x="${tbx+100}" y="${tby+88}" font-size="10">${mm0(width)} / ${mm0(height)}</text><text x="${tbx+8}" y="${tby+112}" font-size="10">전개길이</text><text x="${tbx+100}" y="${tby+112}" font-size="10">${mm0(length)}</text><text x="${tbx+8}" y="${tby+132}" font-size="10">작성일</text><text x="${tbx+100}" y="${tby+132}" font-size="10">${date}</text><text x="52" y="800" font-size="10" font-family="Arial,'Noto Sans KR',sans-serif">NOTE : 실구동 화면과 PDF는 동일한 CAD/치수 파이프라인을 사용합니다. 실제 촬영 이미지 위 LINE(파랑)/ARC(빨강)를 실제 치구 폭의 약 절반 수준으로 얇게 표시하고, 제작에 필요한 큰 직선/곡선 구간만 L 길이로 표시하고 R 치수를 함께 표시합니다. 치수선과 화살표는 검은색으로 통일합니다.</text></svg>`;
