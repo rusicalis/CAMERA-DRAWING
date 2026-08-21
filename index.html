@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
-  <title>HOOK 모바일 자동도면 v0.10.34</title>
+  <title>HOOK 모바일 자동도면 v0.10.37</title>
 <style>
 :root{
   --bg:#070b13;--panel:#111827;--panel2:#172033;--line:#263247;--text:#eef2ff;--muted:#9aa8bd;
@@ -151,7 +151,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 #bootStatus{position:sticky;top:0;z-index:1000;margin:0 auto;max-width:820px;padding:8px 14px;background:#0c4a6e;color:#e0f2fe;font-size:11px;font-weight:800;text-align:center;border-bottom:1px solid #38bdf8}#bootStatus.ok{display:none}#bootStatus.error{background:#7f1d1d;color:#fee2e2;display:block}.boot-fallback{display:none}
 
 
-/* v0.10.34 ACPT compact workspace */
+/* v0.10.37 ACPT compact workspace */
 :root{--acpt:#0f5f5a;--acpt-dark:#0b2f34;--acpt-soft:#eaf7f5;--acpt-line:#cfe2e3;--paper:#f4f8f8;--ink:#21333a;--sub:#6d8086}
 html{background:var(--paper);color-scheme:light}
 body{background:linear-gradient(180deg,#eef5f5 0,#f7faf9 260px,#f5f8f8 100%);color:var(--ink)}
@@ -170,7 +170,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
 @media(max-width:820px){.topbar{padding:13px 14px}.brand-mark{width:44px;height:44px;border-radius:12px}.topbar h1{font-size:18px}.topbar p{font-size:9px}.workspace-tabs-wrap{top:72px;padding:7px 9px}.workspace-tab,.mode-mini{padding:7px 10px;font-size:10px}.settings-sub-tab{padding:6px 9px;font-size:9px;min-height:30px}.settings-sub-tabs{gap:5px}.settings-sub-tabs:before{height:21px}.mode-mini{margin-left:0}.option-dock{padding:0 8px;margin-top:7px}.option-panel{padding:11px}.option-panel .form-grid{grid-template-columns:1fr 1fr}.camera-stage{max-height:50vh}.capture-item{flex-basis:132px}.capture-thumb{height:92px}.queue-actions{grid-template-columns:105px 1fr}.export-actions{grid-template-columns:1fr 1fr}.export-actions #newJobBtn{grid-column:1/-1}}
 @media(max-width:480px){.topbar{position:relative}.workspace-tabs-wrap{top:0}.topbar p{display:block}.option-panel .form-grid{grid-template-columns:1fr 1fr}.camera-stage{aspect-ratio:3/4;max-height:48vh}.capture-item{flex-basis:118px}.capture-thumb{height:82px}.capture-fields{grid-template-columns:1fr}.queue-actions{grid-template-columns:90px 1fr}.capture-btn{width:64px;height:64px}}
 
-/* v0.10.34 focused tab/camera refinements */
+/* v0.10.37 focused tab/camera refinements */
 .shoot-workspace{display:none}.shoot-workspace.active{display:block}.option-dock.hidden-for-shoot{display:none}
 .api-save-row{display:flex;align-items:center;gap:10px;margin-top:10px}.api-save-row .btn{min-height:36px;padding:7px 14px}.api-key-status{font-size:10px;font-weight:800;color:#70858a}.api-key-status.saved{color:#08786f;background:#def7f2;border:1px solid #bde8e2;border-radius:999px;padding:6px 9px}
 .camera-primary{width:100%;max-width:none}.camera-stage{width:100%;max-width:none;margin-left:auto;margin-right:auto;aspect-ratio:auto;height:clamp(360px,58vh,650px);max-height:none}.camera-stage video{width:100%;height:100%;object-fit:cover;object-position:center center}
@@ -185,7 +185,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
   <header class="topbar">
     <div class="brand-wrap">
       <div class="brand-mark"><b>H</b></div>
-      <div class="brand-copy"><div class="eyebrow">COTEC · HOOK DRAWING</div><h1>HOOK 모바일 자동도면 <small>v0.10.34</small></h1><p>치구 전용 / 실사진 기반 선재 인식 V2 + 선택형 OpenAI Vision 검증 보조 / JPG 기본 출력</p></div>
+      <div class="brand-copy"><div class="eyebrow">COTEC · HOOK DRAWING</div><h1>HOOK 모바일 자동도면 <small>v0.10.37</small></h1><p>치구 전용 / 실사진 기반 선재 인식 V2 + 선택형 OpenAI Vision 검증 보조 / JPG 기본 출력</p></div>
     </div>
     <span id="statusPill" class="pill">준비</span>
   </header>
@@ -2980,10 +2980,10 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     const parts=[];
     for(const s of specs){
       const info=dimSpecInfo(s);
-      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#000" stroke-width="1.7" stroke-opacity="1" fill="none"/>`).join('');
+      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#000" stroke-width="2.2" stroke-opacity="1" fill="none"/>`).join('');
       let main='';
-      if(s.kind==='leader' || s.kind==='leaderSegment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.7" stroke-opacity="1" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6,'#000')}`;
-      else if(s.kind==='segment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.7" stroke-opacity="1" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6,'#000')}${svgArrow(s.x1,s.y1,s.x2,s.y2,6,'#000')}`;
+      if(s.kind==='leader' || s.kind==='leaderSegment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="2.2" stroke-opacity="1" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,7,'#000')}`;
+      else if(s.kind==='segment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="2.2" stroke-opacity="1" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,7,'#000')}${svgArrow(s.x1,s.y1,s.x2,s.y2,7,'#000')}`;
       const val=readDimValue(r,s.key,s.value),label=`${info.symbol} ${mm0(val)}${info.unit?` ${info.unit}`:''}`;
       const approxW=Math.max(52,label.length*6.6),approxH=18,x=s.textX-approxW/2,y=s.textY-approxH/2;
       const textColor=s.segColor||(/^bendR/.test(s.key)?'#ff4b4b':(/^seg/.test(s.key)?'#69d5ff':'#69d5ff'));
@@ -3059,23 +3059,29 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     return catmullRomSvgD(points,.50);
   }
   function cadGeometrySvg(cad,tx,ty,sc,reviewColors=false,strokeWidth=4){
-    const sw=Math.max(.6,strokeWidth*.70);
+    const sw=Math.max(.7,strokeWidth*.70);
     if(!cad?.segments?.length){
       return `<path d="${cad?.d||''}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${reviewColors?'#1976ff':'#111'}" stroke-width="${sw}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`;
     }
     const out=[];
-    if(reviewColors && cad?.d){
-      out.push(`<path d="${cad.d}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="#fff" stroke-opacity=".92" stroke-width="${(sw+0.20).toFixed(2)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
-    }
-    for(const g of cad.segments){
-      const color=reviewColors?(g.type==='arc'?'#ff3b3b':'#2a9dff'):'#111';
+    const jointDots=[];
+    for(let idx=0; idx<cad.segments.length; idx++){
+      const g=cad.segments[idx];
+      const color=reviewColors?(g.type==='arc'?'#ff2d2d':'#1976ff'):'#111';
       if(reviewColors){
         const segPts=rawSegmentSourcePoints(cad,g);
         if(segPts.length>=2){
           const d=pathToSvgD(segPts);
           out.push(`<path d="${d}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${color}" stroke-width="${sw.toFixed(2)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
-          continue;
+        }else if(g.type==='arc'&&g.m){
+          out.push(`<path d="${cadArcPathD(g)}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${color}" stroke-width="${sw.toFixed(2)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
+        }else{
+          out.push(`<line x1="${g.p0.x.toFixed(3)}" y1="${g.p0.y.toFixed(3)}" x2="${g.p1.x.toFixed(3)}" y2="${g.p1.y.toFixed(3)}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" stroke="${color}" stroke-width="${sw.toFixed(2)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
         }
+        if(idx<cad.segments.length-1 && g.p1){
+          jointDots.push(`<circle cx="${g.p1.x.toFixed(3)}" cy="${g.p1.y.toFixed(3)}" r="${(sw*0.52).toFixed(2)}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="${color}" vector-effect="non-scaling-stroke"/>`);
+        }
+        continue;
       }
       if(g.type==='arc'&&g.m){
         out.push(`<path d="${cadArcPathD(g)}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${color}" stroke-width="${sw.toFixed(2)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
@@ -3083,7 +3089,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
         out.push(`<line x1="${g.p0.x.toFixed(3)}" y1="${g.p0.y.toFixed(3)}" x2="${g.p1.x.toFixed(3)}" y2="${g.p1.y.toFixed(3)}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" stroke="${color}" stroke-width="${sw.toFixed(2)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
       }
     }
-    return out.join('');
+    return out.join('') + jointDots.join('');
   }
   function photoFocusRect(r){
     const iw=Math.max(1,r.imageW||1000),ih=Math.max(1,r.imageH||1000),pr=r.paperRect?.outer,rb=r.rawBBox;
@@ -3137,11 +3143,11 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     const parts=[];
     for(const s of specs||[]){
       const info=dimSpecInfo(s);
-      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#000" stroke-width="1.2" fill="none"/>`).join('');
+      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#000" stroke-width="1.65" fill="none"/>`).join('');
       const val=readDimValue(r,s.key,s.value),label=`${info.symbol==='Ø'?'Ø':info.symbol}${mm0(val)}`;
       let main='';
-      if(s.kind==='leader' || s.kind==='leaderSegment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.2" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5,'#000')}`;
-      else if(s.kind==='segment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.2" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5,'#000')}${svgArrow(s.x1,s.y1,s.x2,s.y2,5,'#000')}`;
+      if(s.kind==='leader' || s.kind==='leaderSegment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.65" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6,'#000')}`;
+      else if(s.kind==='segment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.65" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6,'#000')}${svgArrow(s.x1,s.y1,s.x2,s.y2,6,'#000')}`;
       const w=Math.max(28,label.length*7.2),x=s.textX-w/2,y=s.textY-10;
       parts.push(`<g>${ext}${main}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="16" fill="#efefef" fill-opacity="0.82" stroke="#d0d0d0" stroke-width="0.4"/><text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial,'Noto Sans KR',sans-serif" font-size="10.5" fill="${s.segColor||'#111'}">${esc(label)}</text></g>`);
     }
@@ -3149,46 +3155,58 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
   }
 
 
-  function buildRenderedDrawingSvg(r,mmRaw,cadMm,mmForDrawing,mmForDims,width,height,length,date){
-    const W=1189,H=841;
-    const main={x:95,y:55,w:455,h:610};
-    const side={x:772,y:92,w:92,h:440};
-    const section={cx:818,cy:638,rad:34};
-    const title={x:452,y:680,w:646,h:120};
-    const notes={x:48,y:684,w:360,h:116};
 
-    const pb=pathBounds(mmForDrawing);
-    const sc=Math.min(main.w/Math.max(1,pb.w),main.h/Math.max(1,pb.h))*0.84;
-    const ox=main.x+(main.w-pb.w*sc)/2, oy=main.y+(main.h-pb.h*sc)/2;
-    const tx=ox-pb.minX*sc, ty=oy-pb.minY*sc;
-    const mapPt=p=>({x:tx+p.x*sc,y:ty+p.y*sc});
-    const centerPath=(cadMm.fitPath||mmForDrawing).map(mapPt);
-    const centerD=pathToSvgD(centerPath);
-    const diaVal=Number(readDimValue(r,'diameter',r.diameter)||6);
-    const outlineW=Math.max(6,diaVal*sc), innerW=Math.max(1,outlineW-2.4);
-    const mainShape=`<path d="${centerD}" fill="none" stroke="#111" stroke-width="${outlineW.toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${centerD}" fill="none" stroke="#fff" stroke-width="${innerW.toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${centerD}" fill="none" stroke="#777" stroke-width="1" stroke-dasharray="7 5" stroke-linecap="round"/>`;
-
-    let specs=buildDimensionSpecs(mmForDims,centerPath,W,H,{arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,mapPt),cadGeometry:cadMm,mapPtMmToScreen:mapPt,diameterMm:diaVal,totalLengthMm:length,overallScreenPath:centerPath,overallBoundsMm:pathBounds(mmForDrawing)});
-    const detail=($('dimensionDetailSelect')?.value)||'basic';
-    specs=specs.filter(s=> s.key==='length' || /^bendR\d+$/.test(s.key) || /^seg[1-4]$/.test(s.key) || (detail==='full' && /^seg\d+$/.test(s.key)));
-    const dimSvg=makeDimSvgFormal(specs,r);
-
-    const sideCx=side.x+side.w/2, sideTop=side.y+10, sideBot=side.y+side.h-10;
-    const sideW=Math.max(8,diaVal*5.5), sideInner=Math.max(2,sideW-2.4);
-    const sideSvg=`<path d="M ${sideCx} ${sideTop} L ${sideCx} ${sideBot}" fill="none" stroke="#111" stroke-width="${sideW.toFixed(1)}" stroke-linecap="round"/><path d="M ${sideCx} ${sideTop} L ${sideCx} ${sideBot}" fill="none" stroke="#fff" stroke-width="${sideInner.toFixed(1)}" stroke-linecap="round"/><path d="M ${sideCx} ${sideTop} L ${sideCx} ${sideBot}" fill="none" stroke="#777" stroke-width="1" stroke-dasharray="7 5" stroke-linecap="round"/>`;
-    const diaText=`<line x1="${sideCx-sideW/2}" y1="${side.y+side.h/2}" x2="${sideCx+sideW/2}" y2="${side.y+side.h/2}" stroke="#111" stroke-width="1"/>${svgArrow(sideCx-sideW/2,side.y+side.h/2,sideCx+sideW/2,side.y+side.h/2,5)}${svgArrow(sideCx+sideW/2,side.y+side.h/2,sideCx-sideW/2,side.y+side.h/2,5)}<text x="${side.x+side.w+40}" y="${side.y+side.h/2-4}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif">Ø${mm0(diaVal)}</text>`;
-    let hatch=''; for(let i=-26;i<=18;i+=8){ hatch+=`<line x1="${section.cx-28+i}" y1="${section.cy+28}" x2="${section.cx+28+i}" y2="${section.cy-28}" stroke="#888" stroke-width="1"/>`; }
-    const sectionSvg=`<text x="${section.cx-44}" y="${section.cy-54}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif">단면 A-A</text><circle cx="${section.cx}" cy="${section.cy}" r="${section.rad}" fill="#fff" stroke="#111" stroke-width="1.5"/>${hatch}<line x1="${section.cx-section.rad-30}" y1="${section.cy}" x2="${section.cx+section.rad+30}" y2="${section.cy}" stroke="#111" stroke-width="1"/>${svgArrow(section.cx-section.rad,section.cy,section.cx+section.rad,section.cy,5)}${svgArrow(section.cx+section.rad,section.cy,section.cx-section.rad,section.cy,5)}<text x="${section.cx+section.rad+36}" y="${section.cy-4}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif">Ø${mm0(diaVal)}</text>`;
-
-    const photoInset=r.photoDataUrl?`<rect x="${main.x+8}" y="${main.y+main.h-96}" width="82" height="82" fill="#fff" stroke="#777"/><image href="${r.photoDataUrl}" x="${main.x+12}" y="${main.y+main.h-92}" width="74" height="74" preserveAspectRatio="xMidYMid meet"/>`:'';
-
-    const noteSvg=`<text x="${notes.x}" y="${notes.y}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif">주서</text><text x="${notes.x}" y="${notes.y+24}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">1. 재질 : ${esc(r.material)}</text><text x="${notes.x}" y="${notes.y+44}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">2. 재질규격 : 환봉 Ø${mm0(diaVal)}</text><text x="${notes.x}" y="${notes.y+64}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">3. 표면처리 : 없음</text><text x="${notes.x}" y="${notes.y+84}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">4. 일반공차 : ±0.5</text><text x="${notes.x}" y="${notes.y+104}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">5. 날카로운 부분은 R0.3~0.5 제거</text><text x="${notes.x}" y="${notes.y+124}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">6. 치수 단위 : mm</text>`;
-
-    const titleSvg=`<rect x="${title.x}" y="${title.y}" width="${title.w}" height="${title.h}" fill="#fff" stroke="#111" stroke-width="1.15"/><line x1="${title.x}" y1="${title.y+30}" x2="${title.x+title.w}" y2="${title.y+30}" stroke="#111"/><line x1="${title.x}" y1="${title.y+60}" x2="${title.x+title.w}" y2="${title.y+60}" stroke="#111"/><line x1="${title.x}" y1="${title.y+90}" x2="${title.x+title.w}" y2="${title.y+90}" stroke="#111"/><line x1="${title.x+110}" y1="${title.y}" x2="${title.x+110}" y2="${title.y+title.h}" stroke="#111"/><line x1="${title.x+290}" y1="${title.y}" x2="${title.x+290}" y2="${title.y+title.h}" stroke="#111"/><line x1="${title.x+425}" y1="${title.y}" x2="${title.x+425}" y2="${title.y+title.h}" stroke="#111"/><text x="${title.x+16}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">품 명</text><text x="${title.x+126}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">J HOOK</text><text x="${title.x+306}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">도면번호</text><text x="${title.x+442}" y="${title.y+20}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">${esc(r.name)}</text><text x="${title.x+16}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">재 질</text><text x="${title.x+126}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">${esc(r.material)}</text><text x="${title.x+306}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">척 도</text><text x="${title.x+442}" y="${title.y+50}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">1 : 1</text><text x="${title.x+16}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">재질규격</text><text x="${title.x+126}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">환봉 Ø${mm0(diaVal)}</text><text x="${title.x+306}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">단 위</text><text x="${title.x+442}" y="${title.y+80}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">mm</text><text x="${title.x+16}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">작 성 일</text><text x="${title.x+126}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">${date.replace(/-/g,'. ') + '.'}</text><text x="${title.x+306}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">작 성</text><text x="${title.x+442}" y="${title.y+110}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif">-</text><text x="${title.x+520}" y="${title.y+110}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">전체 폭 ${mm0(width)} / 전체 높이 ${mm0(height)} / 전개길이 ${mm0(length)}</text>`;
-
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff"/><rect x="16" y="16" width="${W-32}" height="${H-32}" fill="none" stroke="#111" stroke-width="1.4"/>${mainShape}${photoInset}${dimSvg}<text x="${side.x+4}" y="${side.y-18}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif">측면도</text>${sideSvg}${diaText}${sectionSvg}${noteSvg}${titleSvg}</svg>`;
+  function buildUnifiedHeaderSvg(titleText,subText,metaText){
+    return `<text x="48" y="52" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700" letter-spacing="1.1">COTEC · HOOK DRAWING</text><text x="48" y="76" font-size="20" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="800">${esc(titleText)}</text><text x="48" y="98" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif" fill="#333">${esc(subText)}</text><text x="48" y="116" font-size="10.5" font-family="Arial,'Noto Sans KR',sans-serif" fill="#444">${esc(metaText)}</text>`;
+  }
+  function buildUnifiedNotesSvg(notes,r,diaVal){
+    return `<rect x="${notes.x}" y="${notes.y}" width="${notes.w}" height="${notes.h}" fill="#fff" stroke="#111" stroke-width="1.05"/><line x1="${notes.x}" y1="${notes.y+24}" x2="${notes.x+notes.w}" y2="${notes.y+24}" stroke="#111"/><text x="${notes.x+10}" y="${notes.y+17}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">주서 / NOTE</text><text x="${notes.x+10}" y="${notes.y+42}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">1. 재질 : ${esc(r.material)}</text><text x="${notes.x+10}" y="${notes.y+61}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">2. 재질규격 : 환봉 Ø${mm0(diaVal)}</text><text x="${notes.x+10}" y="${notes.y+80}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">3. 표면처리 : 없음 / 일반공차 : ±0.5</text><text x="${notes.x+10}" y="${notes.y+99}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">4. 날카로운 부분은 R0.3~0.5 제거</text><text x="${notes.x+10}" y="${notes.y+118}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">5. 치수 단위 : mm</text>`;
+  }
+  function buildUnifiedTitleBlockSvg(title,r,diaVal,width,height,length,date){
+    return `<rect x="${title.x}" y="${title.y}" width="${title.w}" height="${title.h}" fill="#fff" stroke="#111" stroke-width="1.15"/><line x1="${title.x}" y1="${title.y+28}" x2="${title.x+title.w}" y2="${title.y+28}" stroke="#111"/><line x1="${title.x}" y1="${title.y+56}" x2="${title.x+title.w}" y2="${title.y+56}" stroke="#111"/><line x1="${title.x}" y1="${title.y+84}" x2="${title.x+title.w}" y2="${title.y+84}" stroke="#111"/><line x1="${title.x}" y1="${title.y+112}" x2="${title.x+title.w}" y2="${title.y+112}" stroke="#111"/><line x1="${title.x+90}" y1="${title.y+28}" x2="${title.x+90}" y2="${title.y+title.h}" stroke="#111"/><line x1="${title.x+288}" y1="${title.y}" x2="${title.x+288}" y2="${title.y+title.h}" stroke="#111"/><line x1="${title.x+438}" y1="${title.y}" x2="${title.x+438}" y2="${title.y+title.h}" stroke="#111"/><text x="${title.x+10}" y="${title.y+18}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="800">TITLE BLOCK</text><text x="${title.x+10}" y="${title.y+46}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">도면번호</text><text x="${title.x+100}" y="${title.y+46}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">${esc(r.name)}</text><text x="${title.x+298}" y="${title.y+46}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">품 명</text><text x="${title.x+448}" y="${title.y+46}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">J HOOK</text><text x="${title.x+10}" y="${title.y+74}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">재 질</text><text x="${title.x+100}" y="${title.y+74}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">${esc(r.material)}</text><text x="${title.x+298}" y="${title.y+74}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">재질규격</text><text x="${title.x+448}" y="${title.y+74}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">환봉 Ø${mm0(diaVal)}</text><text x="${title.x+10}" y="${title.y+102}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">전체 폭 / 높이</text><text x="${title.x+100}" y="${title.y+102}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">${mm0(width)} / ${mm0(height)}</text><text x="${title.x+298}" y="${title.y+102}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">전개길이 TL</text><text x="${title.x+448}" y="${title.y+102}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">${mm0(length)} mm</text><text x="${title.x+10}" y="${title.y+130}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">작성일</text><text x="${title.x+100}" y="${title.y+130}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">${date.replace(/-/g,'. ') + '.'}</text><text x="${title.x+298}" y="${title.y+130}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">단위 / 축척</text><text x="${title.x+448}" y="${title.y+130}" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">mm / 1 : 1</text>`;
   }
 
+  function buildRenderedDrawingSvg(r,mmRaw,cadMm,mmForDrawing,mmForDims,width,height,length,date){
+    const W=1189,H=841;
+    const main={x:52,y:42,w:734,h:712};
+    const tlBox={x:860,y:44,w:288,h:98};
+    const tableBox={x:860,y:170,w:288,h:348};
+    const legendBox={x:860,y:542,w:288,h:96};
+    const specBox={x:860,y:662,w:288,h:110};
+    const diaVal=Number(readDimValue(r,'diameter',r.diameter)||6);
+    const fit=fitPhotoFocus(r,main),map=cadScreenMappingForFocusedPhoto(r,cadMm,fit);
+    const screen=(cadMm.fitPath||mmForDrawing).map(map.mapPt);
+    const dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,map.mapPt),cadGeometry:cadMm,mapPtMmToScreen:map.mapPt,diameterMm:diaVal,totalLengthMm:length,overallScreenPath:screen,overallBoundsMm:pathBounds(mmForDrawing)};
+    const specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt).filter(s=>!['width','height','length'].includes(s.key));
+    const mainDimSvg=makeDimSvg(specs,r,true);
+    const drawingPathSvg=cadGeometrySvg(cadMm,map.tx,map.ty,map.sc,true,5.7);
+    const photo=r.photoDataUrl?photoImageMarkup(r,fit):'';
+    const segRows=specs.filter(s=>/^seg\d+$/.test(s.key)).sort((a,b)=>parseInt(a.key.replace('seg',''))-parseInt(b.key.replace('seg','')));
+    const rRows=specs.filter(s=>/^bendR\d+$/.test(s.key)).sort((a,b)=>parseInt(a.key.replace('bendR',''))-parseInt(b.key.replace('bendR','')));
+    const merged=[]; const maxLen=Math.max(segRows.length,rRows.length);
+    for(let i=0;i<maxLen;i++){ if(segRows[i]) merged.push(segRows[i]); if(rRows[i]) merged.push(rRows[i]); }
+    const rows=merged.slice(0,9);
+    const rowH=34, startY=tableBox.y+44;
+    const tableRows=[];
+    rows.forEach((s,i)=>{
+      const info=dimSpecInfo(s); const val=mm0(readDimValue(r,s.key,s.value));
+      const label=/^seg/.test(s.key)?`${info.symbol} (${String(s.segType||'line').toUpperCase()})`:info.symbol;
+      const color=s.segColor||(/^bendR/.test(s.key)?'#d92b2b':'#1e57d8');
+      const y=startY+i*rowH;
+      tableRows.push(`<line x1="${tableBox.x}" y1="${y}" x2="${tableBox.x+tableBox.w}" y2="${y}" stroke="#222" stroke-width="1"/><text x="${tableBox.x+18}" y="${y+22}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700" fill="${color}">${esc(label)}</text><text x="${tableBox.x+tableBox.w-18}" y="${y+22}" text-anchor="end" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700" fill="${color}">${val} mm</text>`);
+    });
+    const thumb=r.photoDataUrl?`<rect x="70" y="594" width="86" height="86" fill="#fff" stroke="#9a9a9a" stroke-width="1.1"/><image href="${r.photoDataUrl}" x="76" y="600" width="74" height="74" preserveAspectRatio="xMidYMid meet"/>`:'';
+    const defs=`<defs><clipPath id="photoClip"><rect x="${main.x}" y="${main.y}" width="${main.w}" height="${main.h}" rx="6"/></clipPath><pattern id="pageGrid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M 28 0 L 0 0 0 28" fill="none" stroke="#d3d3d3" stroke-width="1"/></pattern></defs>`;
+    const bg=`<rect width="${W}" height="${H}" fill="#efefef"/><rect width="${W}" height="${H}" fill="url(#pageGrid)" opacity="1"/>`;
+    const header=`<text x="54" y="26" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700" letter-spacing="1.2" fill="#4b4b4b">COTEC · HOOK DRAWING</text>`;
+    const mainPlate=`<rect x="${main.x-8}" y="${main.y-8}" width="${main.w+16}" height="${main.h+16}" rx="10" fill="rgba(255,255,255,.18)" stroke="rgba(0,0,0,.08)" stroke-width="1"/>`;
+    const tlSvg=`<rect x="${tlBox.x}" y="${tlBox.y}" width="${tlBox.w}" height="${tlBox.h}" rx="8" fill="#f8f8f8" stroke="#111" stroke-width="1.5"/><text x="${tlBox.x+tlBox.w/2}" y="${tlBox.y+32}" text-anchor="middle" font-size="19" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="800" fill="#1e57d8">TL (총 길이)</text><rect x="${tlBox.x+48}" y="${tlBox.y+46}" width="${tlBox.w-96}" height="40" rx="8" fill="rgba(232,232,232,.86)" stroke="#cfcfcf" stroke-width="1"/><text x="${tlBox.x+tlBox.w/2}" y="${tlBox.y+73}" text-anchor="middle" font-size="26" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="900" fill="#1e57d8">${mm0(length)} mm</text>`;
+    const tableSvg=`<rect x="${tableBox.x}" y="${tableBox.y}" width="${tableBox.w}" height="${tableBox.h}" rx="8" fill="#f8f8f8" stroke="#111" stroke-width="1.4"/><line x1="${tableBox.x}" y1="${tableBox.y+38}" x2="${tableBox.x+tableBox.w}" y2="${tableBox.y+38}" stroke="#111" stroke-width="1.2"/><line x1="${tableBox.x+172}" y1="${tableBox.y+38}" x2="${tableBox.x+172}" y2="${tableBox.y+tableBox.h}" stroke="#111" stroke-width="1"/><text x="${tableBox.x+tableBox.w/2}" y="${tableBox.y+25}" text-anchor="middle" font-size="16" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="800">각 구간 길이</text>${tableRows.join('')}<line x1="${tableBox.x}" y1="${tableBox.y+tableBox.h-52}" x2="${tableBox.x+tableBox.w}" y2="${tableBox.y+tableBox.h-52}" stroke="#111" stroke-width="1.2"/><text x="${tableBox.x+tableBox.w/2}" y="${tableBox.y+tableBox.h-18}" text-anchor="middle" font-size="18" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="800">총 길이 (TL)</text><text x="${tableBox.x+tableBox.w/2}" y="${tableBox.y+tableBox.h-6}" text-anchor="middle" font-size="21" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="900" fill="#1e57d8">${mm0(length)} mm</text>`;
+    const legendSvg=`<rect x="${legendBox.x}" y="${legendBox.y}" width="${legendBox.w}" height="${legendBox.h}" rx="8" fill="#f8f8f8" stroke="#111" stroke-width="1.4"/><line x1="${legendBox.x+34}" y1="${legendBox.y+34}" x2="${legendBox.x+104}" y2="${legendBox.y+34}" stroke="#e32323" stroke-width="7" stroke-linecap="round"/><text x="${legendBox.x+128}" y="${legendBox.y+41}" font-size="15" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">ARC (원호)</text><line x1="${legendBox.x+34}" y1="${legendBox.y+68}" x2="${legendBox.x+104}" y2="${legendBox.y+68}" stroke="#1e57d8" stroke-width="7" stroke-linecap="round"/><text x="${legendBox.x+128}" y="${legendBox.y+75}" font-size="15" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">LINE (직선)</text>`;
+    const specSvg=`<rect x="${specBox.x}" y="${specBox.y}" width="${specBox.w}" height="${specBox.h}" rx="8" fill="#f8f8f8" stroke="#111" stroke-width="1.4"/><line x1="${specBox.x}" y1="${specBox.y+36}" x2="${specBox.x+specBox.w}" y2="${specBox.y+36}" stroke="#111" stroke-width="1.1"/><text x="${specBox.x+specBox.w/2}" y="${specBox.y+24}" text-anchor="middle" font-size="16" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="800">사양 정보</text><text x="${specBox.x+16}" y="${specBox.y+62}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">재질 : ${esc(r.material)}</text><text x="${specBox.x+16}" y="${specBox.y+88}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">선재 직경 : Ø${mm0(diaVal)}</text><text x="${specBox.x+16}" y="${specBox.y+114}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">단위 : mm</text>`;
+    const note=`<text x="${W/2}" y="815" text-anchor="middle" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700" fill="#2443cc">※ 치수는 촬영 환경 및 인식 결과에 따라 ±1mm 내외 오차가 발생할 수 있습니다.</text>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">${defs}${bg}${header}${mainPlate}${photo}${drawingPathSvg}${mainDimSvg}${thumb}${tlSvg}${tableSvg}${legendSvg}${specSvg}${note}</svg>`;
+  }
   function buildSvgOnly(r,forcedVariant=null){
     const W=1189,H=841, draw={x:72,y:82,w:820,h:650}, title={x:846,y:646,w:296,h:138};
     const variant = forcedVariant || (r.captureType==='product' ? 'photo' : currentRenderMode());
@@ -3213,9 +3231,13 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     }
     const displayRadius=displayRadiusInfo(cadMm,Number(r.diameter)||6);
     let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);const dimSvg=makeDimSvg(specs,r,true);
-    const sideTitle = r.captureType==='product' ? '제품 실이미지 오버레이 치수도' : '치구 실이미지 오버레이 치수도';
-    const tbx=title.x,tby=title.y,tbw=title.w,tbh=title.h;
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><defs><clipPath id="photoClip"><rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}"/></clipPath></defs><rect width="${W}" height="${H}" fill="#fff"/><rect x="24" y="24" width="1141" height="793" fill="none" stroke="#111" stroke-width="1.4"/><text x="52" y="50" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">COTEC JIG DRAWING</text><text x="52" y="72" font-size="16" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${sideTitle}</text><text x="52" y="92" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${mm0(r.diameter)} / 전개길이 ${mm0(length)}</text>${shapeMarkup}${dimSvg}<rect x="${tbx}" y="${tby}" width="${tbw}" height="${tbh}" fill="#fff" stroke="#111" stroke-width="1"/><line x1="${tbx}" y1="${tby+24}" x2="${tbx+tbw}" y2="${tby+24}" stroke="#111"/><line x1="${tbx}" y1="${tby+48}" x2="${tbx+tbw}" y2="${tby+48}" stroke="#111"/><line x1="${tbx}" y1="${tby+72}" x2="${tbx+tbw}" y2="${tby+72}" stroke="#111"/><line x1="${tbx}" y1="${tby+96}" x2="${tbx+tbw}" y2="${tby+96}" stroke="#111"/><line x1="${tbx}" y1="${tby+116}" x2="${tbx+tbw}" y2="${tby+116}" stroke="#111"/><line x1="${tbx+92}" y1="${tby+24}" x2="${tbx+92}" y2="${tby+tbh}" stroke="#111"/><text x="${tbx+8}" y="${tby+16}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">TITLE BLOCK</text><text x="${tbx+8}" y="${tby+40}" font-size="10">도면번호</text><text x="${tbx+100}" y="${tby+40}" font-size="10">${esc(r.name)}</text><text x="${tbx+8}" y="${tby+64}" font-size="10">재질</text><text x="${tbx+100}" y="${tby+64}" font-size="10">${esc(r.material)}</text><text x="${tbx+8}" y="${tby+88}" font-size="10">전체 폭/높이</text><text x="${tbx+100}" y="${tby+88}" font-size="10">${mm0(width)} / ${mm0(height)}</text><text x="${tbx+8}" y="${tby+112}" font-size="10">전개길이</text><text x="${tbx+100}" y="${tby+112}" font-size="10">${mm0(length)}</text><text x="${tbx+8}" y="${tby+132}" font-size="10">작성일</text><text x="${tbx+100}" y="${tby+132}" font-size="10">${date}</text><text x="52" y="800" font-size="10" font-family="Arial,'Noto Sans KR',sans-serif">NOTE : 실구동 화면과 JPG/PDF 출력은 동일한 CAD/치수 파이프라인을 사용합니다. 실제 촬영 이미지 위 LINE(파랑)/ARC(빨강)를 실제 치구 폭의 약 절반 수준으로 얇게 표시하고, 제작에 필요한 큰 직선/곡선 구간만 L 길이로 표시하고 R 치수를 함께 표시합니다. 치수선과 화살표는 검은색으로 통일합니다.</text></svg>`;
+    const diaVal=Number(readDimValue(r,'diameter',r.diameter)||r.diameter||6);
+    const docTitle = variant==='photo' ? 'HOOK 실사 인식 확인도' : 'HOOK 렌더링 도면';
+    const subTitle = variant==='photo' ? '촬영 후 인식 상태 확인용 오버레이 화면' : '정식 저장 / JPG / PDF 출력용 렌더링 도면';
+    const headerSvg=buildUnifiedHeaderSvg(docTitle,subTitle,'치수 단위 : mm / 재질 : '+r.material+' / 환봉 Ø'+mm0(diaVal)+' / 전개길이 TL '+mm0(length)+' mm');
+    const noteSvg=buildUnifiedNotesSvg({x:48,y:676,w:350,h:116},r,diaVal);
+    const titleSvg=buildUnifiedTitleBlockSvg({x:440,y:666,w:658,h:146},r,diaVal,width,height,length,date);
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><defs><clipPath id="photoClip"><rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}"/></clipPath></defs><rect width="${W}" height="${H}" fill="#fff"/><rect x="24" y="24" width="1141" height="793" fill="none" stroke="#111" stroke-width="1.4"/>${headerSvg}${shapeMarkup}${dimSvg}${noteSvg}${titleSvg}</svg>`;
   }
 
   function makeFigureHtml(r){
