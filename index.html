@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
-  <title>HOOK 모바일 자동도면 v0.10.32</title>
+  <title>HOOK 모바일 자동도면 v0.10.34</title>
 <style>
 :root{
   --bg:#070b13;--panel:#111827;--panel2:#172033;--line:#263247;--text:#eef2ff;--muted:#9aa8bd;
@@ -103,6 +103,8 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 .wide{grid-column:1/-1}
 .figure-frame{position:relative;background:#fff;margin:10px;border-radius:10px;overflow:hidden;aspect-ratio:1189/841}
 .figure-frame svg{width:100%;height:100%;display:block;background:#fff}
+.figure-toggle-btn{position:absolute;right:10px;top:10px;z-index:3;padding:7px 11px;border-radius:999px;border:1px solid rgba(0,0,0,.18);background:rgba(255,255,255,.92);color:#163036;font-size:11px;font-weight:800;backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.figure-toggle-btn:hover{background:#fff}
 .dim-input-overlay{position:absolute;transform:translate(-50%,-50%);width:44px;min-width:44px;max-width:44px;padding:1px 2px;height:19px;border:1px solid #2563eb;border-radius:3px;background:rgba(255,255,255,.90);color:#0f172a;font-size:9px;font-weight:800;text-align:center;z-index:3;box-shadow:0 1px 3px rgba(0,0,0,.18)}
 .photo-variant .dim-input-overlay{background:rgba(255,255,255,.82)}
 .capture-type-badge{font-size:9px;color:#e0f2fe;background:#155e75;border:1px solid #0891b2;padding:4px 6px;border-radius:999px;margin-left:6px}
@@ -149,7 +151,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 #bootStatus{position:sticky;top:0;z-index:1000;margin:0 auto;max-width:820px;padding:8px 14px;background:#0c4a6e;color:#e0f2fe;font-size:11px;font-weight:800;text-align:center;border-bottom:1px solid #38bdf8}#bootStatus.ok{display:none}#bootStatus.error{background:#7f1d1d;color:#fee2e2;display:block}.boot-fallback{display:none}
 
 
-/* v0.10.32 ACPT compact workspace */
+/* v0.10.34 ACPT compact workspace */
 :root{--acpt:#0f5f5a;--acpt-dark:#0b2f34;--acpt-soft:#eaf7f5;--acpt-line:#cfe2e3;--paper:#f4f8f8;--ink:#21333a;--sub:#6d8086}
 html{background:var(--paper);color-scheme:light}
 body{background:linear-gradient(180deg,#eef5f5 0,#f7faf9 260px,#f5f8f8 100%);color:var(--ink)}
@@ -168,7 +170,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
 @media(max-width:820px){.topbar{padding:13px 14px}.brand-mark{width:44px;height:44px;border-radius:12px}.topbar h1{font-size:18px}.topbar p{font-size:9px}.workspace-tabs-wrap{top:72px;padding:7px 9px}.workspace-tab,.mode-mini{padding:7px 10px;font-size:10px}.settings-sub-tab{padding:6px 9px;font-size:9px;min-height:30px}.settings-sub-tabs{gap:5px}.settings-sub-tabs:before{height:21px}.mode-mini{margin-left:0}.option-dock{padding:0 8px;margin-top:7px}.option-panel{padding:11px}.option-panel .form-grid{grid-template-columns:1fr 1fr}.camera-stage{max-height:50vh}.capture-item{flex-basis:132px}.capture-thumb{height:92px}.queue-actions{grid-template-columns:105px 1fr}.export-actions{grid-template-columns:1fr 1fr}.export-actions #newJobBtn{grid-column:1/-1}}
 @media(max-width:480px){.topbar{position:relative}.workspace-tabs-wrap{top:0}.topbar p{display:block}.option-panel .form-grid{grid-template-columns:1fr 1fr}.camera-stage{aspect-ratio:3/4;max-height:48vh}.capture-item{flex-basis:118px}.capture-thumb{height:82px}.capture-fields{grid-template-columns:1fr}.queue-actions{grid-template-columns:90px 1fr}.capture-btn{width:64px;height:64px}}
 
-/* v0.10.32 focused tab/camera refinements */
+/* v0.10.34 focused tab/camera refinements */
 .shoot-workspace{display:none}.shoot-workspace.active{display:block}.option-dock.hidden-for-shoot{display:none}
 .api-save-row{display:flex;align-items:center;gap:10px;margin-top:10px}.api-save-row .btn{min-height:36px;padding:7px 14px}.api-key-status{font-size:10px;font-weight:800;color:#70858a}.api-key-status.saved{color:#08786f;background:#def7f2;border:1px solid #bde8e2;border-radius:999px;padding:6px 9px}
 .camera-primary{width:100%;max-width:none}.camera-stage{width:100%;max-width:none;margin-left:auto;margin-right:auto;aspect-ratio:auto;height:clamp(360px,58vh,650px);max-height:none}.camera-stage video{width:100%;height:100%;object-fit:cover;object-position:center center}
@@ -183,7 +185,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
   <header class="topbar">
     <div class="brand-wrap">
       <div class="brand-mark"><b>H</b></div>
-      <div class="brand-copy"><div class="eyebrow">COTEC · HOOK DRAWING</div><h1>HOOK 모바일 자동도면 <small>v0.10.32</small></h1><p>치구 전용 / 실사진 기반 선재 인식 V2 + 선택형 OpenAI Vision 검증 보조 / JPG 기본 출력</p></div>
+      <div class="brand-copy"><div class="eyebrow">COTEC · HOOK DRAWING</div><h1>HOOK 모바일 자동도면 <small>v0.10.34</small></h1><p>치구 전용 / 실사진 기반 선재 인식 V2 + 선택형 OpenAI Vision 검증 보조 / JPG 기본 출력</p></div>
     </div>
     <span id="statusPill" class="pill">준비</span>
   </header>
@@ -3084,7 +3086,16 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     return out.join('');
   }
   function photoFocusRect(r){
-    const iw=Math.max(1,r.imageW||1000),ih=Math.max(1,r.imageH||1000),pr=r.paperRect?.outer;
+    const iw=Math.max(1,r.imageW||1000),ih=Math.max(1,r.imageH||1000),pr=r.paperRect?.outer,rb=r.rawBBox;
+    if(rb && Number.isFinite(rb.minX) && Number.isFinite(rb.minY) && Number.isFinite(rb.maxX) && Number.isFinite(rb.maxY)){
+      const bw=Math.max(1,rb.maxX-rb.minX), bh=Math.max(1,rb.maxY-rb.minY);
+      const padX=Math.max(26,Math.round(bw*0.32)), padY=Math.max(26,Math.round(bh*0.28));
+      let x0=clamp(Math.round(rb.minX-padX),0,iw-1), y0=clamp(Math.round(rb.minY-padY),0,ih-1), x1=clamp(Math.round(rb.maxX+padX),0,iw-1), y1=clamp(Math.round(rb.maxY+padY),0,ih-1);
+      const minW=Math.round(iw*0.34), minH=Math.round(ih*0.42);
+      if(x1-x0<minW){ const cx=(x0+x1)/2; x0=clamp(Math.round(cx-minW/2),0,iw-1); x1=clamp(Math.round(cx+minW/2),1,iw); }
+      if(y1-y0<minH){ const cy=(y0+y1)/2; y0=clamp(Math.round(cy-minH/2),0,ih-1); y1=clamp(Math.round(cy+minH/2),1,ih); }
+      return{x:x0,y:y0,w:Math.max(1,x1-x0),h:Math.max(1,y1-y0)};
+    }
     if(pr&&pr.w>iw*.22&&pr.h>ih*.25){
       const pad=Math.max(10,Math.round(Math.min(iw,ih)*.025));
       const x0=clamp(pr.x0-pad,0,iw-1),y0=clamp(pr.y0-pad,0,ih-1),x1=clamp(pr.x1+pad,0,iw-1),y1=clamp(pr.y1+pad,0,ih-1);
@@ -3178,9 +3189,9 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff"/><rect x="16" y="16" width="${W-32}" height="${H-32}" fill="none" stroke="#111" stroke-width="1.4"/>${mainShape}${photoInset}${dimSvg}<text x="${side.x+4}" y="${side.y-18}" font-size="14" font-family="Arial,'Noto Sans KR',sans-serif">측면도</text>${sideSvg}${diaText}${sectionSvg}${noteSvg}${titleSvg}</svg>`;
   }
 
-  function buildSvgOnly(r){
+  function buildSvgOnly(r,forcedVariant=null){
     const W=1189,H=841, draw={x:72,y:82,w:820,h:650}, title={x:846,y:646,w:296,h:138};
-    const variant = r.captureType==='product' ? 'photo' : currentRenderMode();
+    const variant = forcedVariant || (r.captureType==='product' ? 'photo' : currentRenderMode());
     const {mmRaw,cadMm,mmForDrawing,mmForDims,totalLength}=resolvedDisplayGeometry(r);
     const date=new Date().toLocaleDateString('sv-SE');
     const width=parseFloat(r.width)||r.baseWidth,height=parseFloat(r.height)||r.baseHeight,length=Number.isFinite(parseFloat(r.length))?parseFloat(r.length):totalLength;
@@ -3208,8 +3219,10 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
   }
 
   function makeFigureHtml(r){
-    const svg=buildSvgOnly(r),variant=r.captureType==='product'?'photo':currentRenderMode();
-    return `<div class="figure-frame ${variant==='photo'?'photo-variant':''}">${svg}</div>`;
+    const variant=(r.reviewMode==='drawing')?'drawing':'photo';
+    const svg=buildSvgOnly(r,variant);
+    const label=variant==='photo'?'렌더링 도면 보기':'실사 확인 보기';
+    return `<div class="figure-frame ${variant==='photo'?'photo-variant':''}"><button type="button" class="figure-toggle-btn" data-id="${escAttr(r.id)}" data-mode="${variant}">${label}</button>${svg}</div>`;
   }
 
   function samplePathEvenly(path,count=14){
@@ -3272,7 +3285,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
       const modeText=currentRenderMode()==='drawing'?'치구 렌더링 정식 도면':'치구 실이미지 오버레이';
       const autoOk=r.shapeConfirmed&&!r.userShapeCorrected,autoLabel=autoOk?(r.quality>.76?'자동 인식 · 양호':r.quality>.53?'자동 인식 · 보통':'자동 인식 · 확인권장'):'보정 필요';
       const aiBadge=r.openAiAssisted?'<span class="source-badge">OpenAI 적용</span>':r.openAiChecked?'<span class="source-badge">OpenAI 검증</span>':'';
-      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b>${aiBadge}<span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}${dimensionEditorHtml(r)}<div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-jump-btn" data-id="${r.id}">기호별 치수 입력</button><button class="btn apply-dims" data-id="${r.id}">수정값 형상 반영</button><button class="btn export-one" data-id="${r.id}">${currentExportFormat()==='pdf'?(currentRenderMode()==='drawing'?'이 도면 PDF':'이 오버레이 PDF'):(currentRenderMode()==='drawing'?'이 도면 JPG':'이 오버레이 JPG')}</button></div><div class="dim-note-box">격자 촬영은 격자판 X/Y 주기 경계를 먼저 잠그고 그 내부에서만 치구를 선택합니다. 일반 바닥은 AR/Ø 교차검증과 중심 후보 점수를 사용합니다. 치수는 사진 위에 직접 표시되고, 아래 기호 입력칸에서 수정할 수 있습니다. 그림 위 직접입력 대신 기호 입력 방식으로 값을 수정하세요.</div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. ${currentRenderMode()==='drawing'?'정리된 중심선으로 정식 렌더링 도면을 생성하며, 본도/측면도/단면도와 기호 치수를 함께 출력합니다.':'실제 촬영 이미지 위에 실제 치구보다 약간 얇게 조정한 LINE(파랑)/ARC(빨강)과 기호 치수를 표시하며, 이 오버레이 화면 자체를 최종 도면으로 사용합니다.'} 실구동 도면과 JPG/PDF 출력은 동일한 CAD/치수 파이프라인을 사용합니다. RED/BLUE 표시도 원본 중심선 이탈 시에는 원본 중심선 기반으로 자동 보정합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
+      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b>${aiBadge}<span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}${dimensionEditorHtml(r)}<div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-jump-btn" data-id="${r.id}">기호별 치수 입력</button><button class="btn apply-dims" data-id="${r.id}">수정값 형상 반영</button><button class="btn export-one" data-id="${r.id}">${currentExportFormat()==='pdf'?'이 도면 PDF':'이 도면 JPG'}</button></div><div class="dim-note-box">기본 화면은 실이미지 오버레이로 인식 상태를 확인합니다. 이미지 우측 상단 전환 버튼을 누르면 렌더링 도면을 바로 확인할 수 있습니다. 저장/JPG/PDF 출력은 정리된 렌더링 도면으로 생성됩니다.</div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. 화면에서는 치구 부위만 확대된 실이미지 위에 LINE(파랑)/ARC(빨강)와 기호 치수를 표시하여 인식 상태를 확인합니다. 이미지 우측 상단 전환 버튼으로 렌더링 도면을 바로 확인할 수 있으며, 저장/JPG/PDF 출력도 동일한 CAD/치수 파이프라인의 정리된 렌더링 도면 형식으로 출력합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
     }).join('');
   }
 
@@ -3289,7 +3302,8 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
   });
 
   $('resultList').addEventListener('click',async e=>{
-    const shape=e.target.closest('.shape-edit-btn'),reset=e.target.closest('.shape-reset'),clear=e.target.closest('.shape-clear'),undo=e.target.closest('.shape-undo'),approve=e.target.closest('.shape-approve'),shapeApply=e.target.closest('.shape-apply'),dimJump=e.target.closest('.dim-jump-btn'),apply=e.target.closest('.apply-dims'),one=e.target.closest('.export-one');
+    const figureToggle=e.target.closest('.figure-toggle-btn'),shape=e.target.closest('.shape-edit-btn'),reset=e.target.closest('.shape-reset'),clear=e.target.closest('.shape-clear'),undo=e.target.closest('.shape-undo'),approve=e.target.closest('.shape-approve'),shapeApply=e.target.closest('.shape-apply'),dimJump=e.target.closest('.dim-jump-btn'),apply=e.target.closest('.apply-dims'),one=e.target.closest('.export-one');
+    if(figureToggle){const r=state.results.find(x=>x.id===figureToggle.dataset.id);if(!r?.ok)return;r.reviewMode=(r.reviewMode==='drawing')?'photo':'drawing';renderResults();return;}
     if(shape){const r=state.results.find(x=>x.id===shape.dataset.id);if(!r?.ok)return;r.shapeEditMode=!r.shapeEditMode;if(r.shapeEditMode){if(!Array.isArray(r.shapeNodes)||r.shapeNodes.length<2)initShapeNodes(r,true);}renderResults();return;}
     if(reset){const r=state.results.find(x=>x.id===reset.dataset.id);if(!r?.ok)return;r.shapeDrawMode='auto';initShapeNodes(r,true);renderResults();toast('자동선 기준점을 불러왔습니다. 파란 점을 드래그해 수정할 수 있습니다.');return;}
     if(clear){const r=state.results.find(x=>x.id===clear.dataset.id);if(!r?.ok)return;r.shapeDrawMode='manual';r.shapeNodes=[];renderResults();toast('기존 자동선을 모두 제거했습니다. 치구 한쪽 끝부터 중심점을 순서대로 터치하세요.');return;}
@@ -3339,8 +3353,8 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     return await new Promise((resolve)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>resolve(null);im.src=src;});
   }
   async function renderPdfPageJpeg(r){
-    // 최종 도면은 실이미지 오버레이 자체: 화면 SVG를 그대로 PDF용 JPEG로 변환한다.
-    return await svgToJpeg(buildSvgOnly(r));
+    // 화면 확인은 실이미지 오버레이(photo)를 사용하고, 저장/출력은 정식 렌더링 도면(drawing)으로 생성한다.
+    return await svgToJpeg(buildSvgOnly(r,'drawing'));
   }
 
   async function svgToJpeg(svg) {
