@@ -738,15 +738,11 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     const rowSamples=[],colSamples=[],lineCount=14,minLag=Math.max(5,Math.floor(Math.min(w,h)/180)),maxLag=Math.min(110,Math.floor(Math.min(w,h)/5));
     for(let k=0;k<lineCount;k++){const y=clamp(Math.round(h*(.10+.80*k/(lineCount-1))),1,h-2),row=new Uint8Array(w);for(let x=0;x<w;x++)row[x]=gray[y*w+x];rowSamples.push(scanlinePeriod(row,minLag,maxLag));const x=clamp(Math.round(w*(.10+.80*k/(lineCount-1))),1,w-2),col=new Uint8Array(h);for(let yy=0;yy<h;yy++)col[yy]=gray[yy*w+x];colSamples.push(scanlinePeriod(col,minLag,maxLag));}
     const px=clusteredPeriod(rowSamples),py=clusteredPeriod(colSamples),qx=projectionLinePitch(gray,w,h,'x'),qy=projectionLinePitch(gray,w,h,'y');
-    let gx=normalizeGridFundamental(px.lag,qx.pitch),gy=normalizeGridFundamental(py.lag,qy.pitch);if(!gx||!gy)return{pitch:null,pitchX:null,pitchY:null,confidence:0,reason:'양방향 격자 미검출'};
-    // gx = 세로 격자선 사이의 X 픽셀 간격, gy = 가로 격자선 사이의 Y 픽셀 간격.
-    // 물리 격자는 X/Y 모두 10 mm이므로 촬영 원근/화면 비율 때문에 픽셀 피치가 달라도 평균내지 않고 별도로 보존한다.
+    let gx=normalizeGridFundamental(px.lag,qx.pitch),gy=normalizeGridFundamental(py.lag,qy.pitch);if(!gx||!gy)return{pitch:null,confidence:0,reason:'양방향 격자 미검출'};
     let a=Math.min(gx,gy),b=Math.max(gx,gy),rr=b/a;if(Math.abs(rr-2)<.18||Math.abs(rr-3)<.22||Math.abs(rr-4)<.28){gx=gy=a;}
-    const ratio=Math.max(gx,gy)/Math.max(1,Math.min(gx,gy));
-    if(ratio>1.58)return{pitch:null,pitchX:gx,pitchY:gy,confidence:0,reason:`가로/세로 격자 간격 과다 불일치 ${n1(gx)}/${n1(gy)}px`};
-    const pitch=Math.sqrt(gx*gy),support=Math.min(1,((px.support||0)+(py.support||0)+(qx.support||0)+(qy.support||0))/24),axisAgree=clamp(1-Math.abs(gx-gy)/Math.max(gx,gy),0,1),confidence=clamp(.36+support*.46+axisAgree*.18,0,.99);
-    const valid=gx>=6&&gy>=6&&gx<=Math.min(120,w/4)&&gy<=Math.min(120,h/4);
-    return valid?{pitch,pitchX:gx,pitchY:gy,confidence,reason:`1cm 격자 X ${n1(gx)}px / Y ${n1(gy)}px`}:{pitch:null,pitchX:null,pitchY:null,confidence:0,reason:'격자 피치 범위 오류'};
+    const ratio=Math.max(gx,gy)/Math.max(1,Math.min(gx,gy));if(ratio>1.28)return{pitch:null,confidence:0,reason:'가로/세로 격자 간격 불일치'};
+    const pitch=(gx+gy)/2,support=Math.min(1,((px.support||0)+(py.support||0)+(qx.support||0)+(qy.support||0))/24),confidence=clamp(.34+support*.46+(1-Math.abs(gx-gy)/Math.max(gx,gy))*.20,0,.99);
+    return (pitch>=6&&pitch<=Math.min(120,Math.min(w,h)/4))?{pitch,confidence,reason:`기본격자 검증 ${n1(gx)}/${n1(gy)}px`}:{pitch:null,confidence:0,reason:'격자 피치 범위 오류'};
   }
 
   function medianFromHist(hist,total){let acc=0,target=Math.max(1,Math.floor(total/2));for(let i=0;i<hist.length;i++){acc+=hist[i];if(acc>=target)return i;}return 0;}
@@ -1713,13 +1709,15 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     };
   }
 
-  function normalizeVerifiedGridAxisPitch(pitchPx,paperRect,axis='x'){
+  function normalizeVerifiedGridPitch(pitchPx,paperRect){
     if(!(pitchPx>0)||!paperRect?.inner)return pitchPx||0;
-    const ir=paperRect.inner,cells=(axis==='x'?ir.w:ir.h)/Math.max(1,pitchPx),limit=axis==='x'?34:52,target=axis==='x'?20:30;
-    if(cells>limit){const mul=clamp(Math.round(cells/target),2,4);return pitchPx*mul;}
+    const ir=paperRect.inner,cols=ir.w/Math.max(1,pitchPx),rows=ir.h/Math.max(1,pitchPx);
+    if(cols>34||rows>52){
+      const mul=clamp(Math.round(cols/20),2,4);
+      return pitchPx*mul;
+    }
     return pitchPx;
   }
-  function normalizeVerifiedGridPitch(pitchPx,paperRect){return normalizeVerifiedGridAxisPitch(pitchPx,paperRect,'x');}
 
   function validateDetectedPaperRect(rect,w,h,pitchPx){
     if(!rect?.outer||!rect?.inner)return null;
@@ -1776,19 +1774,14 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
   function buildOpenAiAssistResult(item,ds,assist,localResult=null){
     const diameter=Math.max(.1,parseFloat(item.diameter)||6), pathPx=normalizedAssistPath(assist?.centerline_points_norm,ds.w,ds.h); if(pathPx.length<2) return null;
     const pb=pathBBox(pathPx), widthHint=numberOrNaN(assist?.width_mm), heightHint=numberOrNaN(assist?.height_mm), lengthHint=numberOrNaN(assist?.developed_length_mm);
-    let sx=numberOrNaN(localResult?.mmPerPxX),sy=numberOrNaN(localResult?.mmPerPxY),iso=numberOrNaN(localResult?.mmPerPx);
-    if(widthHint>diameter&&pb.w>1)sx=(widthHint-diameter)/pb.w;
-    if(heightHint>diameter&&pb.h>1)sy=(heightHint-diameter)/pb.h;
-    if(!(sx>0))sx=iso>0?iso:NaN;if(!(sy>0))sy=iso>0?iso:NaN;
-    if(!(sx>0)&&lengthHint>diameter&&pathLength(pathPx)>1)sx=lengthHint/pathLength(pathPx);
-    if(!(sy>0)&&lengthHint>diameter&&pathLength(pathPx)>1)sy=lengthHint/pathLength(pathPx);
-    if(!(sx>0))sx=1;if(!(sy>0))sy=1;
-    let pathMm=pathPx.map(p=>({x:(p.x-pb.minX)*sx,y:(p.y-pb.minY)*sy})),width=widthHint>0?widthHint:(pb.w*sx+diameter),height=heightHint>0?heightHint:(pb.h*sy+diameter),length=pathLength(pathMm);
-    if(lengthHint>0&&length>0&&!(widthHint>diameter&&heightHint>diameter)){
-      const k=lengthHint/length;if(!(widthHint>diameter))sx*=k;if(!(heightHint>diameter))sy*=k;
-      pathMm=pathPx.map(p=>({x:(p.x-pb.minX)*sx,y:(p.y-pb.minY)*sy}));width=widthHint>0?widthHint:(pb.w*sx+diameter);height=heightHint>0?heightHint:(pb.h*sy+diameter);length=pathLength(pathMm);
-    }
-    const mb=pathBBox(pathMm),rr=estimateRadii(pathMm,1,mb,diameter),mmPerPx=Math.sqrt(sx*sy),conf=clamp(numberOrNaN(assist?.confidence)||0.72,.25,.99);
+    let mmPerPx=numberOrNaN(localResult?.mmPerPx), scales=[];
+    if(widthHint>diameter&&pb.w>1) scales.push((widthHint-diameter)/pb.w);
+    if(heightHint>diameter&&pb.h>1) scales.push((heightHint-diameter)/pb.h);
+    if(lengthHint>diameter&&pathLength(pathPx)>1) scales.push(lengthHint/pathLength(pathPx));
+    if(scales.length) mmPerPx=scales.reduce((a,b)=>a+b,0)/scales.length;
+    if(!(mmPerPx>0)) mmPerPx=1;
+    const width=widthHint>0?widthHint:(pb.w*mmPerPx+diameter), height=heightHint>0?heightHint:(pb.h*mmPerPx+diameter), length=lengthHint>0?lengthHint:(pathLength(pathPx)*mmPerPx);
+    const rr=estimateRadii(pathPx,mmPerPx,pb,diameter), conf=clamp(numberOrNaN(assist?.confidence)||0.72,.25,.99), pathMm=pathPx.map(p=>({x:(p.x-pb.minX)*mmPerPx,y:(p.y-pb.minY)*mmPerPx}));
     const r1=numberOrNaN(assist?.top_radius_mm)>0?numberOrNaN(assist?.top_radius_mm):rr.r1, r2=numberOrNaN(assist?.bottom_radius_mm)>0?numberOrNaN(assist?.bottom_radius_mm):rr.r2;
     const quality=clamp(Math.max(conf,(numberOrNaN(localResult?.quality)||0)*0.92),.45,.98);
     const note=String(assist?.notes||'').trim();
@@ -1796,11 +1789,11 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
       id:item.id,name:item.name.trim()||makeJigNumber(currentLineCode(),item.seq),material:item.material.trim()||'SUS304',diameter,
       baseWidth:width,baseHeight:height,baseLength:length,baseR1:r1,baseR2:r2,
       width,height,length,r1:r1,r2:r2,pathBase:pathMm,path:pathMm.map(p=>({...p})), rawPath:pathPx.map(p=>({...p})), rawBBox:pb, imageW:ds.w, imageH:ds.h,
-      scaleSource:'OpenAI Vision 보조 추정',scaleConfidence:conf,quality,threshold:0,invert:false,segmentMethod:'OpenAI Vision 보조 인식 · 중심선 앵커 재구성',consensus:conf,
+      scaleSource:scales.length?'OpenAI Vision 보조 추정':'OpenAI Vision 형상 보조',scaleConfidence:conf,quality,threshold:0,invert:false,segmentMethod:'OpenAI Vision 보조 인식 · 중심선 앵커 재구성',consensus:conf,
       gridDetected:!!localResult?.gridDetected,arDetected:false,gridReason:localResult?.gridReason||'',shapeFill:localResult?.shapeFill||0,arDistanceMm:item.arDistanceMm||null,
-      dimensionEstimated:!(widthHint>0||heightHint>0||lengthHint>0), wirePxEstimate:localResult?.wirePxEstimate||NaN,
+      dimensionEstimated:!scales.length, wirePxEstimate:localResult?.wirePxEstimate||NaN,
       endpointRecovered:true,endpointTurnDeg:localResult?.endpointTurnDeg||NaN,
-      shapeEstimated:conf<0.78, warning:`OpenAI 보조 인식 결과입니다. ${note||'세부 치수는 반드시 검토하세요.'}`, photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx, mmPerPxX:sx, mmPerPxY:sy, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:conf>=0.78, shapeDrawMode:'auto', paperRect:localResult?.paperRect||null, openAiAssisted:true
+      shapeEstimated:conf<0.78, warning:`OpenAI 보조 인식 결과입니다. ${note||'세부 치수는 반드시 검토하세요.'}`, photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx, mmPerPxX:mmPerPx, mmPerPxY:mmPerPx, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:conf>=0.78, shapeDrawMode:'auto', paperRect:localResult?.paperRect||null, openAiAssisted:true
     };
   }
   async function maybeUseOpenAiAssist(item, ds, localResult=null, hardFail=false){
@@ -1821,9 +1814,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     const pitch=grid.pitch||Math.max(18,Math.min(ds.w,ds.h)/20);
     const paperRectRaw=detectBestBoardRect(ds.imageData,gray,ds.w,ds.h,pitch);
     const paperRect=validateDetectedPaperRect(paperRectRaw,ds.w,ds.h,pitch);
-    const verifiedGridPitchX=paperRect?.inner&&(grid.pitchX||grid.pitch)?normalizeVerifiedGridAxisPitch(grid.pitchX||grid.pitch,paperRect,'x'):null;
-    const verifiedGridPitchY=paperRect?.inner&&(grid.pitchY||grid.pitch)?normalizeVerifiedGridAxisPitch(grid.pitchY||grid.pitch,paperRect,'y'):null;
-    const verifiedGridPitch=(verifiedGridPitchX&&verifiedGridPitchY)?Math.sqrt(verifiedGridPitchX*verifiedGridPitchY):(verifiedGridPitchX||verifiedGridPitchY||null);
+    const verifiedGridPitch=paperRect?.inner&&grid.pitch?normalizeVerifiedGridPitch(grid.pitch,paperRect):null;
     // 일반 바닥에서는 우연히 검출된 5~8px 반복무늬를 격자로 오인하지 않는다.
     // 실제 촬영판이 확인되지 않았으면 안정적인 물체 크기 기준 피치를 사용해 배경 변화에 대한 민감도를 낮춘다.
     const fallbackSegPitch=Math.max(18,Math.min(ds.w,ds.h)/20);
@@ -1843,41 +1834,50 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     // 입력 폭/높이는 선재 외곽 전체치수로 간주하고, 중심선 span에서 Ø를 뺀 값으로 스케일을 구한다.
     if(Number.isFinite(approxW)&&approxW>diameter)userScales.push((approxW-diameter)/pb.w);
     if(Number.isFinite(approxH)&&approxH>diameter)userScales.push((approxH-diameter)/pb.h);
-    let mmPerPx=1,mmPerPxX=1,mmPerPxY=1,scaleSource,scaleConfidence;
+    let mmPerPx,scaleSource,scaleConfidence;
     const mode=item.measureMode||'auto', arScale=parseFloat(item.arMmPerPx);
     const wirePxEst=Number.isFinite(seg.wirePx)?seg.wirePx:estimateWirePx(comp,path);
+    const refinedGridPitch=verifiedGridPitch;
     const wireDerivedScale=Number.isFinite(wirePxEst)&&wirePxEst>0 ? diameter/wirePxEst : NaN;
-    const gridDerivedScaleX=Number.isFinite(verifiedGridPitchX)&&verifiedGridPitchX>0 ? 10/verifiedGridPitchX : NaN;
-    const gridDerivedScaleY=Number.isFinite(verifiedGridPitchY)&&verifiedGridPitchY>0 ? 10/verifiedGridPitchY : NaN;
-    const hasGridXY=Number.isFinite(gridDerivedScaleX)&&gridDerivedScaleX>0&&Number.isFinite(gridDerivedScaleY)&&gridDerivedScaleY>0;
-    const approxScaleX=Number.isFinite(approxW)&&approxW>diameter?(approxW-diameter)/pb.w:NaN,approxScaleY=Number.isFinite(approxH)&&approxH>diameter?(approxH-diameter)/pb.h:NaN;
-    if(Number.isFinite(approxScaleX)||Number.isFinite(approxScaleY)){
-      mmPerPxX=Number.isFinite(approxScaleX)?approxScaleX:(Number.isFinite(approxScaleY)?approxScaleY:1);mmPerPxY=Number.isFinite(approxScaleY)?approxScaleY:mmPerPxX;scaleSource='사용자 대략치수 X/Y';scaleConfidence=.92;
+    const gridDerivedScale=Number.isFinite(refinedGridPitch)&&refinedGridPitch>0 ? 10/refinedGridPitch : NaN;
+    if(userScales.length){
+      mmPerPx=userScales.reduce((a,b)=>a+b,0)/userScales.length;scaleSource='사용자 대략치수';scaleConfidence=.92;
     } else if(mode==='manual') {
-      if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0){mmPerPxX=mmPerPxY=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.38;}
-      else {mmPerPxX=mmPerPxY=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.12;}
+      if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0){
+        mmPerPx=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.38;
+      } else {
+        mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.12;
+      }
     } else if(mode==='ar' && Number.isFinite(arScale) && arScale>0) {
-      mmPerPxX=mmPerPxY=arScale;scaleSource='AR 자동 측정';scaleConfidence=.68;
-    } else if((mode==='grid'||mode==='auto') && hasGridXY) {
-      mmPerPxX=gridDerivedScaleX;mmPerPxY=gridDerivedScaleY;scaleSource=`1cm 격자 X/Y 자동 · X ${n1(verifiedGridPitchX)}px / Y ${n1(verifiedGridPitchY)}px`;scaleConfidence=grid.confidence;
+      mmPerPx=arScale;scaleSource='AR 자동 측정';scaleConfidence=.68;
+    } else if(mode==='grid' && verifiedGridPitch) {
+      mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
     } else if(mode==='grid') {
-      if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0){mmPerPxX=mmPerPxY=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.36;}
-      else {mmPerPxX=mmPerPxY=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.12;}
+      if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0){
+        mmPerPx=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.36;
+      } else {
+        mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.12;
+      }
+    } else if(mode==='auto' && verifiedGridPitch) {
+      mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
     } else if(Number.isFinite(arScale) && arScale>0) {
-      mmPerPxX=mmPerPxY=arScale;scaleSource='AR 자동 측정';scaleConfidence=.64;
-    } else if(hasGridXY) {
-      mmPerPxX=gridDerivedScaleX;mmPerPxY=gridDerivedScaleY;scaleSource=`1cm 격자 X/Y 자동 · X ${n1(verifiedGridPitchX)}px / Y ${n1(verifiedGridPitchY)}px`;scaleConfidence=grid.confidence;
+      mmPerPx=arScale;scaleSource='AR 자동 측정';scaleConfidence=.64;
+    } else if(verifiedGridPitch) {
+      mmPerPx=gridDerivedScale;scaleSource=refinedGridPitch!==grid.pitch?'1cm 격자 자동 · Ø 교차검증':'1cm 격자 자동';scaleConfidence=grid.confidence;
     } else if(Number.isFinite(wireDerivedScale)&&wireDerivedScale>0) {
-      mmPerPxX=mmPerPxY=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.34;
-    } else {mmPerPxX=mmPerPxY=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.10;}
-
-    mmPerPx=Math.sqrt(mmPerPxX*mmPerPxY);
-    if(hasGridXY&&Number.isFinite(wireDerivedScale)&&scaleSource.startsWith('1cm 격자')){
-      const gridIso=Math.sqrt(gridDerivedScaleX*gridDerivedScaleY),ratio=gridIso/wireDerivedScale;
-      if(ratio<.45||ratio>2.20)scaleConfidence=Math.min(scaleConfidence,.72);
+      mmPerPx=wireDerivedScale;scaleSource='Ø 기반 자동 추정';scaleConfidence=.34;
+    } else {
+      mmPerPx=1;scaleSource='치수 미인식 · 임시치수';scaleConfidence=.10;
     }
-    const width=pb.w*mmPerPxX+diameter,height=pb.h*mmPerPxY+diameter;
-    const pathMm=path.map(p=>({x:(p.x-pb.minX)*mmPerPxX,y:(p.y-pb.minY)*mmPerPxY})),length=pathLength(pathMm),mb=pathBBox(pathMm),r=estimateRadii(pathMm,1,mb,diameter);
+
+    if(Number.isFinite(gridDerivedScale)&&Number.isFinite(wireDerivedScale)&&scaleSource.startsWith('1cm 격자')){
+      const ratio=gridDerivedScale/wireDerivedScale;
+      if(ratio<.45||ratio>2.20)scaleConfidence=Math.min(scaleConfidence,.72);
+      mmPerPx=gridDerivedScale;
+    }
+    const width=pb.w*mmPerPx+diameter,height=pb.h*mmPerPx+diameter,length=pathLength(path)*mmPerPx;
+    const r=estimateRadii(path,mmPerPx,pb,diameter);
+    const pathMm=path.map(p=>({x:(p.x-pb.minX)*mmPerPx,y:(p.y-pb.minY)*mmPerPx}));
     const aspect=Math.max(width,height)/Math.max(1,Math.min(width,height)),curveRatio=length/Math.max(1,Math.hypot(width,height));
     let quality=scaleConfidence*.38+(comp.fill>=.025&&comp.fill<=.35?.22:.08)+(comp.border?0:.16)+(path.length>24?.14:.08)+(curveRatio>1.20?.10:.04)+(seg.method.includes('정밀 다중스케일')?.20:seg.method.includes('배경변화 적응형')?.17:seg.method.includes('주기격자')?.14:seg.method.includes('격자선 제거')?.08:0);
     quality=clamp(quality,.08,.99);
@@ -1889,7 +1889,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
       gridDetected:!!verifiedGridPitch,arDetected:scaleSource==='AR 자동 측정',gridReason:grid.reason||'',shapeFill:comp.fill,arDistanceMm:item.arDistanceMm||null,
       dimensionEstimated:scaleSource.includes('추정')||scaleSource.includes('임시'), wirePxEstimate:wirePxEst,
       endpointRecovered,endpointTurnDeg:endTurn,
-      shapeEstimated:suspiciousShape, warning:suspiciousShape?'전체 형상 커버리지가 부족하거나 배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':'', photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx, mmPerPxX, mmPerPxY, gridPitchX:verifiedGridPitchX||null, gridPitchY:verifiedGridPitchY||null, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:false, shapeDrawMode:'auto', paperRect
+      shapeEstimated:suspiciousShape, warning:suspiciousShape?'전체 형상 커버리지가 부족하거나 배경/그림자 오인 가능성이 있어 형상 확인이 필요합니다.':'', photoDataUrl:item.photoDataUrl||'', captureType:item.captureType||'jig', manualDims:{}, mmPerPx, mmPerPxX:mmPerPx, mmPerPxY:mmPerPx, userShapeCorrected:false, shapeEditMode:false, shapeNodes:null, shapeConfirmed:false, shapeDrawMode:'auto', paperRect
     };
     const aiResult=await maybeUseOpenAiAssist(item,ds,localResult,false);
     if(aiResult){
@@ -2752,19 +2752,64 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     const top=withMid[0]?.g||null,bottom=withMid.length>1?withMid[withMid.length-1].g:null;
     return {r1:top?top.m.r:NaN,r2:(bottom&&bottom!==top)?bottom.m.r:NaN,arcs:arcs};
   }
+  function screenVec(p0,p1){ const dx=(p1?.x||0)-(p0?.x||0),dy=(p1?.y||0)-(p0?.y||0),m=Math.hypot(dx,dy)||1; return {x:dx/m,y:dy/m}; }
+  function arcTangentScreen(gs,atEnd=false){
+    if(!(gs&&gs.center&&(gs.p0||gs.p1))) return {x:1,y:0};
+    const p=atEnd?(gs.p1||gs.p2||gs.corner):(gs.p0||gs.p1||gs.corner), c=gs.center;
+    let rx=p.x-c.x, ry=p.y-c.y, m=Math.hypot(rx,ry)||1; rx/=m; ry/=m;
+    const sweep=((gs.sweep||0)>=0)?1:-1;
+    return sweep>=0?{x:-ry,y:rx}:{x:ry,y:-rx};
+  }
+  function endpointNear(a,b,tol=16){ return !!(a&&b&&dist(a,b)<=tol); }
+  function sameArcGroup(a,b,diameterMm=6){
+    if(!(a&&b&&a.type==='arc'&&b.type==='arc'&&a.gm&&b.gm)) return false;
+    const ra=Number(a.gm.m?.r)||0, rb=Number(b.gm.m?.r)||0, sa=Number(a.gm.m?.signedSpan||a.gm.m?.span||0), sb=Number(b.gm.m?.signedSpan||b.gm.m?.span||0);
+    if(!ra||!rb) return false;
+    const sameSign=(sa===0||sb===0)?true:(Math.sign(sa)===Math.sign(sb));
+    const radiusClose=Math.abs(ra-rb)<=Math.max(2.4,Math.min(ra,rb)*0.35,diameterMm*0.7);
+    const touch=endpointNear(a.gs?.p1,b.gs?.p0,18)||endpointNear(a.gs?.p0,b.gs?.p1,18);
+    return sameSign&&radiusClose&&touch;
+  }
+  function canAbsorbShortLineIntoArc(line,arc,totalPath,diameterMm=6){
+    if(!(line&&arc&&line.type==='line'&&arc.type==='arc')) return false;
+    const shortMax=Math.max(14,diameterMm*3.6,totalPath*0.055);
+    if(!(Number(line.len)>0 && line.len<=shortMax)) return false;
+    const l0=line.gs?.p0,l1=line.gs?.p1,a0=arc.gs?.p0,a1=arc.gs?.p1;
+    let tangent=null,dir=null;
+    if(endpointNear(l1,a0,18)){ tangent=arcTangentScreen(arc.gs,false); dir=screenVec(l0,l1); }
+    else if(endpointNear(l0,a1,18)){ tangent=arcTangentScreen(arc.gs,true); dir=screenVec(l0,l1); }
+    else if(endpointNear(l0,a0,18)){ tangent=arcTangentScreen(arc.gs,false); dir=screenVec(l1,l0); }
+    else if(endpointNear(l1,a1,18)){ tangent=arcTangentScreen(arc.gs,true); dir=screenVec(l1,l0); }
+    if(!tangent||!dir) return false;
+    const ang=angleBetweenVec(tangent,dir);
+    return ang<=24;
+  }
+  function mergeDisplayDimensionSegments(segCandidates,totalPath,diameterMm=6){
+    if(!Array.isArray(segCandidates)||!segCandidates.length) return [];
+    const base=[];
+    for(const cand of segCandidates.slice().sort((a,b)=>a.i-b.i)){
+      const last=base[base.length-1];
+      if(last&&sameArcGroup(last,cand,diameterMm)){
+        last.len+=cand.len; last.members.push(cand); last.i1=Math.max(last.i1,cand.i); last.gm=cand.gm; last.gs={...cand.gs}; last.arcMembers.push(cand);
+      }else{
+        base.push({ ...cand, i0:cand.i, i1:cand.i, members:[cand], arcMembers:cand.type==='arc'?[cand]:[] });
+      }
+    }
+    const removed=new Set();
+    for(let i=0;i<base.length;i++){
+      const g=base[i]; if(g.type!=='arc') continue;
+      const prev=base[i-1], next=base[i+1];
+      if(prev && !removed.has(i-1) && canAbsorbShortLineIntoArc(prev,g,totalPath,diameterMm)){ g.len+=prev.len; g.members=[...prev.members,...g.members]; removed.add(i-1); }
+      if(next && !removed.has(i+1) && canAbsorbShortLineIntoArc(next,g,totalPath,diameterMm)){ g.len+=next.len; g.members=[...g.members,...next.members]; removed.add(i+1); }
+    }
+    return base.filter((_,idx)=>!removed.has(idx));
+  }
+
   function buildDimensionSpecs(pathMm, pathScreen, W, H, opt={}){
     const specs=[];
     if(pathScreen.length<2 || pathMm.length<2) return specs;
     const overallScreen=(Array.isArray(opt.overallScreenPath)&&opt.overallScreenPath.length)?opt.overallScreenPath:pathScreen;
     const b=pathBounds(overallScreen), mb=opt.overallBoundsMm||pathBounds(pathMm);
-    const left=overallScreen.reduce((a,p)=>p.x<a.x?p:a,overallScreen[0]);
-    const right=overallScreen.reduce((a,p)=>p.x>a.x?p:a,overallScreen[0]);
-    const top=overallScreen.reduce((a,p)=>p.y<a.y?p:a,overallScreen[0]);
-    const bottom=overallScreen.reduce((a,p)=>p.y>a.y?p:a,overallScreen[0]);
-    const widthVal=mb.w, heightVal=mb.h;
-    const widthY=Math.max(42,b.minY-42), heightX=Math.max(42,b.minX-52);
-    specs.push({key:'width', value:widthVal, kind:'overallH', textX:(left.x+right.x)/2, textY:widthY-13, x1:left.x, y1:widthY, x2:right.x, y2:widthY, ext:[[left.x,left.y,left.x,widthY],[right.x,right.y,right.x,widthY]]});
-    specs.push({key:'height', value:heightVal, kind:'overallV', textX:heightX-12, textY:(top.y+bottom.y)/2, x1:heightX, y1:top.y, x2:heightX, y2:bottom.y, ext:[[top.x,top.y,heightX,top.y],[bottom.x,bottom.y,heightX,bottom.y]]});
 
     const shapeCenter={x:(b.minX+b.maxX)/2,y:(b.minY+b.maxY)/2};
     const cadSegsMm=Array.isArray(opt.cadSegmentsMm)?opt.cadSegmentsMm:[];
@@ -2773,10 +2818,8 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     const mapPtMmToScreen=typeof opt.mapPtMmToScreen==='function'?opt.mapPtMmToScreen:null;
     const diameterMm=Math.max(.1,Number(opt.diameterMm)||6);
     const segCandidates=[];
-    const strictArcPairs=[];
-    const totalPath=Math.max(1,pathLength(pathMm)||1);
-    // 제작에 필요한 주요 세그먼트만 표시한다. 미세 분절/잡선은 치수 대상에서 제외한다.
-    const minSeg=Math.max(14,Math.max(mb.w,mb.h)*0.08,totalPath*0.045);
+    const totalPath=Math.max(1,Number(opt.totalLengthMm)||pathLength(pathMm)||1);
+    const minSeg=Math.max(10,Math.max(mb.w,mb.h)*0.045,totalPath*0.028);
 
     if(cadSegsMm.length && cadSegsScreen.length && cadSegsMm.length===cadSegsScreen.length){
       let seq=0;
@@ -2796,7 +2839,6 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
         const len=cadSegmentLengthMm(gm);
         if(!Number.isFinite(len)||len<minSeg) continue;
         segCandidates.push({i:seq++,len,type:gm.type,gm,gs});
-        if(gm.type==='arc') strictArcPairs.push({gm,gs});
       }
     }else{
       const count=Math.min(pathMm.length,pathScreen.length);
@@ -2807,61 +2849,47 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
       }
     }
 
-    const segLimit=currentDimensionDetail()==='full'?8:6;
-    const selected=[];
-    for(const cand of segCandidates.slice().sort((a,b)=>b.len-a.len)){
-      if(selected.length>=segLimit) break;
-      selected.push(cand);
-    }
-    selected.sort((a,b)=>a.i-b.i);
-    let segNo=1;
+    const merged=mergeDisplayDimensionSegments(segCandidates,totalPath,diameterMm);
+    const segLimit=currentDimensionDetail()==='full'?10:8;
+    const selected=merged.filter(c=>Number.isFinite(c.len)&&c.len>=minSeg*.86).slice(0,segLimit);
+    let segNo=1,arcNo=1;
     for(const g of selected){
       const key=`seg${segNo++}`;
       if(g.type==='arc'){
-        const mp=g.gs.mid||cadSegmentMidPoint(g.gs);
+        const mainArc=(g.arcMembers&&g.arcMembers.length)?g.arcMembers[Math.floor(g.arcMembers.length/2)]:g;
+        const center=mainArc.gs?.center||mainArc.gs?.mid||cadSegmentMidPoint(mainArc.gs);
+        const corner=mainArc.gs?.corner||mainArc.gs?.mid||mainArc.gs?.p1||center;
+        const mp=mainArc.gs?.mid||cadSegmentMidPoint(mainArc.gs);
         let nx=mp.x-shapeCenter.x,ny=mp.y-shapeCenter.y; const nm=Math.hypot(nx,ny)||1; nx/=nm; ny/=nm;
-        const off=50+((segNo%2)*10);
+        const off=54+((segNo%2)*8);
         const tx=clamp(mp.x+nx*off,64,W-64),ty=clamp(mp.y+ny*off,44,H-44);
         specs.push({key,value:g.len,kind:'leader',textX:tx,textY:ty,x1:mp.x,y1:mp.y,x2:tx-8*nx,y2:ty-8*ny});
+        const rVal=Number(mainArc.gm?.m?.r)||NaN;
+        if(Number.isFinite(rVal)&&center){
+          specs.push({key:`bendR${arcNo++}`,value:rVal,kind:'radiusCenter',prefix:'R',textX:clamp(center.x,54,W-54),textY:clamp(center.y,42,H-42)});
+        }
       }else{
         const s1=g.gs.p0,s2=g.gs.p1,len=g.len;
         const dx=s2.x-s1.x,dy=s2.y-s1.y,mag=Math.max(1,Math.hypot(dx,dy));
         let nx=-dy/mag,ny=dx/mag;
         const center={x:(s1.x+s2.x)/2,y:(s1.y+s2.y)/2};
         if((center.x-shapeCenter.x)*nx+(center.y-shapeCenter.y)*ny<0){nx=-nx;ny=-ny;}
-        const off=26+(segNo%2)*8;
+        const off=24+(segNo%2)*8;
         const d1={x:s1.x+nx*off,y:s1.y+ny*off},d2={x:s2.x+nx*off,y:s2.y+ny*off};
         specs.push({key,value:len,kind:'segment',textX:clamp((d1.x+d2.x)/2+nx*8,58,W-58),textY:clamp((d1.y+d2.y)/2+ny*8,42,H-42),x1:d1.x,y1:d1.y,x2:d2.x,y2:d2.y,ext:[[s1.x,s1.y,d1.x,d1.y],[s2.x,s2.y,d2.x,d2.y]]});
       }
     }
-
-    const radiusPairs=strictArcPairs.length?strictArcPairs:[];
-    if(radiusPairs.length){
-      const limit=currentDimensionDetail()==='full'?4:2;
-      let shown=0;
-      for(let k=0;k<radiusPairs.length;k++){
-        const am=radiusPairs[k].gm?.m,as=radiusPairs[k].gs;
-        if(!(am&&Number.isFinite(am.r)&&am.r>0.8&&as)) continue;
-        const anchor=as.center||as.corner||as.p1||as.mid;
-        const corner=as.corner||as.mid||as.p1;
-        if(!anchor||!corner) continue;
-        let nx=anchor.x-shapeCenter.x,ny=anchor.y-shapeCenter.y; const nm=Math.hypot(nx,ny)||1; nx/=nm; ny/=nm;
-        const tx=clamp(anchor.x+nx*(70+(shown%2)*14),62,W-62),ty=clamp(anchor.y+ny*(70+(shown%2)*14),46,H-46);
-        specs.push({key:`bendR${shown+1}`,value:am.r,kind:'leader',prefix:'R',textX:tx,textY:ty,x1:corner.x,y1:corner.y,x2:tx-8*nx,y2:ty-8*ny});
-        shown++;
-        if(shown>=limit) break;
-      }
-    }
+    specs.push({key:'length',value:totalPath,kind:'badge',textX:clamp(b.maxX-54,70,W-70),textY:Math.max(36,b.minY-18)});
     return layoutDimensionLabels(specs,W,H);
   }
 
-  function svgArrow(x1,y1,x2,y2,size=6,color='#111'){
+  function svgArrow(x1,y1,x2,y2,size=6,color='#000'){
     const dx=x2-x1,dy=y2-y1,m=Math.hypot(dx,dy)||1,ux=dx/m,uy=dy/m,nx=-uy,ny=ux;
     const ax=x2-ux*size,ay=y2-uy*size;
     return `<path d="M ${x2.toFixed(1)} ${y2.toFixed(1)} L ${(ax+nx*size*.45).toFixed(1)} ${(ay+ny*size*.45).toFixed(1)} L ${(ax-nx*size*.45).toFixed(1)} ${(ay-ny*size*.45).toFixed(1)} Z" fill="${color}"/>`;
   }
   function dimSpecInfo(spec){
-    const map={width:{symbol:'W',name:'전체 폭',unit:'mm'},height:{symbol:'H',name:'전체 높이',unit:'mm'},length:{symbol:'D',name:'전개길이',unit:'mm'},r1:{symbol:'R1',name:'상부 R',unit:'mm'},r2:{symbol:'R2',name:'하부 R',unit:'mm'},diameter:{symbol:'Ø',name:'환봉 지름',unit:'mm'}};
+    const map={width:{symbol:'W',name:'전체 폭',unit:'mm'},height:{symbol:'H',name:'전체 높이',unit:'mm'},length:{symbol:'TL',name:'총 길이',unit:'mm'},r1:{symbol:'R1',name:'상부 R',unit:'mm'},r2:{symbol:'R2',name:'하부 R',unit:'mm'},diameter:{symbol:'Ø',name:'환봉 지름',unit:'mm'}};
     if(map[spec.key]) return map[spec.key];
     if(/^seg(\d+)$/.test(spec.key)) { const n=spec.key.replace('seg',''); return {symbol:`L${n}`,name:`구간 길이 ${n}`,unit:'mm'}; }
     if(/^bendR(\d+)$/.test(spec.key)) { const n=spec.key.replace('bendR',''); return {symbol:`R${n}`,name:`곡선 반경 ${n}`,unit:'mm'}; }
@@ -2882,22 +2910,18 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     let screen=[],dimOpt={};
     if(variant==='photo'){
       const fit=fitPhotoFocus(r,draw),map=cadScreenMappingForFocusedPhoto(r,cadMm,fit);
-      screen=mmForDims.map(map.mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,map.mapPt),cadGeometry:cadMm,mapPtMmToScreen:map.mapPt,diameterMm:Number(r.diameter)||6,overallScreenPath:(map.fitPath&&map.fitPath.length)?map.fitPath:screen,overallBoundsMm:pathBounds(mmForDrawing)};
+      screen=mmForDims.map(map.mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,map.mapPt),cadGeometry:cadMm,mapPtMmToScreen:map.mapPt,diameterMm:Number(r.diameter)||6,totalLengthMm:totalLength,overallScreenPath:(map.fitPath&&map.fitPath.length)?map.fitPath:screen,overallBoundsMm:pathBounds(mmForDrawing)};
     }else{
       const mmPath=mmForDrawing,pb=pathBounds(mmPath),sc=Math.min(draw.w/pb.w,draw.h/pb.h)*.84,ox=draw.x+(draw.w-pb.w*sc)/2,oy=draw.y+(draw.h-pb.h*sc)/2,tx=ox-pb.minX*sc,ty=oy-pb.minY*sc,mapPt=p=>({x:tx+p.x*sc,y:ty+p.y*sc});
-      screen=mmForDims.map(mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,mapPt),cadGeometry:cadMm,mapPtMmToScreen:mapPt,diameterMm:Number(r.diameter)||6,overallScreenPath:mmPath.map(mapPt),overallBoundsMm:pathBounds(mmPath)};
+      screen=mmForDims.map(mapPt);dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,mapPt),cadGeometry:cadMm,mapPtMmToScreen:mapPt,diameterMm:Number(r.diameter)||6,totalLengthMm:totalLength,overallScreenPath:mmPath.map(mapPt),overallBoundsMm:pathBounds(mmPath)};
     }
     const displayRadius=displayRadiusInfo(cadMm,Number(r.diameter)||6);
-    let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);if(variant==='photo')specs=layoutDimensionLabels([...specs,...radiusOverlaySpecs({...r,r1:displayRadius.r1,r2:displayRadius.r2},screen,W,H)],W,H);
+    let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);
     const fixed=[
       {key:'length',value:Number.isFinite(parseFloat(r.length))?parseFloat(r.length):totalLength},
-      {key:'width',value:parseFloat(r.width)||r.baseWidth},
-      {key:'height',value:parseFloat(r.height)||r.baseHeight},
-      {key:'r1',value:displayRadius.r1},
-      {key:'r2',value:displayRadius.r2},
       {key:'diameter',value:parseFloat(r.diameter)}
     ].filter(x=>Number.isFinite(x.value));
-    const priority=s=> /^seg\d+$/.test(s.key)?0 : s.key==='length'?1 : /^bendR\d+$/.test(s.key)?2 : ['width','height','r1','r2','diameter'].indexOf(s.key)+3;
+    const priority=s=> /^seg\d+$/.test(s.key)?0 : s.key==='length'?1 : /^bendR\d+$/.test(s.key)?2 : (s.key==='diameter'?3:9);
     const keys=new Set();
     return [...specs,...fixed].filter(s=>{ if(!s||!s.key||keys.has(s.key)) return false; keys.add(s.key); return true; }).sort((a,b)=>priority(a)-priority(b));
   }
@@ -2914,16 +2938,19 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     const parts=[];
     for(const s of specs){
       const info=dimSpecInfo(s);
-      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#111" stroke-width="1.15" fill="none"/>`).join('');
+      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#000" stroke-width="1.35" fill="none"/>`).join('');
       let main='';
-      if(s.kind==='leader') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1.15" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6)}`;
-      else main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1.15" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6)}${svgArrow(s.x1,s.y1,s.x2,s.y2,6)}`;
+      if(s.kind==='leader') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.35" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6,'#000')}`;
+      else if(s.kind==='segment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.35" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6,'#000')}${svgArrow(s.x1,s.y1,s.x2,s.y2,6,'#000')}`;
       const val=readDimValue(r,s.key,s.value),label=`${info.symbol} ${mm0(val)}${info.unit?` ${info.unit}`:''}`;
       const approxW=Math.max(52,label.length*6.6),approxH=18,x=s.textX-approxW/2,y=s.textY-approxH/2;
-      parts.push(`<g>${ext}${main}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" rx="4" ry="4" width="${approxW.toFixed(1)}" height="${approxH.toFixed(1)}" fill="rgba(0,0,0,.82)" stroke="#fff" stroke-width="0.6"/><text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="${/^R/.test(info.symbol)?'#ffb4b4':/^L/.test(info.symbol)||['W','H','D','Ø'].includes(info.symbol)?'#8fe7ff':'#fff'}">${esc(label)}</text></g>`);
+      const fillColor=(s.kind==='radiusCenter')?'rgba(130,0,0,.86)':'rgba(0,0,0,.82)';
+      const textColor=(s.kind==='radiusCenter')?'#ffd6d6':(/^R/.test(info.symbol)?'#ffb4b4':/^L/.test(info.symbol)||['TL','Ø'].includes(info.symbol)?'#8fe7ff':'#fff');
+      parts.push(`<g>${ext}${main}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" rx="4" ry="4" width="${approxW.toFixed(1)}" height="${approxH.toFixed(1)}" fill="${fillColor}" stroke="#fff" stroke-width="0.6"/><text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="${textColor}">${esc(label)}</text></g>`);
     }
     return parts.join('');
   }
+
 
   function finalVisualCenterline(path,diameter=6){
     if(!Array.isArray(path)||path.length<2)return path||[];
@@ -3056,16 +3083,18 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     const parts=[];
     for(const s of specs||[]){
       const info=dimSpecInfo(s);
-      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#111" stroke-width="1.0" fill="none"/>`).join('');
+      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#000" stroke-width="1.15" fill="none"/>`).join('');
       const val=readDimValue(r,s.key,s.value),label=`${info.symbol==='Ø'?'Ø':info.symbol}${mm0(val)}`;
       let main='';
-      if(s.kind==='leader') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1.0" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5)}`;
-      else main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#111" stroke-width="1.0" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5)}${svgArrow(s.x1,s.y1,s.x2,s.y2,5)}`;
+      if(s.kind==='leader') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.15" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5,'#000')}`;
+      else if(s.kind==='segment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.15" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5,'#000')}${svgArrow(s.x1,s.y1,s.x2,s.y2,5,'#000')}`;
       const w=Math.max(28,label.length*7.2),x=s.textX-w/2,y=s.textY-10;
-      parts.push(`<g>${ext}${main}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="16" fill="#fff"/><text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial,'Noto Sans KR',sans-serif" font-size="10.5" fill="#111">${esc(label)}</text></g>`);
+      const fill=s.kind==='radiusCenter'?'#fff5f5':'#fff';
+      parts.push(`<g>${ext}${main}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="16" fill="${fill}"/><text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial,'Noto Sans KR',sans-serif" font-size="10.5" fill="#000">${esc(label)}</text></g>`);
     }
     return parts.join('');
   }
+
 
   function buildRenderedDrawingSvg(r,mmRaw,cadMm,mmForDrawing,mmForDims,width,height,length,date){
     const W=1189,H=841;
@@ -3086,9 +3115,9 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     const outlineW=Math.max(6,diaVal*sc), innerW=Math.max(1,outlineW-2.4);
     const mainShape=`<path d="${centerD}" fill="none" stroke="#111" stroke-width="${outlineW.toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${centerD}" fill="none" stroke="#fff" stroke-width="${innerW.toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${centerD}" fill="none" stroke="#777" stroke-width="1" stroke-dasharray="7 5" stroke-linecap="round"/>`;
 
-    let specs=buildDimensionSpecs(mmForDims,centerPath,W,H,{arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,mapPt),overallScreenPath:centerPath,overallBoundsMm:pathBounds(mmForDrawing)});
+    let specs=buildDimensionSpecs(mmForDims,centerPath,W,H,{arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,mapPt),cadGeometry:cadMm,mapPtMmToScreen:mapPt,diameterMm:diaVal,totalLengthMm:length,overallScreenPath:centerPath,overallBoundsMm:pathBounds(mmForDrawing)});
     const detail=($('dimensionDetailSelect')?.value)||'basic';
-    specs=specs.filter(s=>['width','height','r1','r2'].includes(s.key) || /^seg[1-3]$/.test(s.key) || (detail==='full' && (/^seg\d+$/.test(s.key) || /^bendR\d+$/.test(s.key))));
+    specs=specs.filter(s=> s.key==='length' || /^bendR\d+$/.test(s.key) || /^seg[1-4]$/.test(s.key) || (detail==='full' && /^seg\d+$/.test(s.key)));
     const dimSvg=makeDimSvgFormal(specs,r);
 
     const sideCx=side.x+side.w/2, sideTop=side.y+10, sideBot=side.y+side.h-10;
@@ -3130,7 +3159,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
       dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,mapPt),cadGeometry:cadMm,mapPtMmToScreen:mapPt,diameterMm:Number(r.diameter)||6,overallScreenPath:(cadMm.fitPath||[]).map(mapPt),overallBoundsMm:pathBounds(mmForDrawing)};
     }
     const displayRadius=displayRadiusInfo(cadMm,Number(r.diameter)||6);
-    let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);if(variant==='photo')specs=layoutDimensionLabels([...specs,...radiusOverlaySpecs({...r,r1:displayRadius.r1,r2:displayRadius.r2},screen,W,H)],W,H);const dimSvg=makeDimSvg(specs,r,true);
+    let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);const dimSvg=makeDimSvg(specs,r,true);
     const sideTitle = r.captureType==='product' ? '제품 실이미지 오버레이 치수도' : '치구 실이미지 오버레이 치수도';
     const tbx=title.x,tby=title.y,tbw=title.w,tbh=title.h;
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><defs><clipPath id="photoClip"><rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}"/></clipPath></defs><rect width="${W}" height="${H}" fill="#fff"/><rect x="24" y="24" width="1141" height="793" fill="none" stroke="#111" stroke-width="1.4"/><text x="52" y="50" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">COTEC JIG DRAWING</text><text x="52" y="72" font-size="16" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">${sideTitle}</text><text x="52" y="92" font-size="11" font-family="Arial,'Noto Sans KR',sans-serif">치수 단위 : mm / 재질 : ${esc(r.material)} / 환봉 Ø${mm0(r.diameter)} / 전개길이 ${mm0(length)}</text>${shapeMarkup}${dimSvg}<rect x="${tbx}" y="${tby}" width="${tbw}" height="${tbh}" fill="#fff" stroke="#111" stroke-width="1"/><line x1="${tbx}" y1="${tby+24}" x2="${tbx+tbw}" y2="${tby+24}" stroke="#111"/><line x1="${tbx}" y1="${tby+48}" x2="${tbx+tbw}" y2="${tby+48}" stroke="#111"/><line x1="${tbx}" y1="${tby+72}" x2="${tbx+tbw}" y2="${tby+72}" stroke="#111"/><line x1="${tbx}" y1="${tby+96}" x2="${tbx+tbw}" y2="${tby+96}" stroke="#111"/><line x1="${tbx}" y1="${tby+116}" x2="${tbx+tbw}" y2="${tby+116}" stroke="#111"/><line x1="${tbx+92}" y1="${tby+24}" x2="${tbx+92}" y2="${tby+tbh}" stroke="#111"/><text x="${tbx+8}" y="${tby+16}" font-size="12" font-family="Arial,'Noto Sans KR',sans-serif" font-weight="700">TITLE BLOCK</text><text x="${tbx+8}" y="${tby+40}" font-size="10">도면번호</text><text x="${tbx+100}" y="${tby+40}" font-size="10">${esc(r.name)}</text><text x="${tbx+8}" y="${tby+64}" font-size="10">재질</text><text x="${tbx+100}" y="${tby+64}" font-size="10">${esc(r.material)}</text><text x="${tbx+8}" y="${tby+88}" font-size="10">전체 폭/높이</text><text x="${tbx+100}" y="${tby+88}" font-size="10">${mm0(width)} / ${mm0(height)}</text><text x="${tbx+8}" y="${tby+112}" font-size="10">전개길이</text><text x="${tbx+100}" y="${tby+112}" font-size="10">${mm0(length)}</text><text x="${tbx+8}" y="${tby+132}" font-size="10">작성일</text><text x="${tbx+100}" y="${tby+132}" font-size="10">${date}</text><text x="52" y="800" font-size="10" font-family="Arial,'Noto Sans KR',sans-serif">NOTE : 실구동 화면과 JPG/PDF 출력은 동일한 CAD/치수 파이프라인을 사용합니다. 실제 촬영 이미지 위 LINE(파랑)/ARC(빨강)를 실제 치구 폭의 약 절반 수준으로 얇게 표시하고, 제작에 필요한 큰 직선/곡선 구간만 L 길이로 표시하고 R 치수를 함께 표시합니다. 치수선과 화살표는 검은색으로 통일합니다.</text></svg>`;
@@ -3201,7 +3230,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
       const modeText=currentRenderMode()==='drawing'?'치구 렌더링 정식 도면':'치구 실이미지 오버레이';
       const autoOk=r.shapeConfirmed&&!r.userShapeCorrected,autoLabel=autoOk?(r.quality>.76?'자동 인식 · 양호':r.quality>.53?'자동 인식 · 보통':'자동 인식 · 확인권장'):'보정 필요';
       const aiBadge=r.openAiAssisted?'<span class="source-badge">OpenAI 적용</span>':r.openAiChecked?'<span class="source-badge">OpenAI 검증</span>':'';
-      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b>${aiBadge}<span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}${dimensionEditorHtml(r)}<div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-jump-btn" data-id="${r.id}">기호별 치수 입력</button><button class="btn apply-dims" data-id="${r.id}">수정값 형상 반영</button><button class="btn export-one" data-id="${r.id}">${currentExportFormat()==='pdf'?(currentRenderMode()==='drawing'?'이 도면 PDF':'이 오버레이 PDF'):(currentRenderMode()==='drawing'?'이 도면 JPG':'이 오버레이 JPG')}</button></div><div class="dim-note-box">격자 촬영은 격자판 X/Y 주기 경계를 먼저 잠그고 그 내부에서만 치구를 선택합니다. 일반 바닥은 AR/Ø 교차검증과 중심 후보 점수를 사용합니다. 치수는 사진 위에 직접 표시되고, 아래 기호 입력칸에서 수정할 수 있습니다. 그림 위 직접입력 대신 기호 입력 방식으로 값을 수정하세요.</div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.gridPitchX)&&Number.isFinite(r.gridPitchY)?` · 1cm격자 X ${n1(r.gridPitchX)}px / Y ${n1(r.gridPitchY)}px`:''}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. ${currentRenderMode()==='drawing'?'정리된 중심선으로 정식 렌더링 도면을 생성하며, 본도/측면도/단면도와 기호 치수를 함께 출력합니다.':'실제 촬영 이미지 위에 실제 치구보다 약간 얇게 조정한 LINE(파랑)/ARC(빨강)과 기호 치수를 표시하며, 이 오버레이 화면 자체를 최종 도면으로 사용합니다.'} 실구동 도면과 JPG/PDF 출력은 동일한 CAD/치수 파이프라인을 사용합니다. RED/BLUE 표시도 원본 중심선 이탈 시에는 원본 중심선 기반으로 자동 보정합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
+      return `<div class="result-item" data-id="${r.id}"><div class="result-head"><b>${i+1}. ${esc(r.name)}</b>${aiBadge}<span class="source-badge ${autoOk?'':'quality bad'}">${autoLabel}</span></div>${!r.shapeConfirmed?`<div class="message warn shape-confirm-warning">자동 인식이 실패한 건입니다. 이 경우에만 아래 「보정선」을 사용하세요.</div>`:''}${shapeEditorHtml(r)}${makeFigureHtml(r)}${dimensionEditorHtml(r)}<div class="result-actions"><button class="btn shape-edit-btn ${r.shapeEditMode?'active':''}" data-id="${r.id}">${r.shapeEditMode?'보정선 닫기':'보정선 (최후 수단)'}</button><button class="btn dim-jump-btn" data-id="${r.id}">기호별 치수 입력</button><button class="btn apply-dims" data-id="${r.id}">수정값 형상 반영</button><button class="btn export-one" data-id="${r.id}">${currentExportFormat()==='pdf'?(currentRenderMode()==='drawing'?'이 도면 PDF':'이 오버레이 PDF'):(currentRenderMode()==='drawing'?'이 도면 JPG':'이 오버레이 JPG')}</button></div><div class="dim-note-box">격자 촬영은 격자판 X/Y 주기 경계를 먼저 잠그고 그 내부에서만 치구를 선택합니다. 일반 바닥은 AR/Ø 교차검증과 중심 후보 점수를 사용합니다. 치수는 사진 위에 직접 표시되고, 아래 기호 입력칸에서 수정할 수 있습니다. 그림 위 직접입력 대신 기호 입력 방식으로 값을 수정하세요.</div><div class="result-msg">${r.userShapeCorrected?'사용자 보정선 적용 · ':''}형상 인식: ${esc(r.segmentMethod||'자동')} · 측정: ${esc(r.scaleSource)}${Number.isFinite(r.consensus)?` · 자동 합의도 ${Math.round(r.consensus*100)}%`:''}. ${currentRenderMode()==='drawing'?'정리된 중심선으로 정식 렌더링 도면을 생성하며, 본도/측면도/단면도와 기호 치수를 함께 출력합니다.':'실제 촬영 이미지 위에 실제 치구보다 약간 얇게 조정한 LINE(파랑)/ARC(빨강)과 기호 치수를 표시하며, 이 오버레이 화면 자체를 최종 도면으로 사용합니다.'} 실구동 도면과 JPG/PDF 출력은 동일한 CAD/치수 파이프라인을 사용합니다. RED/BLUE 표시도 원본 중심선 이탈 시에는 원본 중심선 기반으로 자동 보정합니다.${r.warning?` · ${esc(r.warning)}`:''}</div></div>`;
     }).join('');
   }
 
