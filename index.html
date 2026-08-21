@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
-  <title>HOOK 모바일 자동도면 v0.10.30</title>
+  <title>HOOK 모바일 자동도면 v0.10.31</title>
 <style>
 :root{
   --bg:#070b13;--panel:#111827;--panel2:#172033;--line:#263247;--text:#eef2ff;--muted:#9aa8bd;
@@ -149,7 +149,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 #bootStatus{position:sticky;top:0;z-index:1000;margin:0 auto;max-width:820px;padding:8px 14px;background:#0c4a6e;color:#e0f2fe;font-size:11px;font-weight:800;text-align:center;border-bottom:1px solid #38bdf8}#bootStatus.ok{display:none}#bootStatus.error{background:#7f1d1d;color:#fee2e2;display:block}.boot-fallback{display:none}
 
 
-/* v0.10.30 ACPT compact workspace */
+/* v0.10.31 ACPT compact workspace */
 :root{--acpt:#0f5f5a;--acpt-dark:#0b2f34;--acpt-soft:#eaf7f5;--acpt-line:#cfe2e3;--paper:#f4f8f8;--ink:#21333a;--sub:#6d8086}
 html{background:var(--paper);color-scheme:light}
 body{background:linear-gradient(180deg,#eef5f5 0,#f7faf9 260px,#f5f8f8 100%);color:var(--ink)}
@@ -168,7 +168,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
 @media(max-width:820px){.topbar{padding:13px 14px}.brand-mark{width:44px;height:44px;border-radius:12px}.topbar h1{font-size:18px}.topbar p{font-size:9px}.workspace-tabs-wrap{top:72px;padding:7px 9px}.workspace-tab,.mode-mini{padding:7px 10px;font-size:10px}.settings-sub-tab{padding:6px 9px;font-size:9px;min-height:30px}.settings-sub-tabs{gap:5px}.settings-sub-tabs:before{height:21px}.mode-mini{margin-left:0}.option-dock{padding:0 8px;margin-top:7px}.option-panel{padding:11px}.option-panel .form-grid{grid-template-columns:1fr 1fr}.camera-stage{max-height:50vh}.capture-item{flex-basis:132px}.capture-thumb{height:92px}.queue-actions{grid-template-columns:105px 1fr}.export-actions{grid-template-columns:1fr 1fr}.export-actions #newJobBtn{grid-column:1/-1}}
 @media(max-width:480px){.topbar{position:relative}.workspace-tabs-wrap{top:0}.topbar p{display:block}.option-panel .form-grid{grid-template-columns:1fr 1fr}.camera-stage{aspect-ratio:3/4;max-height:48vh}.capture-item{flex-basis:118px}.capture-thumb{height:82px}.capture-fields{grid-template-columns:1fr}.queue-actions{grid-template-columns:90px 1fr}.capture-btn{width:64px;height:64px}}
 
-/* v0.10.30 focused tab/camera refinements */
+/* v0.10.31 focused tab/camera refinements */
 .shoot-workspace{display:none}.shoot-workspace.active{display:block}.option-dock.hidden-for-shoot{display:none}
 .api-save-row{display:flex;align-items:center;gap:10px;margin-top:10px}.api-save-row .btn{min-height:36px;padding:7px 14px}.api-key-status{font-size:10px;font-weight:800;color:#70858a}.api-key-status.saved{color:#08786f;background:#def7f2;border:1px solid #bde8e2;border-radius:999px;padding:6px 9px}
 .camera-primary{width:100%;max-width:none}.camera-stage{width:100%;max-width:none;margin-left:auto;margin-right:auto;aspect-ratio:auto;height:clamp(360px,58vh,650px);max-height:none}.camera-stage video{width:100%;height:100%;object-fit:cover;object-position:center center}
@@ -183,7 +183,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
   <header class="topbar">
     <div class="brand-wrap">
       <div class="brand-mark"><b>H</b></div>
-      <div class="brand-copy"><div class="eyebrow">COTEC · HOOK DRAWING</div><h1>HOOK 모바일 자동도면 <small>v0.10.30</small></h1><p>치구 전용 / 실사진 기반 선재 인식 V2 + 선택형 OpenAI Vision 검증 보조 / JPG 기본 출력</p></div>
+      <div class="brand-copy"><div class="eyebrow">COTEC · HOOK DRAWING</div><h1>HOOK 모바일 자동도면 <small>v0.10.31</small></h1><p>치구 전용 / 실사진 기반 선재 인식 V2 + 선택형 OpenAI Vision 검증 보조 / JPG 기본 출력</p></div>
     </div>
     <span id="statusPill" class="pill">준비</span>
   </header>
@@ -1120,7 +1120,11 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     return inter/Math.max(1,Math.min(rectArea(a),rectArea(b)));
   }
   function rebuildInnerFromOuter(candidate,w,h,pitchPx,method,confidence){
-    const o=candidate.outer,margin=Math.max(5,Math.round((pitchPx||24)*.62));
+    const o=candidate.outer;
+    const spanX=(o.w||((o.x1||0)-(o.x0||0)+1))/Math.max(1,w),spanY=(o.h||((o.y1||0)-(o.y0||0)+1))/Math.max(1,h),p=Math.max(6,pitchPx||24);
+    const nearFrame=(o.x0||0)<=p*.75||(o.y0||0)<=p*.75||(w-1-(o.x1||0))<=p*.75||(h-1-(o.y1||0))<=p*.75||spanX>.82||spanY>.82;
+    // 치구가 격자판 가장자리 가까이에 놓여도 선재가 잘리지 않도록 넓은 ROI는 내부 여백을 최소화합니다.
+    const margin=Math.max(5,Math.round(p*(nearFrame?0.20:0.42)));
     const outer={x0:clamp(o.x0|0,0,w-1),y0:clamp(o.y0|0,0,h-1),x1:clamp(o.x1|0,0,w-1),y1:clamp(o.y1|0,0,h-1)};
     outer.w=outer.x1-outer.x0+1;outer.h=outer.y1-outer.y0+1;
     const inner={x0:clamp(outer.x0+margin,0,w-1),y0:clamp(outer.y0+margin,0,h-1),x1:clamp(outer.x1-margin,0,w-1),y1:clamp(outer.y1-margin,0,h-1)};
@@ -1133,7 +1137,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     // 실제 촬영에서는 반사 테이프 때문에 세로 색상 run이 중간에서 끊길 수 있으므로 '첫 성공값' 방식은 사용하지 않는다.
     const a=detectGridPaperRect(imageData,gray,w,h,pitchPx),b=detectGridSupportRect(gray,w,h,pitchPx),c=detectBrightGridBoardRect(imageData,w,h,pitchPx),d=detectPaperRect(imageData,w,h,pitchPx);
     const src=[a,b,c,d].filter(Boolean);if(!src.length)return null;
-    const valid=src.filter(r=>{const o=r.outer,sx=(o.w||0)/Math.max(1,w),sy=(o.h||0)/Math.max(1,h);return sx>=.24&&sy>=.28&&sx<=.94&&sy<=.96;});
+    const valid=src.filter(r=>{const o=r.outer,sx=(o.w||0)/Math.max(1,w),sy=(o.h||0)/Math.max(1,h),gridSupport=String(r.method||'').includes('격자선 X/Y 주기');const maxX=gridSupport?1.001:0.94,maxY=gridSupport?1.001:0.96;return sx>=.24&&sy>=.28&&sx<=maxX&&sy<=maxY;});
     if(!valid.length)return null;
     let best=null;
     for(const r of valid){
@@ -1150,20 +1154,37 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     for(const q of valid){if(q===best.r)continue;if(rectOverlapMin(best.r,q)>=.55){ux=Math.min(ux,q.outer.x0);uy=Math.min(uy,q.outer.y0);ux1=Math.max(ux1,q.outer.x1);uy1=Math.max(uy1,q.outer.y1);used++;}}
     const union={outer:{x0:ux,y0:uy,x1:ux1,y1:uy1,w:ux1-ux+1,h:uy1-uy+1}};
     const uArea=rectArea(union),bArea=rectArea(best.r),uSpanX=union.outer.w/w,uSpanY=union.outer.h/h;
-    const useUnion=used>=2&&uArea<=bArea*1.55&&uSpanX<=.94&&uSpanY<=.96;
+    const bestIsGridSupport=String(best.r.method||'').includes('격자선 X/Y 주기');
+    const useUnion=used>=2&&uArea<=bArea*1.70&&uSpanX<=(bestIsGridSupport?1.001:0.94)&&uSpanY<=(bestIsGridSupport?1.001:0.96);
     const chosen=useUnion?union:best.r;
     return rebuildInnerFromOuter(chosen,w,h,pitchPx,useUnion?'다중 검출 합의 격자판 ROI':'다중 검출 최적 격자판 ROI',clamp(.76+Math.min(3,best.support)*.06,0,.96));
   }
+  function extendPeriodicProjectionRun(run,proj,pitchPx,maxLen){
+    if(!run||!proj?.length||!(pitchPx>=6))return run;
+    const p=Math.max(6,Number(pitchPx)||24),radius=Math.max(2,Math.round(p*.075)),thr=Math.max(0,Number(run.threshold)||0);
+    const peakAt=(c)=>{let best=0;for(let x=Math.max(0,Math.round(c)-radius);x<=Math.min(maxLen-1,Math.round(c)+radius);x++)best=Math.max(best,proj[x]||0);return best;};
+    let start=run.start,end=run.end,weak=0;
+    for(let c=start-p;c>=-p*.45;c-=p){const cc=Math.max(0,c),ok=peakAt(cc)>=thr*.52;if(ok){start=Math.max(0,Math.round(cc));weak=0;}else if(++weak>1)break;}
+    weak=0;
+    for(let c=end+p;c<=maxLen-1+p*.45;c+=p){const cc=Math.min(maxLen-1,c),ok=peakAt(cc)>=thr*.52;if(ok){end=Math.min(maxLen-1,Math.round(cc));weak=0;}else if(++weak>1)break;}
+    const span=(end-start)/Math.max(1,maxLen-1),strongRun=(run.count||0)>=8||span>.58;
+    if(strongRun&&start<=p*1.25)start=0;if(strongRun&&(maxLen-1-end)<=p*1.60)end=maxLen-1;
+    return {...run,start,end,count:Math.max(run.count||0,Math.round((end-start)/p)+1),extended:true};
+  }
   function detectGridSupportRect(gray,w,h,pitchPx){
     if(!(pitchPx>=6)) return null;
-    const px=axisEdgeProjection(gray,w,h,'x',.04,.98),py=axisEdgeProjection(gray,w,h,'y',.04,.98);
-    const xr=periodicProjectionRun(px,pitchPx,6),yr=periodicProjectionRun(py,pitchPx,6);
+    const px=axisEdgeProjection(gray,w,h,'x',.02,.995),py=axisEdgeProjection(gray,w,h,'y',.02,.995);
+    let xr=periodicProjectionRun(px,pitchPx,6),yr=periodicProjectionRun(py,pitchPx,6);
     if(!xr||!yr) return null;
+    xr=extendPeriodicProjectionRun(xr,px,pitchPx,w);yr=extendPeriodicProjectionRun(yr,py,pitchPx,h);
     const pad=Math.max(3,Math.round(pitchPx*.42));
     const outer={x0:clamp(xr.start-pad,0,w-1),y0:clamp(yr.start-pad,0,h-1),x1:clamp(xr.end+pad,0,w-1),y1:clamp(yr.end+pad,0,h-1)};
+    // 촬영 프레임 가장자리까지 1~2칸 이내라면 잘라내지 않고 프레임 끝까지 포함합니다.
+    if(outer.x0<=pitchPx*1.5)outer.x0=0;if((w-1-outer.x1)<=pitchPx*1.5)outer.x1=w-1;
+    if(outer.y0<=pitchPx*1.5)outer.y0=0;if((h-1-outer.y1)<=pitchPx*1.5)outer.y1=h-1;
     outer.w=outer.x1-outer.x0+1;outer.h=outer.y1-outer.y0+1;
-    const area=(outer.w*outer.h)/Math.max(1,w*h),spanX=outer.w/w,spanY=outer.h/h;
-    if(area<.09||spanX<.25||spanY<.25||spanX>.97||spanY>.97) return null;
+    const area=(outer.w*outer.h)/Math.max(1,w*h),spanX=outer.w/w,spanY=outer.h/h,fullGrid=((xr.extended||yr.extended)&&(xr.count||0)>=8&&(yr.count||0)>=8);
+    if(area<.09||spanX<.25||spanY<.25||(!fullGrid&&(spanX>.97||spanY>.97))||spanX>1.001||spanY>1.001) return null;
     const margin=Math.max(5,Math.round(pitchPx*.55));
     const inner={x0:clamp(outer.x0+margin,0,w-1),y0:clamp(outer.y0+margin,0,h-1),x1:clamp(outer.x1-margin,0,w-1),y1:clamp(outer.y1-margin,0,h-1)};
     inner.w=inner.x1-inner.x0+1;inner.h=inner.y1-inner.y0+1;
@@ -1182,8 +1203,8 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     }
     const r=Math.max(1,Math.round(pitchPx*.11));
     m=densityFilter(m,w,h,r,.14);
+    m=morphOpen(m,w,h,clamp(Math.round(pitchPx*.038),2,3));
     m=morphClose(m,w,h,clamp(Math.round(pitchPx*.17),2,5));
-    m=morphOpen(m,w,h,1);
     const comp=bestWireComponentInRect(m,w,h,rect,pitchPx);
     return comp?{comp,mask:m,threshold:null,invert:false,method:'격자판 내부 전용 중심선'}:null;
   }
@@ -1204,8 +1225,8 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     }
     let m=densityFilter(raw,w,h,clamp(Math.round(p*.10),1,4),.07);
     // 격자 교차부 때문에 끊긴 선을 다시 연결하되, 얇은 격자선만 남지 않도록 가볍게 열기/닫기를 수행한다.
+    m=morphOpen(m,w,h,clamp(Math.round(p*.032),1,2));
     m=morphClose(m,w,h,clamp(Math.round(p*.16),2,5));
-    m=morphOpen(m,w,h,1);
     const comp=bestWireComponentInRect(m,w,h,rect,pitchPx);
     if(!comp)return null;
     if(comp.spanRatio<.10||comp.fill>.55)return null;
@@ -1343,8 +1364,8 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
       const i=y*w+x;if(!m[i])continue;
       if(modDist(x,phase.px)<=band||modDist(y,phase.py)<=band)m[i]=0;
     }
-    const closeR=clamp(Math.round(pitchPx*.14),2,4),openR=1;
-    m=morphClose(m,w,h,closeR);m=morphOpen(m,w,h,openR);
+    const closeR=clamp(Math.round(pitchPx*.14),2,4),openR=clamp(Math.round(pitchPx*.040),2,3);
+    m=morphOpen(m,w,h,openR);m=morphClose(m,w,h,closeR);
     const comp=bestWireComponent(m,w,h);if(!comp)return null;
     if(comp.spanRatio<.16||comp.fill<.018||comp.fill>.46)return null;
     return{comp,mask:m,threshold:null,invert:false,method:'1cm 주기격자 제거 + 선재 중심 추출'};
@@ -1395,12 +1416,19 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
   }
   function wireThicknessFit(comp,path,pitchPx,diameter){
     if(!comp||!path?.length) return {wirePx:NaN,fit:0,refinedPitch:pitchPx||0};
-    const wirePx=Math.max(.1,(comp.area||1)/Math.max(1,pathLength(path)));
-    const rp=refineGridPitch(pitchPx,wirePx,diameter);
-    if(!(rp>0&&diameter>0)) return {wirePx,fit:.5,refinedPitch:rp};
-    const expected=rp*diameter/10,ratio=wirePx/Math.max(.1,expected);
-    const fit=Math.exp(-Math.abs(Math.log(Math.max(.05,ratio)))*1.5);
-    return {wirePx,fit,refinedPitch:rp};
+    const wirePx=Math.max(.1,(comp.area||1)/Math.max(1,pathLength(path))),rp=Math.max(0,Number(pitchPx)||0);
+    if(!(rp>0)) return {wirePx,fit:.55,refinedPitch:rp};
+    const rel=wirePx/rp;
+    let geomFit=0;
+    if(rel>=.075&&rel<=.42)geomFit=1;
+    else if(rel>=.045&&rel<.075)geomFit=.35+(rel-.045)/.03*.65;
+    else if(rel>.42&&rel<=.62)geomFit=1-(rel-.42)/.20*.72;
+    else geomFit=.08;
+    let nominalFit=.55;
+    if(Number.isFinite(Number(diameter))&&Number(diameter)>0){const expected=rp*Number(diameter)/10,ratio=wirePx/Math.max(.1,expected);nominalFit=Math.exp(-Math.abs(Math.log(Math.max(.05,ratio)))*.65);}
+    // 후보 선택은 입력 Ø보다 실제 영상에서 보이는 선재/격자 두께비를 우선합니다.
+    const fit=clamp(geomFit*.84+nominalFit*.16,.05,1);
+    return {wirePx,fit,refinedPitch:rp,relativeThickness:rel};
   }
   function candidateCenterPath(candidate,w,h,pitchPx,diameter){
     if(!candidate?.comp)return null;
