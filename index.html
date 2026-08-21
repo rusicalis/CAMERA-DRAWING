@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="HOOK 도면" />
-  <title>HOOK 모바일 자동도면 v0.10.31</title>
+  <title>HOOK 모바일 자동도면 v0.10.32</title>
 <style>
 :root{
   --bg:#070b13;--panel:#111827;--panel2:#172033;--line:#263247;--text:#eef2ff;--muted:#9aa8bd;
@@ -149,7 +149,7 @@ input,select{width:100%;background:#0a1120;border:1px solid #334155;color:#f8faf
 #bootStatus{position:sticky;top:0;z-index:1000;margin:0 auto;max-width:820px;padding:8px 14px;background:#0c4a6e;color:#e0f2fe;font-size:11px;font-weight:800;text-align:center;border-bottom:1px solid #38bdf8}#bootStatus.ok{display:none}#bootStatus.error{background:#7f1d1d;color:#fee2e2;display:block}.boot-fallback{display:none}
 
 
-/* v0.10.31 ACPT compact workspace */
+/* v0.10.32 ACPT compact workspace */
 :root{--acpt:#0f5f5a;--acpt-dark:#0b2f34;--acpt-soft:#eaf7f5;--acpt-line:#cfe2e3;--paper:#f4f8f8;--ink:#21333a;--sub:#6d8086}
 html{background:var(--paper);color-scheme:light}
 body{background:linear-gradient(180deg,#eef5f5 0,#f7faf9 260px,#f5f8f8 100%);color:var(--ink)}
@@ -168,7 +168,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
 @media(max-width:820px){.topbar{padding:13px 14px}.brand-mark{width:44px;height:44px;border-radius:12px}.topbar h1{font-size:18px}.topbar p{font-size:9px}.workspace-tabs-wrap{top:72px;padding:7px 9px}.workspace-tab,.mode-mini{padding:7px 10px;font-size:10px}.settings-sub-tab{padding:6px 9px;font-size:9px;min-height:30px}.settings-sub-tabs{gap:5px}.settings-sub-tabs:before{height:21px}.mode-mini{margin-left:0}.option-dock{padding:0 8px;margin-top:7px}.option-panel{padding:11px}.option-panel .form-grid{grid-template-columns:1fr 1fr}.camera-stage{max-height:50vh}.capture-item{flex-basis:132px}.capture-thumb{height:92px}.queue-actions{grid-template-columns:105px 1fr}.export-actions{grid-template-columns:1fr 1fr}.export-actions #newJobBtn{grid-column:1/-1}}
 @media(max-width:480px){.topbar{position:relative}.workspace-tabs-wrap{top:0}.topbar p{display:block}.option-panel .form-grid{grid-template-columns:1fr 1fr}.camera-stage{aspect-ratio:3/4;max-height:48vh}.capture-item{flex-basis:118px}.capture-thumb{height:82px}.capture-fields{grid-template-columns:1fr}.queue-actions{grid-template-columns:90px 1fr}.capture-btn{width:64px;height:64px}}
 
-/* v0.10.31 focused tab/camera refinements */
+/* v0.10.32 focused tab/camera refinements */
 .shoot-workspace{display:none}.shoot-workspace.active{display:block}.option-dock.hidden-for-shoot{display:none}
 .api-save-row{display:flex;align-items:center;gap:10px;margin-top:10px}.api-save-row .btn{min-height:36px;padding:7px 14px}.api-key-status{font-size:10px;font-weight:800;color:#70858a}.api-key-status.saved{color:#08786f;background:#def7f2;border:1px solid #bde8e2;border-radius:999px;padding:6px 9px}
 .camera-primary{width:100%;max-width:none}.camera-stage{width:100%;max-width:none;margin-left:auto;margin-right:auto;aspect-ratio:auto;height:clamp(360px,58vh,650px);max-height:none}.camera-stage video{width:100%;height:100%;object-fit:cover;object-position:center center}
@@ -183,7 +183,7 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
   <header class="topbar">
     <div class="brand-wrap">
       <div class="brand-mark"><b>H</b></div>
-      <div class="brand-copy"><div class="eyebrow">COTEC · HOOK DRAWING</div><h1>HOOK 모바일 자동도면 <small>v0.10.31</small></h1><p>치구 전용 / 실사진 기반 선재 인식 V2 + 선택형 OpenAI Vision 검증 보조 / JPG 기본 출력</p></div>
+      <div class="brand-copy"><div class="eyebrow">COTEC · HOOK DRAWING</div><h1>HOOK 모바일 자동도면 <small>v0.10.32</small></h1><p>치구 전용 / 실사진 기반 선재 인식 V2 + 선택형 OpenAI Vision 검증 보조 / JPG 기본 출력</p></div>
     </div>
     <span id="statusPill" class="pill">준비</span>
   </header>
@@ -2698,12 +2698,16 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
       const lbl=(s.prefix||'')+mm0(s.value);
       const w=Math.max(50,lbl.length*8+14), h=24;
       let tx=s.textX, ty=s.textY;
-      for(let t=0;t<14;t++){
-        const box={x:tx-w/2,y:ty-h/2,w,h};
-        const hit=placed.some(p=>!(box.x+box.w<p.x || p.x+p.w<box.x || box.y+box.h<p.y || p.y+p.h<box.y));
-        if(!hit && box.x>10 && box.y>10 && box.x+box.w<W-10 && box.y+box.h<H-10) break;
-        tx=clamp(tx + (t%2===0?18:-12) + (idx%2===0?6:-6), w/2+10, W-w/2-10);
-        ty=clamp(ty + 18, h/2+10, H-h/2-10);
+      if(!s.fixed){
+        for(let t=0;t<14;t++){
+          const box={x:tx-w/2,y:ty-h/2,w,h};
+          const hit=placed.some(p=>!(box.x+box.w<p.x || p.x+p.w<box.x || box.y+box.h<p.y || p.y+p.h<box.y));
+          if(!hit && box.x>10 && box.y>10 && box.x+box.w<W-10 && box.y+box.h<H-10) break;
+          tx=clamp(tx + (t%2===0?18:-12) + (idx%2===0?6:-6), w/2+10, W-w/2-10);
+          ty=clamp(ty + 18, h/2+10, H-h/2-10);
+        }
+      }else{
+        tx=clamp(tx,w/2+10,W-w/2-10); ty=clamp(ty,h/2+10,H-h/2-10);
       }
       placed.push({x:tx-w/2,y:ty-h/2,w,h});
       return {...s,textX:tx,textY:ty};
@@ -2886,15 +2890,16 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
       if(g.type==='arc'){
         const mainArc=(g.arcMembers&&g.arcMembers.length)?g.arcMembers[Math.floor(g.arcMembers.length/2)]:g;
         const center=mainArc.gs?.center||mainArc.gs?.mid||cadSegmentMidPoint(mainArc.gs);
-        const corner=mainArc.gs?.corner||mainArc.gs?.mid||mainArc.gs?.p1||center;
         const mp=mainArc.gs?.mid||cadSegmentMidPoint(mainArc.gs);
         let nx=mp.x-shapeCenter.x,ny=mp.y-shapeCenter.y; const nm=Math.hypot(nx,ny)||1; nx/=nm; ny/=nm;
-        const off=54+((segNo%2)*8);
+        const off=56+((segNo%2)*10);
         const tx=clamp(mp.x+nx*off,64,W-64),ty=clamp(mp.y+ny*off,44,H-44);
-        specs.push({key,value:g.len,kind:'leader',textX:tx,textY:ty,x1:mp.x,y1:mp.y,x2:tx-8*nx,y2:ty-8*ny});
+        specs.push({key,value:g.len,kind:'leader',segType:'arc',segColor:'#ff4b4b',textX:tx,textY:ty,x1:mp.x,y1:mp.y,x2:tx-10*nx,y2:ty-10*ny});
         const rVal=Number(mainArc.gm?.m?.r)||NaN;
-        if(Number.isFinite(rVal)&&center){
-          specs.push({key:`bendR${arcNo++}`,value:rVal,kind:'radiusCenter',prefix:'R',textX:clamp(center.x,54,W-54),textY:clamp(center.y,42,H-42)});
+        if(Number.isFinite(rVal)&&center&&mp){
+          const vx=mp.x-center.x,vy=mp.y-center.y,vm=Math.hypot(vx,vy)||1;
+          const rx=center.x+(vx/vm)*Math.max(8,vm*0.52), ry=center.y+(vy/vm)*Math.max(8,vm*0.52);
+          specs.push({key:`bendR${arcNo++}`,value:rVal,kind:'radiusCenter',segType:'arc',segColor:'#ff4b4b',prefix:'R',textX:clamp(rx,54,W-54),textY:clamp(ry,42,H-42),fixed:true});
         }
       }else{
         const s1=g.gs.p0,s2=g.gs.p1,len=g.len;
@@ -2902,12 +2907,19 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
         let nx=-dy/mag,ny=dx/mag;
         const center={x:(s1.x+s2.x)/2,y:(s1.y+s2.y)/2};
         if((center.x-shapeCenter.x)*nx+(center.y-shapeCenter.y)*ny<0){nx=-nx;ny=-ny;}
-        const off=24+(segNo%2)*8;
-        const d1={x:s1.x+nx*off,y:s1.y+ny*off},d2={x:s2.x+nx*off,y:s2.y+ny*off};
-        specs.push({key,value:len,kind:'segment',textX:clamp((d1.x+d2.x)/2+nx*8,58,W-58),textY:clamp((d1.y+d2.y)/2+ny*8,42,H-42),x1:d1.x,y1:d1.y,x2:d2.x,y2:d2.y,ext:[[s1.x,s1.y,d1.x,d1.y],[s2.x,s2.y,d2.x,d2.y]]});
+        const shortSeg=(mag<68 || len<Math.max(16,totalPath*0.08));
+        if(shortSeg){
+          const off=42+((segNo%2)*8);
+          const tx=clamp(center.x+nx*off,58,W-58), ty=clamp(center.y+ny*off,42,H-42);
+          specs.push({key,value:len,kind:'leaderSegment',segType:'line',segColor:'#69d5ff',textX:tx,textY:ty,x1:center.x,y1:center.y,x2:tx-8*nx,y2:ty-8*ny});
+        }else{
+          const off=26+(segNo%2)*8;
+          const d1={x:s1.x+nx*off,y:s1.y+ny*off},d2={x:s2.x+nx*off,y:s2.y+ny*off};
+          specs.push({key,value:len,kind:'segment',segType:'line',segColor:'#69d5ff',textX:clamp((d1.x+d2.x)/2+nx*8,58,W-58),textY:clamp((d1.y+d2.y)/2+ny*8,42,H-42),x1:d1.x,y1:d1.y,x2:d2.x,y2:d2.y,ext:[[s1.x,s1.y,d1.x,d1.y],[s2.x,s2.y,d2.x,d2.y]]});
+        }
       }
     }
-    specs.push({key:'length',value:totalPath,kind:'badge',textX:clamp(b.maxX-54,70,W-70),textY:Math.max(36,b.minY-18)});
+    specs.unshift({key:'length',value:totalPath,kind:'badge',segType:'total',segColor:'#69d5ff',textX:clamp(b.maxX+72,70,W-70),textY:clamp(b.minY+26,24,H-24),fixed:true});
     return layoutDimensionLabels(specs,W,H);
   }
 
@@ -2966,15 +2978,15 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     const parts=[];
     for(const s of specs){
       const info=dimSpecInfo(s);
-      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#000" stroke-width="1.35" fill="none"/>`).join('');
+      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#000" stroke-width="1.7" stroke-opacity="1" fill="none"/>`).join('');
       let main='';
-      if(s.kind==='leader') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.35" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6,'#000')}`;
-      else if(s.kind==='segment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.35" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6,'#000')}${svgArrow(s.x1,s.y1,s.x2,s.y2,6,'#000')}`;
+      if(s.kind==='leader' || s.kind==='leaderSegment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.7" stroke-opacity="1" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6,'#000')}`;
+      else if(s.kind==='segment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.7" stroke-opacity="1" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,6,'#000')}${svgArrow(s.x1,s.y1,s.x2,s.y2,6,'#000')}`;
       const val=readDimValue(r,s.key,s.value),label=`${info.symbol} ${mm0(val)}${info.unit?` ${info.unit}`:''}`;
       const approxW=Math.max(52,label.length*6.6),approxH=18,x=s.textX-approxW/2,y=s.textY-approxH/2;
-      const fillColor=(s.kind==='radiusCenter')?'rgba(130,0,0,.86)':'rgba(0,0,0,.82)';
-      const textColor=(s.kind==='radiusCenter')?'#ffd6d6':(/^R/.test(info.symbol)?'#ffb4b4':/^L/.test(info.symbol)||['TL','Ø'].includes(info.symbol)?'#8fe7ff':'#fff');
-      parts.push(`<g>${ext}${main}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" rx="4" ry="4" width="${approxW.toFixed(1)}" height="${approxH.toFixed(1)}" fill="${fillColor}" stroke="#fff" stroke-width="0.6"/><text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="${textColor}">${esc(label)}</text></g>`);
+      const textColor=s.segColor||(/^bendR/.test(s.key)?'#ff4b4b':(/^seg/.test(s.key)?'#69d5ff':'#69d5ff'));
+      const fillColor='rgba(232,232,232,.74)';
+      parts.push(`<g>${ext}${main}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" rx="4" ry="4" width="${approxW.toFixed(1)}" height="${approxH.toFixed(1)}" fill="${fillColor}" stroke="rgba(255,255,255,.92)" stroke-width="0.7"/><text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="${textColor}">${esc(label)}</text></g>`);
     }
     return parts.join('');
   }
@@ -3045,25 +3057,28 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     return catmullRomSvgD(points,.50);
   }
   function cadGeometrySvg(cad,tx,ty,sc,reviewColors=false,strokeWidth=4){
+    const sw=Math.max(.6,strokeWidth*.70);
     if(!cad?.segments?.length){
-      return `<path d="${cad?.d||''}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${reviewColors?'#1976ff':'#111'}" stroke-width="${strokeWidth}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`;
+      return `<path d="${cad?.d||''}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${reviewColors?'#1976ff':'#111'}" stroke-width="${sw}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`;
     }
     const out=[];
+    if(reviewColors && cad?.d){
+      out.push(`<path d="${cad.d}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="#fff" stroke-opacity=".92" stroke-width="${(sw+0.20).toFixed(2)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
+    }
     for(const g of cad.segments){
-      const color=reviewColors?(g.type==='arc'?'#ff2d2d':'#1976ff'):'#111';
+      const color=reviewColors?(g.type==='arc'?'#ff3b3b':'#2a9dff'):'#111';
       if(reviewColors){
         const segPts=rawSegmentSourcePoints(cad,g);
         if(segPts.length>=2){
           const d=pathToSvgD(segPts);
-          out.push(`<path d="${d}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="#fff" stroke-opacity=".88" stroke-width="${(strokeWidth+0.18).toFixed(2)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
-          out.push(`<path d="${d}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${color}" stroke-width="${strokeWidth}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
+          out.push(`<path d="${d}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${color}" stroke-width="${sw.toFixed(2)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
           continue;
         }
       }
       if(g.type==='arc'&&g.m){
-        out.push(`<path d="${cadArcPathD(g)}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${color}" stroke-width="${strokeWidth}" vector-effect="non-scaling-stroke" stroke-linecap="round"/>`);
+        out.push(`<path d="${cadArcPathD(g)}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" fill="none" stroke="${color}" stroke-width="${sw.toFixed(2)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
       }else{
-        out.push(`<line x1="${g.p0.x.toFixed(3)}" y1="${g.p0.y.toFixed(3)}" x2="${g.p1.x.toFixed(3)}" y2="${g.p1.y.toFixed(3)}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" stroke="${color}" stroke-width="${strokeWidth}" vector-effect="non-scaling-stroke" stroke-linecap="round"/>`);
+        out.push(`<line x1="${g.p0.x.toFixed(3)}" y1="${g.p0.y.toFixed(3)}" x2="${g.p1.x.toFixed(3)}" y2="${g.p1.y.toFixed(3)}" transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${sc.toFixed(6)})" stroke="${color}" stroke-width="${sw.toFixed(2)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`);
       }
     }
     return out.join('');
@@ -3111,14 +3126,13 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     const parts=[];
     for(const s of specs||[]){
       const info=dimSpecInfo(s);
-      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#000" stroke-width="1.15" fill="none"/>`).join('');
+      const ext=(s.ext||[]).map(e=>`<line x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}" stroke="#000" stroke-width="1.2" fill="none"/>`).join('');
       const val=readDimValue(r,s.key,s.value),label=`${info.symbol==='Ø'?'Ø':info.symbol}${mm0(val)}`;
       let main='';
-      if(s.kind==='leader') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.15" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5,'#000')}`;
-      else if(s.kind==='segment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.15" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5,'#000')}${svgArrow(s.x1,s.y1,s.x2,s.y2,5,'#000')}`;
+      if(s.kind==='leader' || s.kind==='leaderSegment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.2" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5,'#000')}`;
+      else if(s.kind==='segment') main=`<line x1="${s.x1.toFixed(1)}" y1="${s.y1.toFixed(1)}" x2="${s.x2.toFixed(1)}" y2="${s.y2.toFixed(1)}" stroke="#000" stroke-width="1.2" fill="none"/>${svgArrow(s.x2,s.y2,s.x1,s.y1,5,'#000')}${svgArrow(s.x1,s.y1,s.x2,s.y2,5,'#000')}`;
       const w=Math.max(28,label.length*7.2),x=s.textX-w/2,y=s.textY-10;
-      const fill=s.kind==='radiusCenter'?'#fff5f5':'#fff';
-      parts.push(`<g>${ext}${main}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="16" fill="${fill}"/><text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial,'Noto Sans KR',sans-serif" font-size="10.5" fill="#000">${esc(label)}</text></g>`);
+      parts.push(`<g>${ext}${main}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="16" fill="#efefef" fill-opacity="0.82" stroke="#d0d0d0" stroke-width="0.4"/><text x="${s.textX.toFixed(1)}" y="${(s.textY+4).toFixed(1)}" text-anchor="middle" font-family="Arial,'Noto Sans KR',sans-serif" font-size="10.5" fill="${s.segColor||'#111'}">${esc(label)}</text></g>`);
     }
     return parts.join('');
   }
@@ -3174,17 +3188,17 @@ main{max-width:1180px;padding:12px 12px 36px}.card{background:#fff;border:1px so
     let screen=[],shapeMarkup='',dimOpt={};
     if(variant==='photo'){
       const fit=fitPhotoFocus(r,draw),map=cadScreenMappingForFocusedPhoto(r,cadMm,fit),visualScreen=mmForDims.map(map.mapPt);
-      const estimatedWireStroke=Math.max(.78,Math.min(1.45,(Number(r.diameter)||6)*Math.max(.01,map.sc)*.38));
+      const estimatedWireStroke=Math.max(.62,Math.min(1.10,(Number(r.diameter)||6)*Math.max(.01,map.sc)*.28));
       const guideStroke=estimatedWireStroke;
       shapeMarkup=`<rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}" fill="#f5f5f5" stroke="#111" stroke-width="1"/>${photoImageMarkup(r,fit)}${cadGeometrySvg(cadMm,map.tx,map.ty,map.sc,true,guideStroke)}<g font-family="Arial,'Noto Sans KR',sans-serif" font-size="10" font-weight="700"><rect x="${draw.x+10}" y="${draw.y+10}" width="160" height="28" rx="5" fill="rgba(0,0,0,.72)"/><line x1="${draw.x+20}" y1="${draw.y+24}" x2="${draw.x+45}" y2="${draw.y+24}" stroke="#1976ff" stroke-width="1.1"/><text x="${draw.x+51}" y="${draw.y+28}" fill="#fff">LINE</text><line x1="${draw.x+92}" y1="${draw.y+24}" x2="${draw.x+117}" y2="${draw.y+24}" stroke="#ff2d2d" stroke-width="1.1"/><text x="${draw.x+123}" y="${draw.y+28}" fill="#fff">ARC</text></g>`;
       screen=visualScreen;
-      dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,map.mapPt),cadGeometry:cadMm,mapPtMmToScreen:map.mapPt,diameterMm:Number(r.diameter)||6,overallScreenPath:visualScreen,overallBoundsMm:pathBounds(mmForDrawing)};
+      dimOpt={arcsMm:cadMm.arcs,arcsScreen:map.arcs,cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,map.mapPt),cadGeometry:cadMm,mapPtMmToScreen:map.mapPt,diameterMm:Number(r.diameter)||6,totalLengthMm:totalLength,overallScreenPath:visualScreen,overallBoundsMm:pathBounds(mmForDrawing)};
     }else{
       const pb=pathBounds(mmForDrawing),sc=Math.min(draw.w/pb.w,draw.h/pb.h)*.84,ox=draw.x+(draw.w-pb.w*sc)/2,oy=draw.y+(draw.h-pb.h*sc)/2,tx=ox-pb.minX*sc,ty=oy-pb.minY*sc;
       const mapPt=p=>({x:tx+p.x*sc,y:ty+p.y*sc});
       shapeMarkup=`<rect x="${draw.x}" y="${draw.y}" width="${draw.w}" height="${draw.h}" fill="none" stroke="#111" stroke-width="1"/>${cadGeometrySvg(cadMm,tx,ty,sc,false,4.2)}${r.photoDataUrl?`<rect x="${draw.x+12}" y="${draw.y+draw.h-128}" width="110" height="110" fill="none" stroke="#555"/><image href="${r.photoDataUrl}" x="${draw.x+16}" y="${draw.y+draw.h-124}" width="102" height="102" preserveAspectRatio="xMidYMid meet"/>`:''}`;
       screen=(cadMm.points||[]).map(mapPt);
-      dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,mapPt),cadGeometry:cadMm,mapPtMmToScreen:mapPt,diameterMm:Number(r.diameter)||6,overallScreenPath:(cadMm.fitPath||[]).map(mapPt),overallBoundsMm:pathBounds(mmForDrawing)};
+      dimOpt={arcsMm:cadMm.arcs,arcsScreen:(cadMm.arcs||[]).map(a=>({...a,p1:mapPt(a.p1),p2:mapPt(a.p2),corner:mapPt(a.corner),center:a.center?mapPt(a.center):undefined,r:a.r*sc})),cadSegmentsMm:cadMm.segments,cadSegmentsScreen:mapCadSegmentsToScreen(cadMm.segments,mapPt),cadGeometry:cadMm,mapPtMmToScreen:mapPt,diameterMm:Number(r.diameter)||6,totalLengthMm:totalLength,overallScreenPath:(cadMm.fitPath||[]).map(mapPt),overallBoundsMm:pathBounds(mmForDrawing)};
     }
     const displayRadius=displayRadiusInfo(cadMm,Number(r.diameter)||6);
     let specs=buildDimensionSpecs(mmForDims,screen,W,H,dimOpt);const dimSvg=makeDimSvg(specs,r,true);
