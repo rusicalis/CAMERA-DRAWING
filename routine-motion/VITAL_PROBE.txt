@@ -1,30 +1,405 @@
-# Vital free-pack deep probe
+# Vital free-pack bundle probe
 
-## Context
-ries with 800+ exercises. Complete Collection ($199) for the full fitness library across gym, home, office, yoga, pilates, and more with 1,500+ exercises." } }, { "@type": "Question", "name": "What is included in the Vital Animations download?", "acceptedAnswer": { "@type": "Answer", "text": "Everything for your plan: structured exercise data in JSON format, HD 1080p MP4 animation files, and metadata — ready to add to your app right away. Delivered as an organized ZIP package." } }, { "@type": "Question", "name": "What payment methods d
-e": "https://vitalanimations.com/license", "isAccessibleForFree": false, "creator": { "@type": "Organization", "name": "Vital Animations", "url": "https://vitalanimations.com/" }, "distribution": [ { "@type": "DataDownload", "encodingFormat": "application/json", "contentUrl": "https://vitalanimations.com/pricing" } ], "variableMeasured": [ "exerciseId", "name", "bodyPart", "equipment", "target", "secondaryMuscles", "difficulty", "category", "description", "instructions" ]
-"women workout dataset", "mobility exercises", "stretching animations", "free exercise animations", "free workout animations", "free fitness animation pack" ] } </script> <!-- ═══ JSON-LD Structured Data: FAQPage (Free Pack) ═══ --> <script type="application/ld+json"> { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [ { "@type": "Question", "name": "Does Vital Animations offer free exercise animations?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Vital Animations offers a free pa
-ck of HD exercise animations with structured JSON metadata. No signup or credit card required — instant ZIP download at vitalanimations.com/free-pack." } }, { "@type": "Question", "name": "What is included in the free exercise animation pack?", "acceptedAnswer": { "@type": "Answer", "text": "The free pack includes production-quality 1080p HD MP4 exercise animations and structured JSON metadata using the same schema as the full paid dataset. Exer
-cises include squats, lunges, push-ups, bicep curls, shoulder presses, deadlift variations, and core work." } }, { "@type": "Question", "name": "How do I download free exercise animations from Vital Animations?", "acceptedAnswer": { "@type": "Answer", "text": "Visit vitalanimations.com/free-pack and click Download Free Pack. The ZIP file downloads instantly — no email, no signup, no credit card needed." } } ] } </script> <!-- ═══ JSON-LD: BreadcrumbList ═══ --> <
-imations.com/pricing" }, { "@type": "ListItem", "position": 5, "name": "License", "item": "https://vitalanimations.com/license" }, { "@type": "ListItem", "position": 6, "name": "Free Pack", "item": "https://vitalanimations.com/free-pack" } ] } </script> <script type="module" crossorigin src="/assets/index-Mahui4Zq.js"></script> </head> <body> <div id="root"></div> <!-- ═══ Noscript fallback for SEO crawlers ═══ --> <noscript> <div style="max-width:800px;margin:60px auto;padding:20px;font-family:system-u
-9 (one-time):</strong> 1,500+ exercise animations across gym, home, office, yoga, pilates, face yoga, women workouts, and mobility/stretching. Includes 1080p HD animations, structured JSON metadata, and commercial license.</p> <h2>Free Exercise Animations</h2> <p>Download free HD exercise animations with structured JSON metadata — no signup required. Get them at <a href="https://vitalanimations.com/free-pack">vitalanimations.com/free-pack</a>.</p> <h2>License</h2> <p>Lifetime commercial usage rights. Use in mobile apps, SaaS platforms, and websites. Redistribution or reselling of the raw dataset is not permitted.</p> <h2
-purchase with lifetime access. No recurring fees.</p> <p><strong>Can I use it in commercial apps?</strong> Yes — commercial use is included. Deploy in iOS apps, Android apps, SaaS platforms, and websites.</p> <p><strong>Do I need an API?</strong> No API required. Download the files and host them yourself — no ongoing dependency.</p> <p><strong>Which plan should I choose?</strong> Gym Dataset ($49) for gym-only apps. Gym Pro Dataset ($99) for male + female gym libraries. Complete Collection ($199) for the full fitness library across all categories.</p> <p><strong>What data fields are included?</strong> Each exercise includes: exe
+## Script https://vitalanimations.com/assets/index-Mahui4Zq.js
+). By purchasing, downloading, accessing, or using any assets from Vital Animations, you agree to be bound by this Agreement.`}),(0,M.jsx)(`h2`,{children:`1. Definitions`}),(0,M.jsx)(`p`,{children:`For the purposes of this Agreement, 
+);
 
-## Script sources
-/assets/index-Mahui4Zq.js
+  .hub-page {
+    --hub-bg: #060608;
+    --hub-bg2: #0d0d12;
+    --hub-bg3: #13131a;
+    --hub-bg4: #1a1a24;
+    --hub-border: rgba(255,255,255,0.07);
+    --hub-border2: rgba(255,255,255,0.12);
+    --hub-border-hover: rgba(255,255,255,0.18);
+    --hub-text: #f0f0f4;
+    --hub-text2: #9999b0;
+    --hub-text3: #6b6b80;
+    --hub-gym-accent: #c8f53f;
+    --hub-gym-accent-dim: rgba(200,245,63,0.12);
+    --hub-gym-glow: rgba(200,245,63,0.25);
+    --hub-home-accent: #ff6b9d;
+    --hub-home-accent-dim: rgba(255,107,157,0.12);
+    --hub-home-glow: rgba(255,107,157,0.25);
+    min-height: 100vh;
+    background: var(--hub-bg);
+    color: var(--hub-text);
+    font-family: 
+);
 
-## Links
-/favicon-48x48.png
-/favicon-512x512.png
-/apple-touch-icon.png
-/site.webmanifest
-https://vitalanimations.com/
-https://fonts.googleapis.com
-https://fonts.gstatic.com
-/assets/index-Mahui4Zq.js
-https://vitalanimations.com/free-pack
-mailto:contact@vitalanimations.com
-https://github.com/exercisedb-pro/exercisedb-dataset
+  /* ── CSS Variables ── */
+  .forge-page {
+    --forge-bg: #080b0f;
+    --forge-bg2: #0d1117;
+    --forge-bg3: #141a22;
+    --forge-card: #111820;
+    --forge-border: #1e2a38;
+    --forge-border2: #273547;
+    --forge-accent: #b3ff00;
+    --forge-accent2: #7aff00;
+    --forge-accent-dim: rgba(179,255,0,0.12);
+    --forge-accent-glow: rgba(179,255,0,0.25);
+    --forge-text: #e8eef5;
+    --forge-text2: #7a90a8;
+    --forge-text3: #4a6278;
+    --forge-red: #ff4455;
+    --forge-blue: #3d9eff;
+    --forge-orange: #ff8c3d;
+    --forge-purple: #9d6fff;
+    --forge-teal: #00d4aa;
+  }
 
-## HTML size
-27741
+  /* ── Reset & page ── */
+  .forge-page {
+    min-height: 100vh;
+    background: var(--forge-bg);
+    color: var(--forge-text);
+    font-family: 
+);
+
+  /* ── CSS Variables ── */
+  .hw-page {
+    --hw-bg: #080b0f;
+    --hw-bg2: #0d1117;
+    --hw-bg3: #141a22;
+    --hw-card: #111820;
+    --hw-border: #1e2a38;
+    --hw-border2: #273547;
+    --hw-accent: #ff6b9d;
+    --hw-accent2: #ff85b1;
+    --hw-accent-dim: rgba(255,107,157,0.12);
+    --hw-accent-glow: rgba(255,107,157,0.25);
+    --hw-text: #e8eef5;
+    --hw-text2: #7a90a8;
+    --hw-text3: #4a6278;
+    --hw-red: #ff4455;
+    --hw-blue: #3d9eff;
+    --hw-orange: #ff8c3d;
+    --hw-purple: #a78bfa;
+    --hw-teal: #34d399;
+    --hw-pink: #f472b6;
+  }
+
+  /* ── Reset & page ── */
+  .hw-page {
+    min-height: 100vh;
+    background: var(--hw-bg);
+    color: var(--hw-text);
+    font-family: 
+);
+
+  /* ── Variables ── */
+  .hub-page {
+    --hub-bg: #060608;
+    --hub-bg2: #0d0d12;
+    --hub-bg3: #13131a;
+    --hub-bg4: #1a1a24;
+    --hub-border: rgba(255,255,255,0.07);
+    --hub-border2: rgba(255,255,255,0.12);
+    --hub-border-hover: rgba(255,255,255,0.18);
+    --hub-text: #f0f0f4;
+    --hub-text2: #9999b0;
+    --hub-text3: #6b6b80;
+    --hub-gym-accent: #c8f53f;
+    --hub-gym-accent-dim: rgba(200,245,63,0.12);
+    --hub-gym-glow: rgba(200,245,63,0.25);
+    --hub-home-accent: #ff6b9d;
+    --hub-home-accent-dim: rgba(255,107,157,0.12);
+    --hub-home-glow: rgba(255,107,157,0.25);
+  }
+
+  /* ── Reset ── */
+  .hub-page {
+    min-height: 100vh;
+    background: var(--hub-bg);
+    color: var(--hub-text);
+    font-family: 
+, monospace;
+    font-size: 0.65rem;
+    color: var(--hub-text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .hub-stat-divider {
+    width: 1px;
+    height: 36px;
+    background: var(--hub-border2);
+  }
+
+  /* ─────────────────────────────────────────────
+     PACKAGES SECTION
+     ───────────────────────────────────────────── */
+  .hub-packages-section {
+    padding: 0 32px 80px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .hub-packages-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    font-family: 
+, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--forge-text2);
+    background: transparent;
+    border: 1px solid var(--forge-border);
+    padding: 7px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .forge-back-btn:hover {
+    color: var(--forge-text);
+    border-color: var(--forge-border2);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .forge-header-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .forge-live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 
+, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--hub-text3);
+    background: transparent;
+    border: 1px solid var(--hub-border);
+    padding: 7px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .hub-back-btn:hover {
+    color: var(--hub-text);
+    border-color: var(--hub-border2);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .hub-header-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .hub-live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 
+, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--hw-text2);
+    background: transparent;
+    border: 1px solid var(--hw-border);
+    padding: 7px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .hw-back-btn:hover {
+    color: var(--hw-text);
+    border-color: var(--hw-border2);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .hw-header-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .hw-live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 
+, sans-serif;
+    font-size: clamp(2.1rem, 4.5vw, 3.4rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    color: var(--fp-text);
+    margin-bottom: 20px;
+  }
+
+  .fp-accent {
+    color: var(--fp-lime);
+    display: block;
+    margin-top: 10px;
+    font-size: clamp(1rem, 2.2vw, 1.35rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+
+  .fp-hero-desc {
+    font-size: 1.1rem;
+    color: var(--fp-muted-2);
+    line-height: 1.7;
+    max-width: 520px;
+    margin-bottom: 32px;
+    font-weight: 300;
+  }
+
+  .fp-download-btn {
+    background: var(--fp-lime);
+    color: #060608;
+    font-family: 
+, sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: -0.01em;
+    padding: 16px 32px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .fp-download-btn--full {
+    width: 100%;
+  }
+
+  .fp-download-btn--hero {
+    font-size: 1.05rem;
+    padding: 18px 36px;
+    margin-top: 4px;
+  }
+
+  .fp-download-btn:hover {
+    background: #d4ff45;
+    transform: translateY(-2px);
+    box-shadow: 0 16px 40px rgba(200,245,63,0.35);
+  }
+
+  .fp-ghost-btn {
+    background: transparent;
+    color: var(--fp-muted-2);
+    font-family: 
+,`**Cache** — long cache on immutable MP4 filenames so repeat plays are cheap and fast.`,`**Same files for web and mobile** — one origin for React, React Native, iOS, and Android.`]},{id:`prepare-files`,title:`Prepare the ZIP before you upload`,list:[`Download the dataset ZIP from your purchase / download page.`,`Unzip locally. Keep the folder structure (gym, home, and other categories as shipped).`,`Confirm you have matching **MP4 files** and **JSON** (exercise id, name, body part, equipment, and a path or filename for the animation).`,`Do not flatten everything into one folder unless your app already expects that — keeping categories makes CDN paths predictable.`],paragraphsAfter:[
+:`/free-pack`,
+:`Close`,children:`×`}),a.phase===`confirm`&&(0,M.jsxs)(M.Fragment,{children:[(0,M.jsx)(`h2`,{id:`fp-modal-title`,className:`fp-modal-title`,children:fi.title}),(0,M.jsxs)(`p`,{className:`fp-modal-desc`,children:[`Ready to download your ZIP. `,fi.note]}),(0,M.jsx)(`div`,{className:`fp-modal-actions`,children:(0,M.jsx)(`button`,{type:`button`,className:`fp-download-btn`,onClick:l,children:`Download Now`})})]}),a.phase===`loading`&&(0,M.jsxs)(M.Fragment,{children:[(0,M.jsx)(`div`,{className:`fp-modal-spinner`,
+:`true`,children:`✓`}),(0,M.jsx)(`h2`,{id:`fp-modal-title`,className:`fp-modal-title`,children:`Download started`}),(0,M.jsxs)(`p`,{className:`fp-modal-desc`,children:[`Check your browser
+:`true`}),(0,M.jsx)(`h2`,{id:`fp-modal-title`,className:`fp-modal-title`,children:`Starting download…`}),(0,M.jsx)(`p`,{className:`fp-modal-desc`,children:`Preparing your ZIP. This closes as soon as the file appears in your browser downloads — you don
+;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--forge-accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+
+  .forge-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--forge-border2);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4), 0 0 0 1px var(--forge-border2);
+  }
+
+  .forge-card:hover::before {
+    transform: scaleX(1);
+  }
+
+  .forge-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .forge-card-name {
+    font-family: 
+;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--hw-accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+
+  .hw-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--hw-border2);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4), 0 0 0 1px var(--hw-border2);
+  }
+
+  .hw-card:hover::before {
+    transform: scaleX(1);
+  }
+
+  .hw-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .hw-card-name {
+    font-family: 
+If you already run a site on Cloudflare, you can also put the files on a subdomain (`cdn.`) with Cloudflare proxy so the CDN caches MP4s at the edge. R2 + custom domain is the usual clean setup for a large animation library.
+],list:[`Use the dashboard for a first test, or the Wrangler / R2 CLI for the full 400–1,500+ file pack.`,`Enable a **public bucket** or attach a **custom domain** on the bucket (recommended for production).`,
+]},{id:`upload-r2`,title:`Upload to Cloudflare R2`,paragraphs:[
+http://localhost
+http://www.w3.org/1998/Math/MathML
+http://www.w3.org/1999/xlink
+http://www.w3.org/2000/svg
+http://www.w3.org/XML/1998/namespace
+https://bodyiq-c99e5-default-rtdb.firebaseio.com
+https://cdn.yourapp.com/animations/...
+https://cdn.yourdomain.com/mp4/gym/squat.mp4
+https://firebase.googleapis.com/v1alpha/projects/-/apps/{app-id}/webConfig
+https://firebaseinstallations.googleapis.com/v1
+https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Space+Mono:wght@400;700&display=swap
+https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap
+https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap
+https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap
+https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap
+https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;700&display=swap
+https://github.com/exercisedb-pro/exercisedb-dataset.git
+https://github.com/ungap/url-search-params.
+https://react.dev/errors/
+https://reactrouter.com/en/main/routers/picking-a-router.
+https://vitalanimations.com
+https://vitalanimations.gumroad.com/l/seudm
+https://vitalanimations.gumroad.com/l/vfyug
+https://vitalanimations.gumroad.com/l/ynjsvz
+https://www.googletagmanager.com/gtag/js
+https://www.paypal.com/sdk/js?client-id=${e}¤cy=USD&intent=capture&disable-funding=credit,card
+https://your-cdn-domain/...
+s included in the download?`,a:`Everything for your plan: structured exercise data, HD animation files, and metadata — ready to add to your app right away.`},{q:`Can
+CTX: oad/file?token=${encodeURIComponent(e)}`),n=await t.json();if(n.success&&(n.downloads||n.downloadUrl)){let e=n.downloads||[{downloadUrl:n.downloadUrl,fileName:n.fileName||`download.zip`}];for(let t=0;t<e.length;t++){let{downloadUrl:n,fileName:r}=e[t],i=document.createElement(`a`);i.href=n,i.download=r||`download.zip`,i.style.display=`none`,document.body.appendChild(i),i.click(),document.body.removeChild(i),t<e.length-1&&await new Promise(e=
+CTX: ext`,children:`Vital Animations`}),`. All rights reserved.`]}),(0,M.jsx)(`p`,{children:`Made for developers who build fitness products.`})]})]})})]})}var fi={href:`/VitalAnimations.zip`,filename:`Vital Animations.zip`,title:`Vital Animations Free Pack`,note:`Large ZIP — may take a minute to appear in your downloads.`};function pi(e,t){let n=document.createElement(`a`);n.href=e,n.download=t,document.body.appendChild(n),n.click(),document.bod
+CTX: y{performance.clearResourceTimings(),pi(fi.href,fi.filename),fetch(`/api/free-download/track`,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({pack:`freePack`})}).catch(()=>{}),await Promise.race([hi(fi.href),gi(fi.href).then(()=>!0)]),i(!0),o({phase:`done`}),setTimeout(()=>o(null),1600)}catch(e){o({phase:`error`,error:e?.message||`Download failed. Please try again.`})}}};return(0,M.jsxs)(M.Fragment,{children:[(0,
+CTX: ldren:`Build-ready starter pack`})]}),(0,M.jsx)(`button`,{type:`button`,className:`fp-download-btn fp-download-btn--full fp-download-btn--hero`,onClick:s,children:r?`Downloaded!`:`Download Free Pack`})]})})]})}),a&&(0,M.jsx)(`div`,{className:`fp-modal-overlay`,role:`presentation`,onClick:e=>{e.target===e.currentTarget&&c()},children:(0,M.jsxs)(`div`,{className:`fp-modal`,role:`dialog`,"aria-modal":`true`,"aria-labelledby":`fp-modal-title`,children:[a.pha
+CTX: se dataset with 1,500+ exercises across gym, yoga, pilates, home workouts, and more — with HD animations and structured JSON. One-time purchase for developers.`,canonical:`${F}/`},freePack:{title:`Free Exercise Animations — Download HD Workout Animations | Vital Animations`,description:`Download free HD exercise animations with structured JSON metadata for fitness apps. 1080p MP4s, instant ZIP download — no signup, no credit card required.`,key
+CTX: Animation Guides for Fitness Apps`,twitterDescription:`Guides and comparisons for fitness app builders choosing exercise animation libraries.`,canonical:`${F}/blog`}};I.samples=I.freePack;var Bi=I.home.title,Vi=I.home.description,Hi=I.home.keywords,Ui=I.home.ogTitle,Wi=I.home.ogDescription,Gi=I.home.twitterTitle,Ki=I.home.twitterDescription,qi=I.home.canonical;function Ji(e,t){if(!t)return;let n=document.querySelector(`meta[name="${e}"]`);n||(
+CTX: se),(0,M.jsxs)(`div`,{className:`site-page-with-footer`,children:[(0,M.jsx)(ci,{category:`home`,onBack:()=>e(`/showcase`)}),(0,M.jsx)(di,{})]})}function sa(){let e=A();return $i(I.freePack),(0,M.jsx)(_i,{onBack:()=>e(`/`)})}function ca({doc:e}){let t=A();return $i(e===`privacy`?I.privacy:e===`refund`?I.refund:e===`license`?I.license:I.terms),(0,M.jsx)(ki,{doc:e,onBack:()=>t(`/`)})}function la(){let e=A();return $i(I.blogHub),(0,M.jsxs)(`div`,{c
