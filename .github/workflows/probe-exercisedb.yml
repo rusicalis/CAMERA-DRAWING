@@ -1,0 +1,87 @@
+name: Probe ExerciseDB free API
+
+on:
+  push:
+    paths:
+      - 'routine-motion/.exercise-probe-trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe ExerciseDB
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p routine-motion
+          python3 - <<'PY'
+          import json, urllib.request, urllib.parse, time
+          base='https://oss.exercisedb.dev/api/v1/exercises'
+          report={'pages':[], 'matches':{}, 'errors':[]}
+          all_rows=[]
+          after=''
+          for page in range(25):
+              q={'limit':'100'}
+              if after: q['after']=after
+              url=base+'?'+urllib.parse.urlencode(q)
+              try:
+                  with urllib.request.urlopen(url, timeout=30) as r:
+                      raw=r.read().decode('utf-8')
+                      payload=json.loads(raw)
+              except Exception as e:
+                  report['errors'].append({'page':page,'url':url,'error':repr(e)})
+                  break
+              if isinstance(payload,list):
+                  arr=payload; meta={}
+                  shape='array'
+              else:
+                  arr=payload.get('data') or payload.get('exercises') or []
+                  meta=payload.get('meta') or {}
+                  shape='object'
+              report['pages'].append({'page':page,'shape':shape,'count':len(arr),'meta':meta})
+              all_rows.extend(arr)
+              nxt=meta.get('nextCursor')
+              if meta.get('hasNextPage') is False or not nxt:
+                  break
+              after=str(nxt)
+          report['total_loaded']=len(all_rows)
+          wants={
+            'pushup':['push up','push-up'],
+            'pushup-close':['close grip push up','narrow push up','diamond push up'],
+            'row':['kettlebell one arm row','one arm dumbbell row','bent over row'],
+            'deadlift':['kettlebell deadlift','dumbbell deadlift','romanian deadlift'],
+            'squat':['kettlebell goblet squat','dumbbell goblet squat','goblet squat'],
+            'lunge':['kettlebell reverse lunge','dumbbell reverse lunge','reverse lunge'],
+            'shoulder-press':['kettlebell one arm shoulder press','kettlebell press','dumbbell shoulder press'],
+            'lateral-raise':['band lateral raise','resistance band lateral raise','dumbbell lateral raise'],
+            'face-pull':['band reverse fly','band rear delt fly','dumbbell reverse fly','rear delt fly'],
+            'curl':['kettlebell curl','dumbbell biceps curl','dumbbell curl'],
+            'triceps':['kettlebell overhead triceps extension','dumbbell overhead triceps extension','overhead triceps extension']
+          }
+          def norm(s):
+              import re
+              return re.sub(r'[^a-z0-9]+',' ',str(s or '').lower()).strip()
+          for key,queries in wants.items():
+              hits=[]
+              for ex in all_rows:
+                  n=norm(ex.get('name'))
+                  for q in queries:
+                      qn=norm(q)
+                      if all(tok in n for tok in qn.split()):
+                          hits.append({k:ex.get(k) for k in ['exerciseId','name','gifUrl','targetMuscles','bodyParts','equipments','secondaryMuscles']})
+                          break
+              report['matches'][key]=hits[:30]
+          open('routine-motion/exercisedb-probe.json','w').write(json.dumps(report,ensure_ascii=False,indent=2))
+          PY
+      - name: Commit probe result
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add routine-motion/exercisedb-probe.json
+          git diff --cached --quiet || git commit -m 'chore: capture ExerciseDB probe [skip ci]'
+          git push
