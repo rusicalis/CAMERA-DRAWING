@@ -1,7 +1,30 @@
-# Vital free-pack link probe
+# Vital free-pack deep probe
 
-## Candidates
+## Context
+ries with 800+ exercises. Complete Collection ($199) for the full fitness library across gym, home, office, yoga, pilates, and more with 1,500+ exercises." } }, { "@type": "Question", "name": "What is included in the Vital Animations download?", "acceptedAnswer": { "@type": "Answer", "text": "Everything for your plan: structured exercise data in JSON format, HD 1080p MP4 animation files, and metadata — ready to add to your app right away. Delivered as an organized ZIP package." } }, { "@type": "Question", "name": "What payment methods d
+e": "https://vitalanimations.com/license", "isAccessibleForFree": false, "creator": { "@type": "Organization", "name": "Vital Animations", "url": "https://vitalanimations.com/" }, "distribution": [ { "@type": "DataDownload", "encodingFormat": "application/json", "contentUrl": "https://vitalanimations.com/pricing" } ], "variableMeasured": [ "exerciseId", "name", "bodyPart", "equipment", "target", "secondaryMuscles", "difficulty", "category", "description", "instructions" ]
+"women workout dataset", "mobility exercises", "stretching animations", "free exercise animations", "free workout animations", "free fitness animation pack" ] } </script> <!-- ═══ JSON-LD Structured Data: FAQPage (Free Pack) ═══ --> <script type="application/ld+json"> { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [ { "@type": "Question", "name": "Does Vital Animations offer free exercise animations?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Vital Animations offers a free pa
+ck of HD exercise animations with structured JSON metadata. No signup or credit card required — instant ZIP download at vitalanimations.com/free-pack." } }, { "@type": "Question", "name": "What is included in the free exercise animation pack?", "acceptedAnswer": { "@type": "Answer", "text": "The free pack includes production-quality 1080p HD MP4 exercise animations and structured JSON metadata using the same schema as the full paid dataset. Exer
+cises include squats, lunges, push-ups, bicep curls, shoulder presses, deadlift variations, and core work." } }, { "@type": "Question", "name": "How do I download free exercise animations from Vital Animations?", "acceptedAnswer": { "@type": "Answer", "text": "Visit vitalanimations.com/free-pack and click Download Free Pack. The ZIP file downloads instantly — no email, no signup, no credit card needed." } } ] } </script> <!-- ═══ JSON-LD: BreadcrumbList ═══ --> <
+imations.com/pricing" }, { "@type": "ListItem", "position": 5, "name": "License", "item": "https://vitalanimations.com/license" }, { "@type": "ListItem", "position": 6, "name": "Free Pack", "item": "https://vitalanimations.com/free-pack" } ] } </script> <script type="module" crossorigin src="/assets/index-Mahui4Zq.js"></script> </head> <body> <div id="root"></div> <!-- ═══ Noscript fallback for SEO crawlers ═══ --> <noscript> <div style="max-width:800px;margin:60px auto;padding:20px;font-family:system-u
+9 (one-time):</strong> 1,500+ exercise animations across gym, home, office, yoga, pilates, face yoga, women workouts, and mobility/stretching. Includes 1080p HD animations, structured JSON metadata, and commercial license.</p> <h2>Free Exercise Animations</h2> <p>Download free HD exercise animations with structured JSON metadata — no signup required. Get them at <a href="https://vitalanimations.com/free-pack">vitalanimations.com/free-pack</a>.</p> <h2>License</h2> <p>Lifetime commercial usage rights. Use in mobile apps, SaaS platforms, and websites. Redistribution or reselling of the raw dataset is not permitted.</p> <h2
+purchase with lifetime access. No recurring fees.</p> <p><strong>Can I use it in commercial apps?</strong> Yes — commercial use is included. Deploy in iOS apps, Android apps, SaaS platforms, and websites.</p> <p><strong>Do I need an API?</strong> No API required. Download the files and host them yourself — no ongoing dependency.</p> <p><strong>Which plan should I choose?</strong> Gym Dataset ($49) for gym-only apps. Gym Pro Dataset ($99) for male + female gym libraries. Complete Collection ($199) for the full fitness library across all categories.</p> <p><strong>What data fields are included?</strong> Each exercise includes: exe
+
+## Script sources
+/assets/index-Mahui4Zq.js
+
+## Links
+/favicon-48x48.png
+/favicon-512x512.png
+/apple-touch-icon.png
+/site.webmanifest
+https://vitalanimations.com/
+https://fonts.googleapis.com
+https://fonts.gstatic.com
+/assets/index-Mahui4Zq.js
 https://vitalanimations.com/free-pack
+mailto:contact@vitalanimations.com
+https://github.com/exercisedb-pro/exercisedb-dataset
 
 ## HTML size
 27741
