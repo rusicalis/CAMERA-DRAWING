@@ -1,0 +1,45 @@
+name: Probe exact exercise candidates
+
+on:
+  push:
+    paths:
+      - 'routine-motion/.exercise-exact-trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Find exact candidates
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request
+          url='https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/data/exercises.json'
+          req=urllib.request.Request(url,headers={'User-Agent':'B-Routine-Probe/1.0'})
+          rows=json.loads(urllib.request.urlopen(req,timeout=60).read().decode())
+          def pick(pred):
+              out=[]
+              for ex in rows:
+                  n=ex.get('name','').lower()
+                  if pred(n,ex):
+                      out.append({k:ex.get(k) for k in ['id','name','equipment','target','body_part','secondary_muscles','media_id','gif_url','attribution']})
+              return out
+          report={
+            'reverse_lunge':pick(lambda n,e:'reverse lunge' in n),
+            'shoulder_press':pick(lambda n,e:('kettlebell' in n and ('press' in n or 'overhead' in n)) or 'kettlebell overhead press' in n),
+            'overhead_triceps':pick(lambda n,e:'overhead' in n and 'triceps' in n and ('extension' in n or 'extend' in n)),
+            'one_arm_row':pick(lambda n,e:('one arm' in n or 'single arm' in n) and 'row' in n and e.get('equipment') in ['dumbbell','kettlebell'])
+          }
+          open('routine-motion/exercisedb-exact-candidates.json','w').write(json.dumps(report,ensure_ascii=False,indent=2))
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add routine-motion/exercisedb-exact-candidates.json
+          git diff --cached --quiet || git commit -m 'chore: capture exact exercise candidates [skip ci]'
+          git push
