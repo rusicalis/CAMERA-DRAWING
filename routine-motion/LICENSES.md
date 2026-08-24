@@ -9,5 +9,6 @@ These motion assets are transcoded/trimmed derivatives used by the DAILY ROUTINE
 - `goblet-squat.mp4` — Source: Wikimedia Commons `Squat - exercise demonstration video.webm`, FitnessScape, CC BY 3.0. https://commons.wikimedia.org/wiki/File:Squat_-_exercise_demonstration_video.webm
 - `shoulder-press.mp4` — Source: Wikimedia Commons `Shoulder press - exercise demonstration video.webm`, FitnessScape, CC BY 3.0. https://commons.wikimedia.org/wiki/File:Shoulder_press_-_exercise_demonstration_video.webm
 - `kettlebell-curl.mp4` — Source: Wikimedia Commons `CURL BÍCEPS.webm`, author MariaMilagrosPérez, CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:CURL_B%C3%8DCEPS.webm
+- `triceps-extension.mp4` — Source: Wikimedia Commons `Standing-overhead-triceps-extension-2.gif`, Everkinetic, CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:Standing-overhead-triceps-extension-2.gif
 
-Modifications: H.264 MP4 transcoding, resizing/padding for mobile playback; the curl source is trimmed to one repetition. CC BY-SA derivatives remain under CC BY-SA 4.0 where applicable.
+Modifications: H.264 MP4 transcoding, resizing/padding for mobile playback; the curl source is trimmed to one repetition. CC BY-SA derivatives remain under the applicable CC BY-SA license.
