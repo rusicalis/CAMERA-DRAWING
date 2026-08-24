@@ -1,0 +1,167 @@
+{
+  "pushup": {
+    "score": 174,
+    "id": "0662",
+    "exerciseId": "I4hDWkc",
+    "name": "push-up",
+    "equipment": "body weight",
+    "target": "pectorals",
+    "body_part": "chest",
+    "secondary_muscles": [
+      "triceps",
+      "deltoids",
+      "core"
+    ],
+    "gif_url": "videos/0662-I4hDWkc.gif",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  },
+  "pushup-close": {
+    "score": 174,
+    "id": "0283",
+    "exerciseId": "soIB2rj",
+    "name": "diamond push-up",
+    "equipment": "body weight",
+    "target": "triceps",
+    "body_part": "upper arms",
+    "secondary_muscles": [
+      "chest",
+      "shoulders"
+    ],
+    "gif_url": "videos/0283-soIB2rj.gif",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  },
+  "row": {
+    "score": 167,
+    "id": "0293",
+    "exerciseId": "BJ0Hz5L",
+    "name": "dumbbell bent over row",
+    "equipment": "dumbbell",
+    "target": "upper back",
+    "body_part": "back",
+    "secondary_muscles": [
+      "biceps",
+      "forearms"
+    ],
+    "gif_url": "videos/0293-BJ0Hz5L.gif",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  },
+  "deadlift": {
+    "score": 167,
+    "id": "0300",
+    "exerciseId": "nUwVh7b",
+    "name": "dumbbell deadlift",
+    "equipment": "dumbbell",
+    "target": "glutes",
+    "body_part": "upper legs",
+    "secondary_muscles": [
+      "hamstrings",
+      "lower back"
+    ],
+    "gif_url": "videos/0300-nUwVh7b.gif",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  },
+  "squat": {
+    "score": 167,
+    "id": "1760",
+    "exerciseId": "yn8yg1r",
+    "name": "dumbbell goblet squat",
+    "equipment": "dumbbell",
+    "target": "quads",
+    "body_part": "upper legs",
+    "secondary_muscles": [
+      "glutes",
+      "hamstrings",
+      "calves"
+    ],
+    "gif_url": "videos/1760-yn8yg1r.gif",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  },
+  "lunge": {
+    "score": 55,
+    "id": "3635",
+    "exerciseId": "ecl28tP",
+    "name": "dumbbell contralateral forward lunge",
+    "equipment": "dumbbell",
+    "target": "glutes",
+    "body_part": "upper legs",
+    "secondary_muscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves"
+    ],
+    "gif_url": "videos/3635-ecl28tP.gif",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  },
+  "shoulder-press": {
+    "score": 139,
+    "id": "0520",
+    "exerciseId": "5KLbZWx",
+    "name": "kettlebell alternating press",
+    "equipment": "kettlebell",
+    "target": "delts",
+    "body_part": "shoulders",
+    "secondary_muscles": [
+      "triceps",
+      "core"
+    ],
+    "gif_url": "videos/0520-5KLbZWx.gif",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  },
+  "lateral-raise": {
+    "score": 174,
+    "id": "0334",
+    "exerciseId": "DsgkuIt",
+    "name": "dumbbell lateral raise",
+    "equipment": "dumbbell",
+    "target": "delts",
+    "body_part": "shoulders",
+    "secondary_muscles": [
+      "traps"
+    ],
+    "gif_url": "videos/0334-DsgkuIt.gif",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  },
+  "face-pull": {
+    "score": 132,
+    "id": "0993",
+    "exerciseId": "sTfvVsG",
+    "name": "band reverse fly",
+    "equipment": "band",
+    "target": "delts",
+    "body_part": "shoulders",
+    "secondary_muscles": [
+      "upper back",
+      "trapezius"
+    ],
+    "gif_url": "videos/0993-sTfvVsG.gif",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  },
+  "curl": {
+    "score": 174,
+    "id": "0294",
+    "exerciseId": "NbVPDMW",
+    "name": "dumbbell biceps curl",
+    "equipment": "dumbbell",
+    "target": "biceps",
+    "body_part": "upper arms",
+    "secondary_muscles": [
+      "forearms"
+    ],
+    "gif_url": "videos/0294-NbVPDMW.gif",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  },
+  "triceps": {
+    "score": 125,
+    "id": "0306",
+    "exerciseId": "OTgkHwR",
+    "name": "dumbbell decline triceps extension",
+    "equipment": "dumbbell",
+    "target": "triceps",
+    "body_part": "upper arms",
+    "secondary_muscles": [
+      "shoulders"
+    ],
+    "gif_url": "videos/0306-OTgkHwR.gif",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  }
+}
