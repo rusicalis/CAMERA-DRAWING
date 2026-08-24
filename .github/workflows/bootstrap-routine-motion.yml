@@ -16,12 +16,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install ffmpeg
+      - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg unzip
 
-      - name: Download license-cleared source motions
+      - name: Download public motion sources
         run: |
           set -euxo pipefail
           mkdir -p /tmp/routine-motion-src routine-motion
@@ -29,42 +29,81 @@ jobs:
           curl -fL 'https://upload.wikimedia.org/wikipedia/commons/4/43/Narrow_Push_Ups.gif' -o /tmp/routine-motion-src/pushup-close.gif
           curl -fL 'https://upload.wikimedia.org/wikipedia/commons/b/b2/Bent-over_row_-_exercise_demonstration_video.webm' -o /tmp/routine-motion-src/row.webm
           curl -fL 'https://upload.wikimedia.org/wikipedia/commons/6/62/Deadlift_-_exercise_demonstration_video.webm' -o /tmp/routine-motion-src/deadlift.webm
-          curl -fL 'https://upload.wikimedia.org/wikipedia/commons/5/5c/Squat_-_exercise_demonstration_video.webm' -o /tmp/routine-motion-src/squat.webm
-          curl -fL 'https://upload.wikimedia.org/wikipedia/commons/6/69/Shoulder_press_-_exercise_demonstration_video.webm' -o /tmp/routine-motion-src/shoulder-press.webm
           curl -fL 'https://upload.wikimedia.org/wikipedia/commons/0/0a/CURL_B%C3%8DCEPS.webm' -o /tmp/routine-motion-src/curl.webm
           curl -fL 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Standing-overhead-triceps-extension-2.gif' -o /tmp/routine-motion-src/triceps.gif
+
+      - name: Download Vital Animations official free pack
+        run: |
+          set -euxo pipefail
+          curl -fL --retry 3 --retry-delay 3 'https://vitalanimations.com/VitalAnimations.zip' -o /tmp/VitalAnimations.zip
+          unzip -p /tmp/VitalAnimations.zip 'VitalAnimations/Free50/Free50/0059.mp4' > /tmp/routine-motion-src/reverse-lunge.mp4
+          unzip -p /tmp/VitalAnimations.zip 'VitalAnimations/Free50/Free50/0064.mp4' > /tmp/routine-motion-src/goblet-squat.mp4
+          unzip -p /tmp/VitalAnimations.zip 'VitalAnimations/Free50/Free50/0078.mp4' > /tmp/routine-motion-src/running.mp4
+          unzip -p /tmp/VitalAnimations.zip 'VitalAnimations/Free50/Free50/0094.mp4' > /tmp/routine-motion-src/shoulder-press.mp4
+          unzip -p /tmp/VitalAnimations.zip 'VitalAnimations/Free50/Free50/0095.mp4' > /tmp/routine-motion-src/lateral-raise.mp4
+          unzip -p /tmp/VitalAnimations.zip 'VitalAnimations/Free50/Free50/0100.mp4' > /tmp/routine-motion-src/rear-delt-fly.mp4
+          test -s /tmp/routine-motion-src/reverse-lunge.mp4
+          test -s /tmp/routine-motion-src/goblet-squat.mp4
+          test -s /tmp/routine-motion-src/running.mp4
+          test -s /tmp/routine-motion-src/shoulder-press.mp4
+          test -s /tmp/routine-motion-src/lateral-raise.mp4
+          test -s /tmp/routine-motion-src/rear-delt-fly.mp4
 
       - name: Convert to mobile MP4
         run: |
           set -euxo pipefail
           FILTER="scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2:color=white"
-          ffmpeg -y -i /tmp/routine-motion-src/pushup.gif -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/pushup.mp4
-          ffmpeg -y -i /tmp/routine-motion-src/pushup-close.gif -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/pushup-close.mp4
-          ffmpeg -y -i /tmp/routine-motion-src/row.webm -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/kettlebell-row.mp4
-          ffmpeg -y -i /tmp/routine-motion-src/deadlift.webm -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/kettlebell-deadlift.mp4
-          ffmpeg -y -i /tmp/routine-motion-src/squat.webm -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/goblet-squat.mp4
-          ffmpeg -y -i /tmp/routine-motion-src/shoulder-press.webm -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/shoulder-press.mp4
-          ffmpeg -y -ss 0.10 -t 2.10 -i /tmp/routine-motion-src/curl.webm -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/kettlebell-curl.mp4
-          ffmpeg -y -i /tmp/routine-motion-src/triceps.gif -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/triceps-extension.mp4
+          ENC="-an -c:v libx264 -preset medium -crf 27 -pix_fmt yuv420p -movflags +faststart"
+          ffmpeg -y -i /tmp/routine-motion-src/pushup.gif -vf "$FILTER" $ENC routine-motion/pushup.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/pushup-close.gif -vf "$FILTER" $ENC routine-motion/pushup-close.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/row.webm -vf "$FILTER" $ENC routine-motion/kettlebell-row.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/deadlift.webm -vf "$FILTER" $ENC routine-motion/kettlebell-deadlift.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/goblet-squat.mp4 -vf "$FILTER" $ENC routine-motion/goblet-squat.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/reverse-lunge.mp4 -vf "$FILTER" $ENC routine-motion/reverse-lunge.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/shoulder-press.mp4 -vf "$FILTER" $ENC routine-motion/shoulder-press.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/lateral-raise.mp4 -vf "$FILTER" $ENC routine-motion/lateral-raise.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/rear-delt-fly.mp4 -vf "$FILTER" $ENC routine-motion/face-pull.mp4
+          ffmpeg -y -ss 0.10 -t 2.10 -i /tmp/routine-motion-src/curl.webm -vf "$FILTER" $ENC routine-motion/kettlebell-curl.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/triceps.gif -vf "$FILTER" $ENC routine-motion/triceps-extension.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/running.mp4 -vf "$FILTER" $ENC routine-motion/running.mp4
 
-      - name: Write attribution
+      - name: Write attribution and app-use notes
         run: |
           cat > routine-motion/LICENSES.md <<'EOF'
-          # Daily Routine motion asset licenses
+          # DAILY ROUTINE motion asset sources
 
-          These motion assets are transcoded/trimmed derivatives used by the DAILY ROUTINE app.
+          These files are prepared specifically for the DAILY ROUTINE app.
 
-          - `pushup.mp4` — Source: Wikimedia Commons `Pushups.gif`, author Wensceslao, CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Pushups.gif
-          - `pushup-close.mp4` — Source: Wikimedia Commons `Narrow Push Ups.gif`, author Danielflefil, CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Narrow_Push_Ups.gif
-          - `kettlebell-row.mp4` — Source: Wikimedia Commons `Bent-over row - exercise demonstration video.webm`, FitnessScape, CC BY 3.0. https://commons.wikimedia.org/wiki/File:Bent-over_row_-_exercise_demonstration_video.webm
-          - `kettlebell-deadlift.mp4` — Source: Wikimedia Commons `Deadlift - exercise demonstration video.webm`, FitnessScape, CC BY 3.0. https://commons.wikimedia.org/wiki/File:Deadlift_-_exercise_demonstration_video.webm
-          - `goblet-squat.mp4` — Source: Wikimedia Commons `Squat - exercise demonstration video.webm`, FitnessScape, CC BY 3.0. https://commons.wikimedia.org/wiki/File:Squat_-_exercise_demonstration_video.webm
-          - `shoulder-press.mp4` — Source: Wikimedia Commons `Shoulder press - exercise demonstration video.webm`, FitnessScape, CC BY 3.0. https://commons.wikimedia.org/wiki/File:Shoulder_press_-_exercise_demonstration_video.webm
-          - `kettlebell-curl.mp4` — Source: Wikimedia Commons `CURL BÍCEPS.webm`, author MariaMilagrosPérez, CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:CURL_B%C3%8DCEPS.webm
-          - `triceps-extension.mp4` — Source: Wikimedia Commons `Standing-overhead-triceps-extension-2.gif`, Everkinetic, CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:Standing-overhead-triceps-extension-2.gif
+          ## Vital Animations Free Pack
+          The following app assets are derived from the official Vital Animations Free Pack downloaded from https://vitalanimations.com/VitalAnimations.zip and used inside this app under Vital Animations' Free Pack usage terms (apps/websites permitted; raw dataset redistribution/resale is not the purpose of this repository).
 
-          Modifications: H.264 MP4 transcoding, resizing/padding for mobile playback; the curl source is trimmed to one repetition. CC BY-SA derivatives remain under the applicable CC BY-SA license.
+          - `goblet-squat.mp4` — Free50 `0064`, dumbbell goblet squat
+          - `reverse-lunge.mp4` — Free50 `0059`, barbell reverse lunges (movement guide)
+          - `shoulder-press.mp4` — Free50 `0094`, kettlebell overhead press
+          - `lateral-raise.mp4` — Free50 `0095`, cable cross lateral raise (band movement guide)
+          - `face-pull.mp4` — Free50 `0100`, rear delt cable fly; used by the app as a band rear-delt fly guide
+          - `running.mp4` — Free50 `0078`, run on treadmill
+
+          Vital Animations Free Pack: https://vitalanimations.com/free-pack
+
+          ## Wikimedia Commons
+          - `pushup.mp4` — `Pushups.gif`, author Wensceslao, CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Pushups.gif
+          - `pushup-close.mp4` — `Narrow Push Ups.gif`, author Danielflefil, CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Narrow_Push_Ups.gif
+          - `kettlebell-row.mp4` — `Bent-over row - exercise demonstration video.webm`, FitnessScape, CC BY 3.0. https://commons.wikimedia.org/wiki/File:Bent-over_row_-_exercise_demonstration_video.webm
+          - `kettlebell-deadlift.mp4` — `Deadlift - exercise demonstration video.webm`, FitnessScape, CC BY 3.0. https://commons.wikimedia.org/wiki/File:Deadlift_-_exercise_demonstration_video.webm
+          - `kettlebell-curl.mp4` — `CURL BÍCEPS.webm`, MariaMilagrosPérez, CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:CURL_B%C3%8DCEPS.webm
+          - `triceps-extension.mp4` — `Standing-overhead-triceps-extension-2.gif`, Everkinetic, CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:Standing-overhead-triceps-extension-2.gif
+
+          Modifications include H.264 transcoding, resizing/padding for mobile playback, and limited trimming where noted. CC BY-SA derivatives remain subject to the applicable ShareAlike license.
           EOF
+
+      - name: Validate all app motion files
+        run: |
+          set -euxo pipefail
+          for f in pushup.mp4 pushup-close.mp4 kettlebell-row.mp4 kettlebell-deadlift.mp4 goblet-squat.mp4 reverse-lunge.mp4 shoulder-press.mp4 lateral-raise.mp4 face-pull.mp4 kettlebell-curl.mp4 triceps-extension.mp4 running.mp4; do
+            test -s "routine-motion/$f"
+            ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height -of default=nw=1 "routine-motion/$f"
+          done
 
       - name: Commit generated assets
         run: |
@@ -74,6 +113,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'No motion asset changes.'
           else
-            git commit -m 'chore: generate daily routine motion assets [skip ci]'
+            git commit -m 'chore: build complete daily routine motion set [skip ci]'
             git push
           fi
