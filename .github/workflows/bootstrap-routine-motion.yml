@@ -32,6 +32,7 @@ jobs:
           curl -fL 'https://upload.wikimedia.org/wikipedia/commons/5/5c/Squat_-_exercise_demonstration_video.webm' -o /tmp/routine-motion-src/squat.webm
           curl -fL 'https://upload.wikimedia.org/wikipedia/commons/6/69/Shoulder_press_-_exercise_demonstration_video.webm' -o /tmp/routine-motion-src/shoulder-press.webm
           curl -fL 'https://upload.wikimedia.org/wikipedia/commons/0/0a/CURL_B%C3%8DCEPS.webm' -o /tmp/routine-motion-src/curl.webm
+          curl -fL 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Standing-overhead-triceps-extension-2.gif' -o /tmp/routine-motion-src/triceps.gif
 
       - name: Convert to mobile MP4
         run: |
@@ -44,6 +45,7 @@ jobs:
           ffmpeg -y -i /tmp/routine-motion-src/squat.webm -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/goblet-squat.mp4
           ffmpeg -y -i /tmp/routine-motion-src/shoulder-press.webm -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/shoulder-press.mp4
           ffmpeg -y -ss 0.10 -t 2.10 -i /tmp/routine-motion-src/curl.webm -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/kettlebell-curl.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/triceps.gif -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/triceps-extension.mp4
 
       - name: Write attribution
         run: |
@@ -59,8 +61,9 @@ jobs:
           - `goblet-squat.mp4` — Source: Wikimedia Commons `Squat - exercise demonstration video.webm`, FitnessScape, CC BY 3.0. https://commons.wikimedia.org/wiki/File:Squat_-_exercise_demonstration_video.webm
           - `shoulder-press.mp4` — Source: Wikimedia Commons `Shoulder press - exercise demonstration video.webm`, FitnessScape, CC BY 3.0. https://commons.wikimedia.org/wiki/File:Shoulder_press_-_exercise_demonstration_video.webm
           - `kettlebell-curl.mp4` — Source: Wikimedia Commons `CURL BÍCEPS.webm`, author MariaMilagrosPérez, CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:CURL_B%C3%8DCEPS.webm
+          - `triceps-extension.mp4` — Source: Wikimedia Commons `Standing-overhead-triceps-extension-2.gif`, Everkinetic, CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:Standing-overhead-triceps-extension-2.gif
 
-          Modifications: H.264 MP4 transcoding, resizing/padding for mobile playback; the curl source is trimmed to one repetition. CC BY-SA derivatives remain under CC BY-SA 4.0 where applicable.
+          Modifications: H.264 MP4 transcoding, resizing/padding for mobile playback; the curl source is trimmed to one repetition. CC BY-SA derivatives remain under the applicable CC BY-SA license.
           EOF
 
       - name: Commit generated assets
