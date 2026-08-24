@@ -1,0 +1,287 @@
+{
+  "reverse_lunge": [],
+  "shoulder_press": [
+    {
+      "id": "0520",
+      "name": "kettlebell alternating press",
+      "equipment": "kettlebell",
+      "target": "delts",
+      "body_part": "shoulders",
+      "secondary_muscles": [
+        "triceps",
+        "core"
+      ],
+      "media_id": "5KLbZWx",
+      "gif_url": "videos/0520-5KLbZWx.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0519",
+      "name": "kettlebell alternating press on floor",
+      "equipment": "kettlebell",
+      "target": "pectorals",
+      "body_part": "chest",
+      "secondary_muscles": [
+        "shoulders",
+        "triceps"
+      ],
+      "media_id": "7w6i0vE",
+      "gif_url": "videos/0519-7w6i0vE.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0523",
+      "name": "kettlebell arnold press",
+      "equipment": "kettlebell",
+      "target": "delts",
+      "body_part": "shoulders",
+      "secondary_muscles": [
+        "triceps",
+        "upper back"
+      ],
+      "media_id": "UM8mgyG",
+      "gif_url": "videos/0523-UM8mgyG.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0524",
+      "name": "kettlebell bent press",
+      "equipment": "kettlebell",
+      "target": "abs",
+      "body_part": "waist",
+      "secondary_muscles": [
+        "shoulders",
+        "triceps",
+        "obliques"
+      ],
+      "media_id": "kjE55n5",
+      "gif_url": "videos/0524-kjE55n5.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0528",
+      "name": "kettlebell double push press",
+      "equipment": "kettlebell",
+      "target": "delts",
+      "body_part": "shoulders",
+      "secondary_muscles": [
+        "triceps",
+        "core"
+      ],
+      "media_id": "I4KkPdl",
+      "gif_url": "videos/0528-I4KkPdl.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0531",
+      "name": "kettlebell extended range one arm press on floor",
+      "equipment": "kettlebell",
+      "target": "pectorals",
+      "body_part": "chest",
+      "secondary_muscles": [
+        "triceps",
+        "shoulders"
+      ],
+      "media_id": "rseLfH3",
+      "gif_url": "videos/0531-rseLfH3.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "1298",
+      "name": "kettlebell one arm floor press",
+      "equipment": "kettlebell",
+      "target": "pectorals",
+      "body_part": "chest",
+      "secondary_muscles": [
+        "triceps",
+        "shoulders"
+      ],
+      "media_id": "rg59QCH",
+      "gif_url": "videos/1298-rg59QCH.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0539",
+      "name": "kettlebell one arm military press to the side",
+      "equipment": "kettlebell",
+      "target": "delts",
+      "body_part": "shoulders",
+      "secondary_muscles": [
+        "triceps",
+        "core"
+      ],
+      "media_id": "yCvYdi7",
+      "gif_url": "videos/0539-yCvYdi7.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0540",
+      "name": "kettlebell one arm push press",
+      "equipment": "kettlebell",
+      "target": "delts",
+      "body_part": "shoulders",
+      "secondary_muscles": [
+        "triceps",
+        "core"
+      ],
+      "media_id": "osdXT3K",
+      "gif_url": "videos/0540-osdXT3K.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0546",
+      "name": "kettlebell seated press",
+      "equipment": "kettlebell",
+      "target": "delts",
+      "body_part": "shoulders",
+      "secondary_muscles": [
+        "triceps",
+        "core"
+      ],
+      "media_id": "BkxB8LW",
+      "gif_url": "videos/0546-BkxB8LW.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "1438",
+      "name": "kettlebell seated two arm military press",
+      "equipment": "kettlebell",
+      "target": "delts",
+      "body_part": "shoulders",
+      "secondary_muscles": [
+        "triceps",
+        "upper back"
+      ],
+      "media_id": "ZEkjZDi",
+      "gif_url": "videos/1438-ZEkjZDi.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0547",
+      "name": "kettlebell seesaw press",
+      "equipment": "kettlebell",
+      "target": "delts",
+      "body_part": "shoulders",
+      "secondary_muscles": [
+        "triceps",
+        "core"
+      ],
+      "media_id": "UDm6cGl",
+      "gif_url": "videos/0547-UDm6cGl.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0553",
+      "name": "kettlebell two arm military press",
+      "equipment": "kettlebell",
+      "target": "delts",
+      "body_part": "shoulders",
+      "secondary_muscles": [
+        "triceps",
+        "upper back"
+      ],
+      "media_id": "blBXysN",
+      "gif_url": "videos/0553-blBXysN.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    }
+  ],
+  "overhead_triceps": [
+    {
+      "id": "0092",
+      "name": "barbell seated overhead triceps extension",
+      "equipment": "barbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "shoulders"
+      ],
+      "media_id": "5uFK1xr",
+      "gif_url": "videos/0092-5uFK1xr.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0109",
+      "name": "barbell standing overhead triceps extension",
+      "equipment": "barbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "shoulders"
+      ],
+      "media_id": "dZl9Q27",
+      "gif_url": "videos/0109-dZl9Q27.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0194",
+      "name": "cable overhead triceps extension (rope attachment)",
+      "equipment": "cable",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "shoulders"
+      ],
+      "media_id": "2IxROQ1",
+      "gif_url": "videos/0194-2IxROQ1.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    }
+  ],
+  "one_arm_row": [
+    {
+      "id": "0292",
+      "name": "dumbbell one arm bent-over row",
+      "equipment": "dumbbell",
+      "target": "upper back",
+      "body_part": "back",
+      "secondary_muscles": [
+        "biceps",
+        "forearms"
+      ],
+      "media_id": "C0MA9bC",
+      "gif_url": "videos/0292-C0MA9bC.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0363",
+      "name": "dumbbell one arm upright row",
+      "equipment": "dumbbell",
+      "target": "delts",
+      "body_part": "shoulders",
+      "secondary_muscles": [
+        "traps",
+        "biceps"
+      ],
+      "media_id": "6cKQC5E",
+      "gif_url": "videos/0363-6cKQC5E.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "1330",
+      "name": "dumbbell reverse grip incline bench one arm row",
+      "equipment": "dumbbell",
+      "target": "upper back",
+      "body_part": "back",
+      "secondary_muscles": [
+        "biceps",
+        "shoulders"
+      ],
+      "media_id": "ZIViNh1",
+      "gif_url": "videos/1330-ZIViNh1.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0541",
+      "name": "kettlebell one arm row",
+      "equipment": "kettlebell",
+      "target": "upper back",
+      "body_part": "back",
+      "secondary_muscles": [
+        "biceps",
+        "forearms"
+      ],
+      "media_id": "g9AsZ8P",
+      "gif_url": "videos/0541-g9AsZ8P.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    }
+  ]
+}
