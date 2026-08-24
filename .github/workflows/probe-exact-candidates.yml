@@ -21,23 +21,16 @@ jobs:
           url='https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/data/exercises.json'
           req=urllib.request.Request(url,headers={'User-Agent':'B-Routine-Probe/1.0'})
           rows=json.loads(urllib.request.urlopen(req,timeout=60).read().decode())
-          def pick(pred):
+          def slim(ex): return {k:ex.get(k) for k in ['id','name','equipment','target','body_part','secondary_muscles','media_id','gif_url','attribution']}
+          def find_text(*phrases):
               out=[]
               for ex in rows:
                   n=ex.get('name','').lower()
-                  if pred(n,ex):
-                      out.append({k:ex.get(k) for k in ['id','name','equipment','target','body_part','secondary_muscles','media_id','gif_url','attribution']})
-              return out[:40]
+                  if any(p in n for p in phrases): out.append(slim(ex))
+              return out[:80]
           report={
-            'lunge_all':pick(lambda n,e:'lunge' in n and e.get('equipment') in ['body weight','dumbbell','kettlebell']),
-            'kettlebell_deadlift':pick(lambda n,e:'kettlebell' in n and ('deadlift' in n or 'dead lift' in n)),
-            'kettlebell_squat':pick(lambda n,e:'kettlebell' in n and 'squat' in n),
-            'kettlebell_shoulder_press':pick(lambda n,e:'kettlebell' in n and ('military press' in n or 'overhead press' in n or 'alternating press' in n)),
-            'band_lateral_raise':pick(lambda n,e:('band' in n or e.get('equipment')=='band') and 'lateral raise' in n),
-            'band_reverse_fly':pick(lambda n,e:('band' in n or e.get('equipment')=='band') and ('reverse fly' in n or 'rear delt fly' in n)),
-            'kettlebell_curl':pick(lambda n,e:'kettlebell' in n and 'curl' in n),
-            'dumbbell_overhead_triceps':pick(lambda n,e:e.get('equipment')=='dumbbell' and 'triceps' in n and ('overhead' in n or 'standing' in n or 'extension' in n)),
-            'one_arm_row':pick(lambda n,e:('one arm' in n or 'single arm' in n) and 'row' in n and e.get('equipment') in ['dumbbell','kettlebell'])
+            'standing_extension':find_text('standing one arm extension','standing triceps extension','one arm extension','overhead triceps extension'),
+            'ids_0420_0430':[slim(ex) for ex in rows if ex.get('id','') in {f'{i:04d}' for i in range(420,431)}]
           }
           open('routine-motion/exercisedb-exact-candidates.json','w').write(json.dumps(report,ensure_ascii=False,indent=2))
           PY
@@ -46,5 +39,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add routine-motion/exercisedb-exact-candidates.json
-          git diff --cached --quiet || git commit -m 'chore: capture exact exercise candidates [skip ci]'
+          git diff --cached --quiet || git commit -m 'chore: capture triceps exact candidates [skip ci]'
           git push
