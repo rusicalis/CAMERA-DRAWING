@@ -1,6 +1,263 @@
 {
-  "reverse_lunge": [],
-  "shoulder_press": [
+  "lunge_all": [
+    {
+      "id": "1651",
+      "name": "dumbbell bicep curl lunge with bowling motion",
+      "equipment": "dumbbell",
+      "target": "biceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "forearms",
+        "shoulders"
+      ],
+      "media_id": "1VpF8db",
+      "gif_url": "videos/1651-1VpF8db.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "3635",
+      "name": "dumbbell contralateral forward lunge",
+      "equipment": "dumbbell",
+      "target": "glutes",
+      "body_part": "upper legs",
+      "secondary_muscles": [
+        "quadriceps",
+        "hamstrings",
+        "calves"
+      ],
+      "media_id": "ecl28tP",
+      "gif_url": "videos/3635-ecl28tP.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "1732",
+      "name": "dumbbell forward lunge triceps extension",
+      "equipment": "dumbbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "shoulders",
+        "core"
+      ],
+      "media_id": "XalXcvM",
+      "gif_url": "videos/1732-XalXcvM.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0336",
+      "name": "dumbbell lunge",
+      "equipment": "dumbbell",
+      "target": "glutes",
+      "body_part": "upper legs",
+      "secondary_muscles": [
+        "quadriceps",
+        "hamstrings",
+        "calves"
+      ],
+      "media_id": "RRWFUcw",
+      "gif_url": "videos/0336-RRWFUcw.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "1658",
+      "name": "dumbbell lunge with bicep curl",
+      "equipment": "dumbbell",
+      "target": "biceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "quadriceps",
+        "hamstrings"
+      ],
+      "media_id": "Mz6lLcW",
+      "gif_url": "videos/1658-Mz6lLcW.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0381",
+      "name": "dumbbell rear lunge",
+      "equipment": "dumbbell",
+      "target": "glutes",
+      "body_part": "upper legs",
+      "secondary_muscles": [
+        "quadriceps",
+        "hamstrings",
+        "calves"
+      ],
+      "media_id": "SSsBDwB",
+      "gif_url": "videos/0381-SSsBDwB.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "2796",
+      "name": "dumbbell step-up lunge",
+      "equipment": "dumbbell",
+      "target": "quads",
+      "body_part": "upper legs",
+      "secondary_muscles": [
+        "glutes",
+        "hamstrings",
+        "calves"
+      ],
+      "media_id": "gFyFj9z",
+      "gif_url": "videos/2796-gFyFj9z.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "3470",
+      "name": "forward lunge (male)",
+      "equipment": "body weight",
+      "target": "glutes",
+      "body_part": "upper legs",
+      "secondary_muscles": [
+        "quadriceps",
+        "hamstrings",
+        "calves"
+      ],
+      "media_id": "kMzUs9Y",
+      "gif_url": "videos/3470-kMzUs9Y.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0536",
+      "name": "kettlebell lunge pass through",
+      "equipment": "kettlebell",
+      "target": "glutes",
+      "body_part": "upper legs",
+      "secondary_muscles": [
+        "quadriceps",
+        "hamstrings",
+        "calves"
+      ],
+      "media_id": "WKMQzCD",
+      "gif_url": "videos/0536-WKMQzCD.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "3582",
+      "name": "lunge with jump",
+      "equipment": "body weight",
+      "target": "glutes",
+      "body_part": "upper legs",
+      "secondary_muscles": [
+        "quadriceps",
+        "hamstrings",
+        "calves"
+      ],
+      "media_id": "PM1PZjg",
+      "gif_url": "videos/3582-PM1PZjg.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "1688",
+      "name": "lunge with twist",
+      "equipment": "body weight",
+      "target": "abs",
+      "body_part": "waist",
+      "secondary_muscles": [
+        "quadriceps",
+        "glutes",
+        "hamstrings"
+      ],
+      "media_id": "K9VL0Jq",
+      "gif_url": "videos/1688-K9VL0Jq.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "3655",
+      "name": "walking high knees lunge",
+      "equipment": "body weight",
+      "target": "cardiovascular system",
+      "body_part": "cardio",
+      "secondary_muscles": [
+        "quadriceps",
+        "hamstrings",
+        "glutes",
+        "calves"
+      ],
+      "media_id": "J9zIWig",
+      "gif_url": "videos/3655-J9zIWig.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "1460",
+      "name": "walking lunge",
+      "equipment": "body weight",
+      "target": "glutes",
+      "body_part": "upper legs",
+      "secondary_muscles": [
+        "quadriceps",
+        "hamstrings",
+        "calves"
+      ],
+      "media_id": "IZVHb27",
+      "gif_url": "videos/1460-IZVHb27.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    }
+  ],
+  "kettlebell_deadlift": [],
+  "kettlebell_squat": [
+    {
+      "id": "0533",
+      "name": "kettlebell front squat",
+      "equipment": "kettlebell",
+      "target": "glutes",
+      "body_part": "upper legs",
+      "secondary_muscles": [
+        "quadriceps",
+        "hamstrings",
+        "calves"
+      ],
+      "media_id": "DB0n8AG",
+      "gif_url": "videos/0533-DB0n8AG.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0534",
+      "name": "kettlebell goblet squat",
+      "equipment": "kettlebell",
+      "target": "glutes",
+      "body_part": "upper legs",
+      "secondary_muscles": [
+        "quadriceps",
+        "hamstrings",
+        "calves"
+      ],
+      "media_id": "ZA8b5hc",
+      "gif_url": "videos/0534-ZA8b5hc.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0544",
+      "name": "kettlebell pistol squat",
+      "equipment": "kettlebell",
+      "target": "glutes",
+      "body_part": "upper legs",
+      "secondary_muscles": [
+        "quadriceps",
+        "hamstrings",
+        "calves"
+      ],
+      "media_id": "5bpPTHv",
+      "gif_url": "videos/0544-5bpPTHv.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0551",
+      "name": "kettlebell turkish get up (squat style)",
+      "equipment": "kettlebell",
+      "target": "glutes",
+      "body_part": "upper legs",
+      "secondary_muscles": [
+        "quadriceps",
+        "hamstrings",
+        "core"
+      ],
+      "media_id": "Ha7SZ3y",
+      "gif_url": "videos/0551-Ha7SZ3y.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    }
+  ],
+  "kettlebell_shoulder_press": [
     {
       "id": "0520",
       "name": "kettlebell alternating press",
@@ -30,77 +287,6 @@
       "attribution": "© Gym visual — https://gymvisual.com/"
     },
     {
-      "id": "0523",
-      "name": "kettlebell arnold press",
-      "equipment": "kettlebell",
-      "target": "delts",
-      "body_part": "shoulders",
-      "secondary_muscles": [
-        "triceps",
-        "upper back"
-      ],
-      "media_id": "UM8mgyG",
-      "gif_url": "videos/0523-UM8mgyG.gif",
-      "attribution": "© Gym visual — https://gymvisual.com/"
-    },
-    {
-      "id": "0524",
-      "name": "kettlebell bent press",
-      "equipment": "kettlebell",
-      "target": "abs",
-      "body_part": "waist",
-      "secondary_muscles": [
-        "shoulders",
-        "triceps",
-        "obliques"
-      ],
-      "media_id": "kjE55n5",
-      "gif_url": "videos/0524-kjE55n5.gif",
-      "attribution": "© Gym visual — https://gymvisual.com/"
-    },
-    {
-      "id": "0528",
-      "name": "kettlebell double push press",
-      "equipment": "kettlebell",
-      "target": "delts",
-      "body_part": "shoulders",
-      "secondary_muscles": [
-        "triceps",
-        "core"
-      ],
-      "media_id": "I4KkPdl",
-      "gif_url": "videos/0528-I4KkPdl.gif",
-      "attribution": "© Gym visual — https://gymvisual.com/"
-    },
-    {
-      "id": "0531",
-      "name": "kettlebell extended range one arm press on floor",
-      "equipment": "kettlebell",
-      "target": "pectorals",
-      "body_part": "chest",
-      "secondary_muscles": [
-        "triceps",
-        "shoulders"
-      ],
-      "media_id": "rseLfH3",
-      "gif_url": "videos/0531-rseLfH3.gif",
-      "attribution": "© Gym visual — https://gymvisual.com/"
-    },
-    {
-      "id": "1298",
-      "name": "kettlebell one arm floor press",
-      "equipment": "kettlebell",
-      "target": "pectorals",
-      "body_part": "chest",
-      "secondary_muscles": [
-        "triceps",
-        "shoulders"
-      ],
-      "media_id": "rg59QCH",
-      "gif_url": "videos/1298-rg59QCH.gif",
-      "attribution": "© Gym visual — https://gymvisual.com/"
-    },
-    {
       "id": "0539",
       "name": "kettlebell one arm military press to the side",
       "equipment": "kettlebell",
@@ -112,34 +298,6 @@
       ],
       "media_id": "yCvYdi7",
       "gif_url": "videos/0539-yCvYdi7.gif",
-      "attribution": "© Gym visual — https://gymvisual.com/"
-    },
-    {
-      "id": "0540",
-      "name": "kettlebell one arm push press",
-      "equipment": "kettlebell",
-      "target": "delts",
-      "body_part": "shoulders",
-      "secondary_muscles": [
-        "triceps",
-        "core"
-      ],
-      "media_id": "osdXT3K",
-      "gif_url": "videos/0540-osdXT3K.gif",
-      "attribution": "© Gym visual — https://gymvisual.com/"
-    },
-    {
-      "id": "0546",
-      "name": "kettlebell seated press",
-      "equipment": "kettlebell",
-      "target": "delts",
-      "body_part": "shoulders",
-      "secondary_muscles": [
-        "triceps",
-        "core"
-      ],
-      "media_id": "BkxB8LW",
-      "gif_url": "videos/0546-BkxB8LW.gif",
       "attribution": "© Gym visual — https://gymvisual.com/"
     },
     {
@@ -157,20 +315,6 @@
       "attribution": "© Gym visual — https://gymvisual.com/"
     },
     {
-      "id": "0547",
-      "name": "kettlebell seesaw press",
-      "equipment": "kettlebell",
-      "target": "delts",
-      "body_part": "shoulders",
-      "secondary_muscles": [
-        "triceps",
-        "core"
-      ],
-      "media_id": "UDm6cGl",
-      "gif_url": "videos/0547-UDm6cGl.gif",
-      "attribution": "© Gym visual — https://gymvisual.com/"
-    },
-    {
       "id": "0553",
       "name": "kettlebell two arm military press",
       "equipment": "kettlebell",
@@ -185,44 +329,237 @@
       "attribution": "© Gym visual — https://gymvisual.com/"
     }
   ],
-  "overhead_triceps": [
+  "band_lateral_raise": [
     {
-      "id": "0092",
-      "name": "barbell seated overhead triceps extension",
-      "equipment": "barbell",
+      "id": "0977",
+      "name": "band front lateral raise",
+      "equipment": "band",
+      "target": "delts",
+      "body_part": "shoulders",
+      "secondary_muscles": [
+        "traps",
+        "upper back"
+      ],
+      "media_id": "sTg7iys",
+      "gif_url": "videos/0977-sTg7iys.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    }
+  ],
+  "band_reverse_fly": [
+    {
+      "id": "0993",
+      "name": "band reverse fly",
+      "equipment": "band",
+      "target": "delts",
+      "body_part": "shoulders",
+      "secondary_muscles": [
+        "upper back",
+        "trapezius"
+      ],
+      "media_id": "sTfvVsG",
+      "gif_url": "videos/0993-sTfvVsG.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    }
+  ],
+  "kettlebell_curl": [],
+  "dumbbell_overhead_triceps": [
+    {
+      "id": "0306",
+      "name": "dumbbell decline triceps extension",
+      "equipment": "dumbbell",
       "target": "triceps",
       "body_part": "upper arms",
       "secondary_muscles": [
         "shoulders"
       ],
-      "media_id": "5uFK1xr",
-      "gif_url": "videos/0092-5uFK1xr.gif",
+      "media_id": "OTgkHwR",
+      "gif_url": "videos/0306-OTgkHwR.gif",
       "attribution": "© Gym visual — https://gymvisual.com/"
     },
     {
-      "id": "0109",
-      "name": "barbell standing overhead triceps extension",
-      "equipment": "barbell",
+      "id": "1732",
+      "name": "dumbbell forward lunge triceps extension",
+      "equipment": "dumbbell",
       "target": "triceps",
       "body_part": "upper arms",
       "secondary_muscles": [
-        "shoulders"
+        "shoulders",
+        "core"
       ],
-      "media_id": "dZl9Q27",
-      "gif_url": "videos/0109-dZl9Q27.gif",
+      "media_id": "XalXcvM",
+      "gif_url": "videos/1732-XalXcvM.gif",
       "attribution": "© Gym visual — https://gymvisual.com/"
     },
     {
-      "id": "0194",
-      "name": "cable overhead triceps extension (rope attachment)",
-      "equipment": "cable",
+      "id": "0330",
+      "name": "dumbbell incline triceps extension",
+      "equipment": "dumbbell",
       "target": "triceps",
       "body_part": "upper arms",
       "secondary_muscles": [
         "shoulders"
       ],
-      "media_id": "2IxROQ1",
-      "gif_url": "videos/0194-2IxROQ1.gif",
+      "media_id": "OVIKwsd",
+      "gif_url": "videos/0330-OVIKwsd.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0344",
+      "name": "dumbbell lying one arm pronated triceps extension",
+      "equipment": "dumbbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "shoulders"
+      ],
+      "media_id": "wyaqzOS",
+      "gif_url": "videos/0344-wyaqzOS.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0346",
+      "name": "dumbbell lying one arm supinated triceps extension",
+      "equipment": "dumbbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "forearms"
+      ],
+      "media_id": "zZlORz6",
+      "gif_url": "videos/0346-zZlORz6.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0351",
+      "name": "dumbbell lying triceps extension",
+      "equipment": "dumbbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "shoulders"
+      ],
+      "media_id": "mpKZGWz",
+      "gif_url": "videos/0351-mpKZGWz.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0362",
+      "name": "dumbbell one arm triceps extension (on bench)",
+      "equipment": "dumbbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "shoulders"
+      ],
+      "media_id": "nAuHPcD",
+      "gif_url": "videos/0362-nAuHPcD.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0373",
+      "name": "dumbbell pronate-grip triceps extension",
+      "equipment": "dumbbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "forearms"
+      ],
+      "media_id": "bpJL2Qs",
+      "gif_url": "videos/0373-bpJL2Qs.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "1737",
+      "name": "dumbbell seated bent over triceps extension",
+      "equipment": "dumbbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "shoulders",
+        "back"
+      ],
+      "media_id": "4ievMJ9",
+      "gif_url": "videos/1737-4ievMJ9.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "2188",
+      "name": "dumbbell seated triceps extension",
+      "equipment": "dumbbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "shoulders"
+      ],
+      "media_id": "kont8Ut",
+      "gif_url": "videos/2188-kont8Ut.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "1740",
+      "name": "dumbbell standing bent over one arm triceps extension",
+      "equipment": "dumbbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "shoulders",
+        "back"
+      ],
+      "media_id": "CJwa0vD",
+      "gif_url": "videos/1740-CJwa0vD.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "1741",
+      "name": "dumbbell standing bent over two arm triceps extension",
+      "equipment": "dumbbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "shoulders",
+        "back"
+      ],
+      "media_id": "3T12T87",
+      "gif_url": "videos/1741-3T12T87.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "0430",
+      "name": "dumbbell standing triceps extension",
+      "equipment": "dumbbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "shoulders"
+      ],
+      "media_id": "PdmaD0N",
+      "gif_url": "videos/0430-PdmaD0N.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "2189",
+      "name": "dumbbells seated triceps extension",
+      "equipment": "dumbbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "shoulders"
+      ],
+      "media_id": "FQXdXzY",
+      "gif_url": "videos/2189-FQXdXzY.gif",
+      "attribution": "© Gym visual — https://gymvisual.com/"
+    },
+    {
+      "id": "1746",
+      "name": "exercise ball supine triceps extension",
+      "equipment": "dumbbell",
+      "target": "triceps",
+      "body_part": "upper arms",
+      "secondary_muscles": [
+        "shoulders"
+      ],
+      "media_id": "Gm2Uv1z",
+      "gif_url": "videos/1746-Gm2Uv1z.gif",
       "attribution": "© Gym visual — https://gymvisual.com/"
     }
   ],
