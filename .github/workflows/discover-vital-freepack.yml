@@ -14,23 +14,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Probe official free-pack page
-        shell: bash
         run: |
-          set -u
-          mkdir -p routine-motion
-          curl -L --compressed -A 'Mozilla/5.0' 'https://vitalanimations.com/free-pack' -o /tmp/vital.html
-          {
-            echo '# Vital free-pack link probe'
-            echo
-            echo '## href/src candidates containing zip/download/free'
-            grep -Eoi '(href|src)=["'"'][^"'"']+["'"']' /tmp/vital.html | grep -Ei 'zip|download|free|pack' || true
-            echo
-            echo '## absolute URL candidates'
-            grep -Eo 'https?://[^"'"' <>]+' /tmp/vital.html | grep -Ei 'zip|download|free|pack' | sort -u || true
-            echo
-            echo '## HTML size'
-            wc -c /tmp/vital.html
-          } > routine-motion/VITAL_PROBE.txt
+          python - <<'PY'
+          import re, urllib.request
+          req=urllib.request.Request('https://vitalanimations.com/free-pack',headers={'User-Agent':'Mozilla/5.0'})
+          html=urllib.request.urlopen(req,timeout=30).read().decode('utf-8','replace')
+          urls=[]
+          for pat in [r'https?://[^"\'<> ]+', r'(?:href|src)=["\']([^"\']+)["\']']:
+              for m in re.findall(pat,html,re.I):
+                  u=m if isinstance(m,str) else m[0]
+                  if any(k in u.lower() for k in ('zip','download','free','pack','storage','cdn')):
+                      urls.append(u)
+          out=['# Vital free-pack link probe','','## Candidates']+sorted(set(urls))+['','## HTML size',str(len(html))]
+          open('routine-motion/VITAL_PROBE.txt','w').write('\n'.join(out)+'\n')
+          PY
       - name: Commit probe
         run: |
           git config user.name 'github-actions[bot]'
