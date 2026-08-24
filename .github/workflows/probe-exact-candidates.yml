@@ -27,11 +27,16 @@ jobs:
                   n=ex.get('name','').lower()
                   if pred(n,ex):
                       out.append({k:ex.get(k) for k in ['id','name','equipment','target','body_part','secondary_muscles','media_id','gif_url','attribution']})
-              return out
+              return out[:40]
           report={
-            'reverse_lunge':pick(lambda n,e:'reverse lunge' in n),
-            'shoulder_press':pick(lambda n,e:('kettlebell' in n and ('press' in n or 'overhead' in n)) or 'kettlebell overhead press' in n),
-            'overhead_triceps':pick(lambda n,e:'overhead' in n and 'triceps' in n and ('extension' in n or 'extend' in n)),
+            'lunge_all':pick(lambda n,e:'lunge' in n and e.get('equipment') in ['body weight','dumbbell','kettlebell']),
+            'kettlebell_deadlift':pick(lambda n,e:'kettlebell' in n and ('deadlift' in n or 'dead lift' in n)),
+            'kettlebell_squat':pick(lambda n,e:'kettlebell' in n and 'squat' in n),
+            'kettlebell_shoulder_press':pick(lambda n,e:'kettlebell' in n and ('military press' in n or 'overhead press' in n or 'alternating press' in n)),
+            'band_lateral_raise':pick(lambda n,e:('band' in n or e.get('equipment')=='band') and 'lateral raise' in n),
+            'band_reverse_fly':pick(lambda n,e:('band' in n or e.get('equipment')=='band') and ('reverse fly' in n or 'rear delt fly' in n)),
+            'kettlebell_curl':pick(lambda n,e:'kettlebell' in n and 'curl' in n),
+            'dumbbell_overhead_triceps':pick(lambda n,e:e.get('equipment')=='dumbbell' and 'triceps' in n and ('overhead' in n or 'standing' in n or 'extension' in n)),
             'one_arm_row':pick(lambda n,e:('one arm' in n or 'single arm' in n) and 'row' in n and e.get('equipment') in ['dumbbell','kettlebell'])
           }
           open('routine-motion/exercisedb-exact-candidates.json','w').write(json.dumps(report,ensure_ascii=False,indent=2))
