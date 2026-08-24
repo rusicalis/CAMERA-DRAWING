@@ -16,16 +16,16 @@ jobs:
       - name: Probe official free-pack page
         run: |
           python - <<'PY'
-          import re, urllib.request
+          import re, urllib.request, html as h
           req=urllib.request.Request('https://vitalanimations.com/free-pack',headers={'User-Agent':'Mozilla/5.0'})
-          html=urllib.request.urlopen(req,timeout=30).read().decode('utf-8','replace')
-          urls=[]
-          for pat in [r'https?://[^"\'<> ]+', r'(?:href|src)=["\']([^"\']+)["\']']:
-              for m in re.findall(pat,html,re.I):
-                  u=m if isinstance(m,str) else m[0]
-                  if any(k in u.lower() for k in ('zip','download','free','pack','storage','cdn')):
-                      urls.append(u)
-          out=['# Vital free-pack link probe','','## Candidates']+sorted(set(urls))+['','## HTML size',str(len(html))]
+          raw=urllib.request.urlopen(req,timeout=30).read().decode('utf-8','replace')
+          lines=[]
+          for m in re.finditer(r'.{0,280}(?:download|\.zip|free.?pack|fetch\(|api/|blob|storage|supabase|cloudfront|r2|s3).{0,380}',raw,re.I|re.S):
+              s=re.sub(r'\s+',' ',h.unescape(m.group(0))).strip()
+              if s not in lines: lines.append(s)
+          scripts=re.findall(r'<script[^>]+src=["\']([^"\']+)["\']',raw,re.I)
+          links=re.findall(r'(?:href|src)=["\']([^"\']+)["\']',raw,re.I)
+          out=['# Vital free-pack deep probe','','## Context']+lines[:80]+['','## Script sources']+scripts+['','## Links']+links+['','## HTML size',str(len(raw))]
           open('routine-motion/VITAL_PROBE.txt','w').write('\n'.join(out)+'\n')
           PY
       - name: Commit probe
@@ -33,5 +33,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add routine-motion/VITAL_PROBE.txt
-          git commit -m 'chore: probe Vital free pack link [skip ci]' || exit 0
+          git commit -m 'chore: deep probe Vital free pack [skip ci]' || exit 0
           git push
