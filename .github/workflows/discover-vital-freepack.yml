@@ -16,27 +16,31 @@ jobs:
       - name: Probe official free-pack app bundle
         run: |
           python - <<'PY'
-          import re, urllib.request, html as h, urllib.parse
-          headers={'User-Agent':'Mozilla/5.0'}
-          page=urllib.request.urlopen(urllib.request.Request('https://vitalanimations.com/free-pack',headers=headers),timeout=30).read().decode('utf-8','replace')
-          scripts=re.findall(r'<script[^>]+src=["\']([^"\']+)["\']',page,re.I)
-          out=['# Vital free-pack bundle probe']
-          for src in scripts:
-              url=urllib.parse.urljoin('https://vitalanimations.com/free-pack',src)
-              out += ['','## Script '+url]
-              try:
-                  js=urllib.request.urlopen(urllib.request.Request(url,headers=headers),timeout=30).read().decode('utf-8','replace')
-                  candidates=set()
-                  for pat in [r'https?://[^"\'` <>]+', r'["\']([^"\']*(?:zip|download|free.?pack|supabase|storage|cloudfront|r2|s3)[^"\']*)["\']']:
-                      for m in re.findall(pat,js,re.I):
-                          s=m if isinstance(m,str) else m[0]
-                          if len(s)<1000: candidates.add(h.unescape(s))
-                  out += sorted(candidates)
-                  for m in re.finditer(r'.{0,180}(?:Download Free Pack|downloadFree|freePack|\.zip).{0,260}',js,re.I|re.S):
-                      s=re.sub(r'\s+',' ',m.group(0)).strip()
-                      if len(s)<1000: out.append('CTX: '+s)
-              except Exception as e:
-                  out.append('ERROR: '+repr(e))
+          import re, urllib.request, urllib.parse
+          H={'User-Agent':'Mozilla/5.0'}
+          page=urllib.request.urlopen(urllib.request.Request('https://vitalanimations.com/free-pack',headers=H),timeout=30).read().decode('utf-8','replace')
+          src=re.search(r'<script[^>]+src=["\']([^"\']+)["\']',page,re.I).group(1)
+          url=urllib.parse.urljoin('https://vitalanimations.com/free-pack',src)
+          js=urllib.request.urlopen(urllib.request.Request(url,headers=H),timeout=30).read().decode('utf-8','replace')
+          out=['# Vital free-pack focused probe','SCRIPT='+url]
+          urls=sorted(set(re.findall(r'https?://[A-Za-z0-9._~:/?#\[\]@!$&()*+,;=%-]+',js)))
+          out.append('## FILTERED URLS')
+          out.extend(u for u in urls if any(k in u.lower() for k in ['firebase','storage','zip','download','vitalanimation','googleapis']))
+          out.append('## STRING CANDIDATES')
+          strings=re.findall(r'(["\'`])(.{0,700}?)\1',js,re.S)
+          keep=[]
+          for _,s in strings:
+              lo=s.lower()
+              if any(k in lo for k in ['.zip','getdownloadurl','download now','download started','starting download','free50','free-pack.zip','storagebucket']):
+                  s=re.sub(r'\s+',' ',s).strip()
+                  if s and s not in keep: keep.append(s)
+          out.extend(keep[:120])
+          out.append('## CONTEXT')
+          for key in ['Download Now','Starting download','Download started','getDownloadURL','.zip','storageBucket']:
+              out.append('KEY='+key)
+              for m in list(re.finditer(re.escape(key),js,re.I))[:8]:
+                  s=re.sub(r'\s+',' ',js[max(0,m.start()-350):m.end()+550])
+                  out.append(s)
           open('routine-motion/VITAL_PROBE.txt','w').write('\n'.join(out)+'\n')
           PY
       - name: Commit probe
@@ -44,5 +48,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add routine-motion/VITAL_PROBE.txt
-          git commit -m 'chore: probe Vital app bundle [skip ci]' || exit 0
+          git commit -m 'chore: focused probe Vital free pack [skip ci]' || exit 0
           git push
