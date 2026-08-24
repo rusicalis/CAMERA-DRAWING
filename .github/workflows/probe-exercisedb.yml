@@ -1,4 +1,4 @@
-name: Probe ExerciseDB free API
+name: Probe ExerciseDB sources
 
 on:
   push:
@@ -14,68 +14,64 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Probe ExerciseDB
+      - name: Probe live API and static mirror
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p routine-motion
           python3 - <<'PY'
-          import json, urllib.request, urllib.parse, time
-          base='https://oss.exercisedb.dev/api/v1/exercises'
-          report={'pages':[], 'matches':{}, 'errors':[]}
-          all_rows=[]
-          after=''
-          for page in range(25):
-              q={'limit':'100'}
-              if after: q['after']=after
-              url=base+'?'+urllib.parse.urlencode(q)
-              try:
-                  with urllib.request.urlopen(url, timeout=30) as r:
-                      raw=r.read().decode('utf-8')
-                      payload=json.loads(raw)
-              except Exception as e:
-                  report['errors'].append({'page':page,'url':url,'error':repr(e)})
-                  break
-              if isinstance(payload,list):
-                  arr=payload; meta={}
-                  shape='array'
-              else:
-                  arr=payload.get('data') or payload.get('exercises') or []
-                  meta=payload.get('meta') or {}
-                  shape='object'
-              report['pages'].append({'page':page,'shape':shape,'count':len(arr),'meta':meta})
-              all_rows.extend(arr)
-              nxt=meta.get('nextCursor')
-              if meta.get('hasNextPage') is False or not nxt:
-                  break
-              after=str(nxt)
-          report['total_loaded']=len(all_rows)
+          import json, urllib.request, urllib.parse, re
+          report={'live_api':{},'static':{'matches':{}},'errors':[]}
+          # Live API probe
+          live='https://oss.exercisedb.dev/api/v1/exercises?limit=100'
+          try:
+              req=urllib.request.Request(live,headers={'User-Agent':'B-Routine-Probe/1.0','Accept':'application/json'})
+              with urllib.request.urlopen(req,timeout=30) as r:
+                  payload=json.loads(r.read().decode('utf-8'))
+              report['live_api']={'status':200,'shape':'array' if isinstance(payload,list) else 'object','count':len(payload if isinstance(payload,list) else (payload.get('data') or payload.get('exercises') or []))}
+          except Exception as e:
+              report['live_api']={'error':repr(e)}
+          # Static dataset mirror, used only to identify exact ExerciseDB IDs and media paths.
+          static_url='https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/data/exercises.json'
+          req=urllib.request.Request(static_url,headers={'User-Agent':'B-Routine-Probe/1.0','Accept':'application/json'})
+          with urllib.request.urlopen(req,timeout=60) as r:
+              rows=json.loads(r.read().decode('utf-8'))
+          report['static']['total_loaded']=len(rows)
           wants={
-            'pushup':['push up','push-up'],
-            'pushup-close':['close grip push up','narrow push up','diamond push up'],
-            'row':['kettlebell one arm row','one arm dumbbell row','bent over row'],
-            'deadlift':['kettlebell deadlift','dumbbell deadlift','romanian deadlift'],
-            'squat':['kettlebell goblet squat','dumbbell goblet squat','goblet squat'],
-            'lunge':['kettlebell reverse lunge','dumbbell reverse lunge','reverse lunge'],
-            'shoulder-press':['kettlebell one arm shoulder press','kettlebell press','dumbbell shoulder press'],
-            'lateral-raise':['band lateral raise','resistance band lateral raise','dumbbell lateral raise'],
-            'face-pull':['band reverse fly','band rear delt fly','dumbbell reverse fly','rear delt fly'],
-            'curl':['kettlebell curl','dumbbell biceps curl','dumbbell curl'],
-            'triceps':['kettlebell overhead triceps extension','dumbbell overhead triceps extension','overhead triceps extension']
+            'pushup':{'queries':['push up','push-up'],'equipment':['body weight'],'targets':['pectorals','chest']},
+            'pushup-close':{'queries':['diamond push up','close grip push up','narrow push up'],'equipment':['body weight'],'targets':['triceps','pectorals']},
+            'row':{'queries':['one arm dumbbell row','dumbbell bent over row','bent over row'],'equipment':['dumbbell','kettlebell'],'targets':['back','lats','upper back']},
+            'deadlift':{'queries':['kettlebell deadlift','dumbbell deadlift','romanian deadlift'],'equipment':['kettlebell','dumbbell'],'targets':['glutes','hamstrings']},
+            'squat':{'queries':['goblet squat','dumbbell goblet squat','kettlebell goblet squat'],'equipment':['dumbbell','kettlebell'],'targets':['quads','glutes']},
+            'lunge':{'queries':['reverse lunge','dumbbell reverse lunge','kettlebell reverse lunge'],'equipment':['dumbbell','kettlebell','body weight'],'targets':['quads','glutes']},
+            'shoulder-press':{'queries':['kettlebell press','dumbbell shoulder press','dumbbell overhead press'],'equipment':['kettlebell','dumbbell'],'targets':['delts','shoulders']},
+            'lateral-raise':{'queries':['dumbbell lateral raise','lateral raise'],'equipment':['dumbbell','resistance band'],'targets':['delts','shoulders']},
+            'face-pull':{'queries':['rear delt fly','reverse fly','rear delt'],'equipment':['dumbbell','resistance band','cable'],'targets':['delts','shoulders']},
+            'curl':{'queries':['dumbbell biceps curl','dumbbell curl','biceps curl'],'equipment':['dumbbell','kettlebell'],'targets':['biceps']},
+            'triceps':{'queries':['dumbbell overhead triceps extension','overhead triceps extension','triceps extension'],'equipment':['dumbbell','kettlebell'],'targets':['triceps']}
           }
-          def norm(s):
-              import re
-              return re.sub(r'[^a-z0-9]+',' ',str(s or '').lower()).strip()
-          for key,queries in wants.items():
-              hits=[]
-              for ex in all_rows:
-                  n=norm(ex.get('name'))
-                  for q in queries:
-                      qn=norm(q)
-                      if all(tok in n for tok in qn.split()):
-                          hits.append({k:ex.get(k) for k in ['exerciseId','name','gifUrl','targetMuscles','bodyParts','equipments','secondaryMuscles']})
-                          break
-              report['matches'][key]=hits[:30]
+          avoid=['wall','assisted','chair','seated','stretch','mobility','rehab','physio','isometric','knee push','incline push']
+          def norm(s): return re.sub(r'[^a-z0-9]+',' ',str(s or '').lower()).strip()
+          for key,pref in wants.items():
+              scored=[]
+              for ex in rows:
+                  name=norm(ex.get('name')); equip=norm(ex.get('equipment')); target=norm(ex.get('target')); body=norm(ex.get('body_part')); secondary=' '.join(norm(x) for x in ex.get('secondary_muscles',[]))
+                  score=0
+                  for qi,q in enumerate(pref['queries']):
+                      qn=norm(q); toks=[x for x in qn.split() if x]; hits=sum(1 for x in toks if x in name)
+                      if hits==len(toks): score=max(score,100-qi*7+(35 if name==qn else 0))
+                      else: score=max(score,hits*9-qi*2)
+                  if any(norm(e) in equip or equip in norm(e) for e in pref['equipment']): score+=20
+                  muscles=' '.join([target,body,secondary])
+                  if any(norm(t) in muscles for t in pref['targets']): score+=14
+                  for bad in avoid:
+                      if bad in name and bad not in ' '.join(norm(q) for q in pref['queries']): score-=90
+                  if ex.get('gif_url'): score+=5
+                  scored.append((score,ex))
+              scored.sort(key=lambda x:(-x[0],x[1].get('name','')))
+              report['static']['matches'][key]=[{
+                  'score':s,'id':ex.get('id'),'exerciseId':ex.get('media_id'),'name':ex.get('name'),'equipment':ex.get('equipment'),'target':ex.get('target'),'body_part':ex.get('body_part'),'secondary_muscles':ex.get('secondary_muscles'),'gif_url':ex.get('gif_url'),'attribution':ex.get('attribution')
+              } for s,ex in scored[:15]]
           open('routine-motion/exercisedb-probe.json','w').write(json.dumps(report,ensure_ascii=False,indent=2))
           PY
       - name: Commit probe result
@@ -83,5 +79,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add routine-motion/exercisedb-probe.json
-          git diff --cached --quiet || git commit -m 'chore: capture ExerciseDB probe [skip ci]'
+          git diff --cached --quiet || git commit -m 'chore: capture ExerciseDB source probe [skip ci]'
           git push
