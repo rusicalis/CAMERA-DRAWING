@@ -1,0 +1,40 @@
+name: Validate curated BURING ROUTINE motions
+
+on:
+  push:
+    paths:
+      - 'routine-motion/.curated-validate-trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate official ExerciseDB GIFs
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request
+          ids=['I4hDWkc','soIB2rj','g9AsZ8P','nUwVh7b','ZA8b5hc','SSsBDwB','5KLbZWx','sTg7iys','sTfvVsG','NbVPDMW','PdmaD0N']
+          out={}
+          for mid in ids:
+              url=f'https://static.exercisedb.dev/media/{mid}.gif'
+              try:
+                  req=urllib.request.Request(url,headers={'User-Agent':'B-ROUTINE/1.4','Accept':'image/gif'})
+                  with urllib.request.urlopen(req,timeout=30) as r:
+                      head=r.read(16)
+                      out[mid]={'status':r.status,'content_type':r.headers.get('content-type'),'gif_signature':head[:6].decode('latin1')}
+              except Exception as e:
+                  out[mid]={'error':repr(e)}
+          open('routine-motion/curated-motion-validation.json','w').write(json.dumps(out,ensure_ascii=False,indent=2))
+          PY
+      - name: Commit result
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add routine-motion/curated-motion-validation.json
+          git diff --cached --quiet || git commit -m 'chore: validate curated motion endpoints [skip ci]'
+          git push
