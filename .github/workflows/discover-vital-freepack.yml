@@ -1,0 +1,40 @@
+name: Discover Vital Free Pack URL
+
+on:
+  push:
+    paths:
+      - 'routine-motion/.vital-probe'
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe official free-pack page
+        shell: bash
+        run: |
+          set -u
+          mkdir -p routine-motion
+          curl -L --compressed -A 'Mozilla/5.0' 'https://vitalanimations.com/free-pack' -o /tmp/vital.html
+          {
+            echo '# Vital free-pack link probe'
+            echo
+            echo '## href/src candidates containing zip/download/free'
+            grep -Eoi '(href|src)=["'"'][^"'"']+["'"']' /tmp/vital.html | grep -Ei 'zip|download|free|pack' || true
+            echo
+            echo '## absolute URL candidates'
+            grep -Eo 'https?://[^"'"' <>]+' /tmp/vital.html | grep -Ei 'zip|download|free|pack' | sort -u || true
+            echo
+            echo '## HTML size'
+            wc -c /tmp/vital.html
+          } > routine-motion/VITAL_PROBE.txt
+      - name: Commit probe
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add routine-motion/VITAL_PROBE.txt
+          git commit -m 'chore: probe Vital free pack link [skip ci]' || exit 0
+          git push
