@@ -1,0 +1,76 @@
+name: Bootstrap Daily Routine Motion Assets
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'routine-motion/.bootstrap'
+
+permissions:
+  contents: write
+
+jobs:
+  build-motion-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Download license-cleared source motions
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/routine-motion-src routine-motion
+          curl -fL 'https://upload.wikimedia.org/wikipedia/commons/8/8f/Pushups.gif' -o /tmp/routine-motion-src/pushup.gif
+          curl -fL 'https://upload.wikimedia.org/wikipedia/commons/4/43/Narrow_Push_Ups.gif' -o /tmp/routine-motion-src/pushup-close.gif
+          curl -fL 'https://upload.wikimedia.org/wikipedia/commons/b/b2/Bent-over_row_-_exercise_demonstration_video.webm' -o /tmp/routine-motion-src/row.webm
+          curl -fL 'https://upload.wikimedia.org/wikipedia/commons/6/62/Deadlift_-_exercise_demonstration_video.webm' -o /tmp/routine-motion-src/deadlift.webm
+          curl -fL 'https://upload.wikimedia.org/wikipedia/commons/5/5c/Squat_-_exercise_demonstration_video.webm' -o /tmp/routine-motion-src/squat.webm
+          curl -fL 'https://upload.wikimedia.org/wikipedia/commons/6/69/Shoulder_press_-_exercise_demonstration_video.webm' -o /tmp/routine-motion-src/shoulder-press.webm
+          curl -fL 'https://upload.wikimedia.org/wikipedia/commons/0/0a/CURL_B%C3%8DCEPS.webm' -o /tmp/routine-motion-src/curl.webm
+
+      - name: Convert to mobile MP4
+        run: |
+          set -euxo pipefail
+          FILTER="scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2:color=white"
+          ffmpeg -y -i /tmp/routine-motion-src/pushup.gif -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/pushup.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/pushup-close.gif -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/pushup-close.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/row.webm -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/kettlebell-row.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/deadlift.webm -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/kettlebell-deadlift.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/squat.webm -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/goblet-squat.mp4
+          ffmpeg -y -i /tmp/routine-motion-src/shoulder-press.webm -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/shoulder-press.mp4
+          ffmpeg -y -ss 0.10 -t 2.10 -i /tmp/routine-motion-src/curl.webm -vf "$FILTER" -an -c:v libx264 -preset medium -crf 25 -pix_fmt yuv420p -movflags +faststart routine-motion/kettlebell-curl.mp4
+
+      - name: Write attribution
+        run: |
+          cat > routine-motion/LICENSES.md <<'EOF'
+          # Daily Routine motion asset licenses
+
+          These motion assets are transcoded/trimmed derivatives used by the DAILY ROUTINE app.
+
+          - `pushup.mp4` — Source: Wikimedia Commons `Pushups.gif`, author Wensceslao, CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Pushups.gif
+          - `pushup-close.mp4` — Source: Wikimedia Commons `Narrow Push Ups.gif`, author Danielflefil, CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Narrow_Push_Ups.gif
+          - `kettlebell-row.mp4` — Source: Wikimedia Commons `Bent-over row - exercise demonstration video.webm`, FitnessScape, CC BY 3.0. https://commons.wikimedia.org/wiki/File:Bent-over_row_-_exercise_demonstration_video.webm
+          - `kettlebell-deadlift.mp4` — Source: Wikimedia Commons `Deadlift - exercise demonstration video.webm`, FitnessScape, CC BY 3.0. https://commons.wikimedia.org/wiki/File:Deadlift_-_exercise_demonstration_video.webm
+          - `goblet-squat.mp4` — Source: Wikimedia Commons `Squat - exercise demonstration video.webm`, FitnessScape, CC BY 3.0. https://commons.wikimedia.org/wiki/File:Squat_-_exercise_demonstration_video.webm
+          - `shoulder-press.mp4` — Source: Wikimedia Commons `Shoulder press - exercise demonstration video.webm`, FitnessScape, CC BY 3.0. https://commons.wikimedia.org/wiki/File:Shoulder_press_-_exercise_demonstration_video.webm
+          - `kettlebell-curl.mp4` — Source: Wikimedia Commons `CURL BÍCEPS.webm`, author MariaMilagrosPérez, CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:CURL_B%C3%8DCEPS.webm
+
+          Modifications: H.264 MP4 transcoding, resizing/padding for mobile playback; the curl source is trimmed to one repetition. CC BY-SA derivatives remain under CC BY-SA 4.0 where applicable.
+          EOF
+
+      - name: Commit generated assets
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add routine-motion/*.mp4 routine-motion/LICENSES.md
+          if git diff --cached --quiet; then
+            echo 'No motion asset changes.'
+          else
+            git commit -m 'chore: generate daily routine motion assets [skip ci]'
+            git push
+          fi
