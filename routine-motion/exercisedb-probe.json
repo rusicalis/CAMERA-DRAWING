@@ -1,0 +1,24 @@
+{
+  "pages": [],
+  "matches": {
+    "pushup": [],
+    "pushup-close": [],
+    "row": [],
+    "deadlift": [],
+    "squat": [],
+    "lunge": [],
+    "shoulder-press": [],
+    "lateral-raise": [],
+    "face-pull": [],
+    "curl": [],
+    "triceps": []
+  },
+  "errors": [
+    {
+      "page": 0,
+      "url": "https://oss.exercisedb.dev/api/v1/exercises?limit=100",
+      "error": "<HTTPError 403: 'Forbidden'>"
+    }
+  ],
+  "total_loaded": 0
+}
